@@ -1576,76 +1576,77 @@ function setUserGreeting(role, namaWilayah, username) {
 }
 
 async function handleLogin(event) {
-  event.preventDefault();
-  const btn = document.getElementById("btnLogin");
-  const user = document.getElementById("login_username").value.trim();
-  const pass = document.getElementById("login_password").value.trim();
+    event.preventDefault();
+    const btn = document.getElementById("btnLogin");
+    const user = document.getElementById("login_username").value.trim();
+    const pass = document.getElementById("login_password").value.trim();
 
-  btn.disabled = true;
-  btn.innerText = "Memverifikasi...";
+    btn.disabled = true;
+    btn.innerText = "Memverifikasi...";
 
-  try {
-    const { data, error } = await db
-      .from('users')
-      .select('*')
-      .or(`Username.eq.${user},username.eq.${user}`)
-      .or(`Password.eq.${pass},password.eq.${pass}`)
-      .maybeSingle();
+    try {
+      // 1. Ambil data pengguna dari tabel users dengan kolom "Username" & "Password"
+      const { data, error } = await db
+        .from('users')
+        .select('*')
+        .eq('Username', user)
+        .eq('Password', pass)
+        .maybeSingle();
 
-    if (error) {
-      console.error("Database Error:", error);
+      if (error) {
+        console.error("Database Error:", error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Koneksi Database Gagal',
+          text: error.message
+        });
+        return;
+      }
+
+      if (!data) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Gagal Masuk',
+          text: 'Username atau Password salah!'
+        });
+        return;
+      }
+
+      // 2. Baca data kolom pengguna
+      const valUser = data.Username || "";
+      const valRole = String(data.Role || "User Desa").trim();
+      const valKab  = data.Kode_Kab || "";
+      const valKec  = data.Kode_Kec ? String(data.Kode_Kec) : "";
+      const valDesa = data.Kode_Desa ? String(data.Kode_Desa) : "";
+
+      currentUser = valUser;
+      userRole = valRole.toUpperCase();
+      userKodeKab = valKab;
+      userKodeKec = valKec;
+      userKodeDesa = valDesa;
+
+      setUserGreeting(valRole, "", valUser);
+      document.getElementById("loginContainer").style.display = "none";
+      document.getElementById("appContainer").style.display = "block";
+      
+      if (Object.keys(dataKecamatan).length === 0) {
+        await loadMasterWilayahFromSheet();
+      }
+
+      showDashboardView();
+
+    } catch (err) {
+      console.error("Login Exception:", err);
       Swal.fire({
         icon: 'error',
-        title: 'Koneksi Database Gagal',
-        text: error.message
-      });
-      return;
-    }
-
-    if (!data) {
-      Swal.fire({
-        icon: 'warning',
         title: 'Gagal Masuk',
-        text: 'Username atau Password salah!'
+        text: err.message || 'Terjadi kesalahan sistem'
       });
-      return;
+    } finally {
+      btn.disabled = false;
+      btn.innerText = "MASUK";
     }
-
-    const valUser = data.Username || data.username || user || "";
-    const rawRole = data.Role || data.role || "User Desa";
-    const valRole = String(rawRole).trim();
-    const valKab  = data.Kode_Kab || data["Kode Kab"] || data.kode_kab || "";
-    const valKec  = data.Kode_Kec || data["Kode Kec"] || data.kode_kec || "";
-    const valDesa = data.Kode_Desa || data["Kode Desa"] || data.kode_desa || "";
-
-    currentUser = valUser;
-    userRole = String(valRole || "").toUpperCase();
-    userKodeKab = String(valKab || "");
-    userKodeKec = String(valKec || "");
-    userKodeDesa = String(valDesa || "");
-
-    setUserGreeting(valRole, "", valUser);
-    document.getElementById("loginContainer").style.display = "none";
-    document.getElementById("appContainer").style.display = "block";
-    
-    if (Object.keys(dataKecamatan).length === 0) {
-      await loadMasterWilayahFromSheet();
-    }
-
-    showDashboardView();
-
-  } catch (err) {
-    console.error("Login Exception:", err);
-    Swal.fire({
-      icon: 'error',
-      title: 'Gagal Masuk',
-      text: err.message || 'Terjadi kesalahan sistem'
-    });
-  } finally {
-    btn.disabled = false;
-    btn.innerText = "MASUK";
   }
-}
 
   function updateKabupaten(selectedVal = "") {
     const kodeProv = document.getElementById("provinsi").value;
