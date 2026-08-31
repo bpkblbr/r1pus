@@ -1542,39 +1542,6 @@ function populateKecamatanDropdowns() {
   });
 }
 
-  // 1. Ekstraksi dari dataKecamatan
-  for (let kdKab in dataKecamatan) {
-    for (let kdKec in dataKecamatan[kdKab]) {
-      let cleanKode = String(kdKec).replace("'", "").trim();
-      if (!addedKec[cleanKode]) {
-        addedKec[cleanKode] = true;
-        kecList.push({ kode: cleanKode, nama: dataKecamatan[kdKab][kdKec] });
-      }
-    }
-  }
-
-  // 2. Fallback jika dataKecamatan bersarang di level lain
-  if (kecList.length === 0 && typeof dataDesa === "object") {
-    for (let kdKec in dataDesa) {
-      let cleanKode = String(kdKec).replace("'", "").trim();
-      if (!addedKec[cleanKode]) {
-        addedKec[cleanKode] = true;
-        kecList.push({ kode: cleanKode, nama: "KECAMATAN " + cleanKode });
-      }
-    }
-  }
-
-  [recapKec, bnbaKec, chartKec].forEach(sel => {
-    if (!sel) return;
-    const currentVal = sel.value;
-    sel.innerHTML = '<option value="">-- PILIH KECAMATAN --</option>';
-    kecList.forEach(k => {
-      sel.add(new Option(k.nama.toUpperCase(), k.kode));
-    });
-    if (currentVal) sel.value = currentVal;
-  });
-}
-
   function getTimeGreeting() {
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 11) return "Selamat pagi";
