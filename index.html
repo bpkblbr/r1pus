@@ -1506,12 +1506,13 @@ async function loadMasterWilayahFromSheet() {
   if (provSelect) {
     provSelect.innerHTML = '<option value="">-- PILIH --</option>';
     for (let kode in dataProvinsi) {
-      provSelect.add(new Option(dataProvinsi[kode].toUpperCase(), kode));
+      provSelect.add(new Option(String(dataProvinsi[kode] || "").toUpperCase(), kode));
     }
   }
   populateKecamatanDropdowns();
 }
-  function populateKecamatanDropdowns() {
+
+function populateKecamatanDropdowns() {
   const recapKec = document.getElementById("recapKecamatan");
   const bnbaKec = document.getElementById("bnbaKecamatan");
   const chartKec = document.getElementById("chartKecamatan");
@@ -1540,40 +1541,41 @@ async function loadMasterWilayahFromSheet() {
     if (currentVal) sel.value = currentVal;
   });
 }
-  function getTimeGreeting() {
-    const hour = new Date().getHours();
-    if (hour >= 5 && hour < 11) return "Selamat pagi";
-    if (hour >= 11 && hour < 15) return "Selamat siang";
-    if (hour >= 15 && hour < 18.5) return "Selamat sore";
-    return "Selamat malam";
+
+function getTimeGreeting() {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 11) return "Selamat pagi";
+  if (hour >= 11 && hour < 15) return "Selamat siang";
+  if (hour >= 15 && hour < 18.5) return "Selamat sore";
+  return "Selamat malam";
+}
+
+function setUserGreeting(role, namaWilayah, username) {
+  const timeGreeting = getTimeGreeting();
+  let identity = "";
+
+  const roleUpper = String(role || "").toUpperCase();
+  if (roleUpper.indexOf("KAB") !== -1) {
+    identity = "Admin Kabupaten " + (namaWilayah || "");
+  } else if (roleUpper.indexOf("KEC") !== -1) {
+    identity = "Admin Kecamatan " + (namaWilayah || "");
+  } else {
+    identity = "User Desa " + (namaWilayah || "");
   }
 
-  function setUserGreeting(role, namaWilayah, username) {
-    const timeGreeting = getTimeGreeting();
-    let identity = "";
-
-    const roleUpper = String(role || "").toUpperCase();
-    if (roleUpper.indexOf("KAB") !== -1) {
-      identity = "Admin Kabupaten " + (namaWilayah || "");
-    } else if (roleUpper.indexOf("KEC") !== -1) {
-      identity = "Admin Kecamatan " + (namaWilayah || "");
-    } else {
-      identity = "User Desa " + (namaWilayah || "");
-    }
-
-    identity = identity.trim();
-    if (!namaWilayah) {
-      identity = role + " (" + username + ")";
-    }
-
-    const fullGreeting = `${timeGreeting}, <b>${identity}</b>`;
-    const greetingEl = document.getElementById("userGreetingText");
-    if (greetingEl) {
-      greetingEl.innerHTML = fullGreeting;
-    }
+  identity = identity.trim();
+  if (!namaWilayah) {
+    identity = role + " (" + username + ")";
   }
 
-  async function handleLogin(event) {
+  const fullGreeting = `${timeGreeting}, <b>${identity}</b>`;
+  const greetingEl = document.getElementById("userGreetingText");
+  if (greetingEl) {
+    greetingEl.innerHTML = fullGreeting;
+  }
+}
+
+async function handleLogin(event) {
   event.preventDefault();
   const btn = document.getElementById("btnLogin");
   const user = document.getElementById("login_username").value.trim();
@@ -1583,7 +1585,6 @@ async function loadMasterWilayahFromSheet() {
   btn.innerText = "Memverifikasi...";
 
   try {
-    // 1. Ambil data pengguna dari tabel users di Supabase
     const { data, error } = await db
       .from('users')
       .select('*')
@@ -1610,7 +1611,6 @@ async function loadMasterWilayahFromSheet() {
       return;
     }
 
-    // 2. Baca kolom secara aman dengan fallback fleksibel
     const valUser = data.Username || data.username || user || "";
     const rawRole = data.Role || data.role || "User Desa";
     const valRole = String(rawRole).trim();
@@ -1628,7 +1628,6 @@ async function loadMasterWilayahFromSheet() {
     document.getElementById("loginContainer").style.display = "none";
     document.getElementById("appContainer").style.display = "block";
     
-    // Pastikan master wilayah sudah termuat sebelum membuka dashboard
     if (Object.keys(dataKecamatan).length === 0) {
       await loadMasterWilayahFromSheet();
     }
@@ -1647,33 +1646,6 @@ async function loadMasterWilayahFromSheet() {
     btn.innerText = "MASUK";
   }
 }
-
-      // 2. Baca kolom secara aman (mendukung "Username" maupun "username", "Role" maupun "role")
-      const valUser = data["Username"] || data["username"] || "";
-      const valRole = String(data["Role"] || data["role"] || "User Desa").trim();
-      const valKab  = data["Kode_Kab"] || data["Kode Kab"] || data["kode_kab"] || "";
-      const valKec  = data["Kode_Kec"] || data["Kode Kec"] || data["kode_kec"] || "";
-      const valDesa = data["Kode_Desa"] || data["Kode Desa"] || data["kode_desa"] || "";
-
-      currentUser = valUser;
-      userRole = valRole.toUpperCase();
-      userKodeKab = valKab;
-      userKodeKec = valKec;
-      userKodeDesa = valDesa;
-
-      setUserGreeting(valRole, "", valUser);
-      document.getElementById("loginContainer").style.display = "none";
-      document.getElementById("appContainer").style.display = "block";
-      showDashboardView();
-
-    } catch (err) {
-      console.error("Login Exception:", err);
-      Swal.fire("Gagal koneksi: " + err.message);
-    } finally {
-      btn.disabled = false;
-      btn.innerText = "MASUK";
-    }
-  }
 
   function updateKabupaten(selectedVal = "") {
     const kodeProv = document.getElementById("provinsi").value;
