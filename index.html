@@ -1599,7 +1599,7 @@ function populateKecamatanDropdowns() {
       // Gunakan nama kolom berhuruf kapital persis sesuai database: "Username" dan "Password"
       const { data, error } = await db
         .from('users')
-        .select('"Username", "Password", "Role", "Kode_Kab", "Kode_Kec", "Kode_Desa"')
+        .select('"Username", "Password", "Role", "Kode Kab", "Kode Kec", "Kode Desa"')
         .eq('Username', user)
         .eq('Password', pass)
         .maybeSingle();
@@ -1626,9 +1626,9 @@ function populateKecamatanDropdowns() {
       // Ambil nilai data sesuai kolom berhuruf kapital
       currentUser = data["Username"];
       userRole = String(data["Role"] || "User Desa").trim().toUpperCase();
-      userKodeKab = data["Kode_Kab"] || "";
-      userKodeKec = data["Kode_Kec"] || "";
-      userKodeDesa = data["Kode_Desa"] || "";
+      userKodeKab = data["Kode Kab"] || "";
+      userKodeKec = data["Kode Kec"] || "";
+      userKodeDesa = data["Kode Desa"] || "";
 
       setUserGreeting(data["Role"], "", data["Username"]);
       document.getElementById("loginContainer").style.display = "none";
