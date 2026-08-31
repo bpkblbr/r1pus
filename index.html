@@ -1587,46 +1587,62 @@ function populateKecamatanDropdowns() {
   }
 
   async function handleLogin(event) {
-  event.preventDefault();
-  const btn = document.getElementById("btnLogin");
-  const user = document.getElementById("login_username").value.trim();
-  const pass = document.getElementById("login_password").value.trim();
+    event.preventDefault();
+    const btn = document.getElementById("btnLogin");
+    const user = document.getElementById("login_username").value.trim();
+    const pass = document.getElementById("login_password").value.trim();
 
-  btn.disabled = true;
-  btn.innerText = "Memverifikasi...";
+    btn.disabled = true;
+    btn.innerText = "Memverifikasi...";
 
-  try {
-    const { data, error } = await db
-      .from('users')
-      .select('*')
-      .eq('username', user)
-      .eq('password', pass)
-      .maybeSingle();
+    try {
+      // Gunakan nama kolom berhuruf kapital persis sesuai database: "Username" dan "Password"
+      const { data, error } = await db
+        .from('users')
+        .select('"Username", "Password", "Role", "Kode_Kab", "Kode_Kec", "Kode_Desa"')
+        .eq('Username', user)
+        .eq('Password', pass)
+        .maybeSingle();
 
-    if (error || !data) {
-      Swal.fire("Username atau Password salah!");
+      if (error) {
+        console.error("Database Error:", error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Koneksi Database Gagal',
+          text: error.message
+        });
+        return;
+      }
+
+      if (!data) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Gagal Masuk',
+          text: 'Username atau Password salah!'
+        });
+        return;
+      }
+
+      // Ambil nilai data sesuai kolom berhuruf kapital
+      currentUser = data["Username"];
+      userRole = String(data["Role"] || "User Desa").trim().toUpperCase();
+      userKodeKab = data["Kode_Kab"] || "";
+      userKodeKec = data["Kode_Kec"] || "";
+      userKodeDesa = data["Kode_Desa"] || "";
+
+      setUserGreeting(data["Role"], "", data["Username"]);
+      document.getElementById("loginContainer").style.display = "none";
+      document.getElementById("appContainer").style.display = "block";
+      showDashboardView();
+
+    } catch (err) {
+      console.error("Login Exception:", err);
+      Swal.fire("Gagal koneksi: " + err.message);
+    } finally {
       btn.disabled = false;
       btn.innerText = "MASUK";
-      return;
     }
-
-    currentUser = data.username;
-    userRole = data.role.toUpperCase();
-    userKodeKab = data.kode_kab || "";
-    userKodeKec = data.kode_kec || "";
-    userKodeDesa = data.kode_desa || "";
-
-    setUserGreeting(data.role, "", data.username);
-    document.getElementById("loginContainer").style.display = "none";
-    document.getElementById("appContainer").style.display = "block";
-    showDashboardView();
-  } catch (err) {
-    Swal.fire("Gagal koneksi: " + err.message);
-  } finally {
-    btn.disabled = false;
-    btn.innerText = "MASUK";
   }
-}
 
   function updateKabupaten(selectedVal = "") {
     const kodeProv = document.getElementById("provinsi").value;
