@@ -1511,8 +1511,7 @@ async function loadMasterWilayahFromSheet() {
   }
   populateKecamatanDropdowns();
 }
-
-function populateKecamatanDropdowns() {
+  function populateKecamatanDropdowns() {
   const recapKec = document.getElementById("recapKecamatan");
   const bnbaKec = document.getElementById("bnbaKecamatan");
   const chartKec = document.getElementById("chartKecamatan");
@@ -1541,7 +1540,6 @@ function populateKecamatanDropdowns() {
     if (currentVal) sel.value = currentVal;
   });
 }
-
   function getTimeGreeting() {
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 11) return "Selamat pagi";
