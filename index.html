@@ -1596,10 +1596,10 @@ function populateKecamatanDropdowns() {
     btn.innerText = "Memverifikasi...";
 
     try {
-      // Gunakan nama kolom berhuruf kapital persis sesuai database: "Username" dan "Password"
+      // 1. Ambil data pengguna dari tabel users di Supabase
       const { data, error } = await db
         .from('users')
-        .select('"Username", "Password", "Role", "Kode Kab", "Kode Kec", "Kode Desa"')
+        .select('*')
         .eq('Username', user)
         .eq('Password', pass)
         .maybeSingle();
@@ -1623,14 +1623,20 @@ function populateKecamatanDropdowns() {
         return;
       }
 
-      // Ambil nilai data sesuai kolom berhuruf kapital
-      currentUser = data["Username"];
-      userRole = String(data["Role"] || "User Desa").trim().toUpperCase();
-      userKodeKab = data["Kode Kab"] || "";
-      userKodeKec = data["Kode Kec"] || "";
-      userKodeDesa = data["Kode Desa"] || "";
+      // 2. Baca kolom secara aman (mendukung "Username" maupun "username", "Role" maupun "role")
+      const valUser = data["Username"] || data["username"] || "";
+      const valRole = String(data["Role"] || data["role"] || "User Desa").trim();
+      const valKab  = data["Kode_Kab"] || data["Kode Kab"] || data["kode_kab"] || "";
+      const valKec  = data["Kode_Kec"] || data["Kode Kec"] || data["kode_kec"] || "";
+      const valDesa = data["Kode_Desa"] || data["Kode Desa"] || data["kode_desa"] || "";
 
-      setUserGreeting(data["Role"], "", data["Username"]);
+      currentUser = valUser;
+      userRole = valRole.toUpperCase();
+      userKodeKab = valKab;
+      userKodeKec = valKec;
+      userKodeDesa = valDesa;
+
+      setUserGreeting(valRole, "", valUser);
       document.getElementById("loginContainer").style.display = "none";
       document.getElementById("appContainer").style.display = "block";
       showDashboardView();
