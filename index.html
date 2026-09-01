@@ -743,14 +743,21 @@
     btn.innerText = "Memverifikasi...";
 
     try {
+      // Cari username tanpa sensitif huruf besar/kecil (ilike)
       const { data, error } = await db
         .from('users')
         .select('*')
-        .eq('username', user)
+        .ilike('username', user)
         .eq('password_hash', pass)
         .maybeSingle();
 
-      if (error || !data) {
+      if (error) {
+        console.error("Database Error:", error);
+        Swal.fire('Koneksi Gagal', error.message, 'error');
+        return;
+      }
+
+      if (!data) {
         Swal.fire('Gagal Masuk', 'Username atau Password salah!', 'warning');
         return;
       }
