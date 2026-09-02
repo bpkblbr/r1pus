@@ -2347,6 +2347,11 @@
 
         const cur = evaluateKbStatus(r[monthKey]);
         const prev = prevMonthKey ? evaluateKbStatus(r[prevMonthKey]) : null;
+        let umurIstri = parseInt(r.umur_istri || 0, 10);
+        
+        if (cur.type !== "BUKAN_PUS" && umurIstri < 50) {
+          grouped[key].total_pus++;
+        }
 
         grouped[key].total_pus++;
         
