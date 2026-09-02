@@ -3415,7 +3415,21 @@
     document.getElementById("mw_jumlah_rt").value = "1";
     document.getElementById("btnSaveMw").innerText = "💾 SIMPAN WILAYAH";
 
-    // Bersihkan dan buka kunci untuk Kode Dusun
+    const inKecKode = document.getElementById("mw_kode_kec");
+    const inDesaKode = document.getElementById("mw_kode_desa");
+    const inDusunKode = document.getElementById("mw_kode_dusun");
+
+    if (inKecKode) { inKecKode.value = ""; inKecKode.readOnly = false; inKecKode.style.backgroundColor = "#ffffff"; }
+    if (inDesaKode) { inDesaKode.value = ""; inDesaKode.readOnly = false; inDesaKode.style.backgroundColor = "#ffffff"; }
+    if (inDusunKode) { inDusunKode.value = ""; inDusunKode.readOnly = false; inDusunKode.style.backgroundColor = "#ffffff"; }
+
+    const inKecNama = document.getElementById("mw_kecamatan_nama");
+    const inDesaNama = document.getElementById("mw_desa_nama");
+
+    if (inKecNama) { inKecNama.value = ""; inKecNama.readOnly = false; inKecNama.style.backgroundColor = "#ffffff"; }
+    if (inDesaNama) { inDesaNama.value = ""; inDesaNama.readOnly = false; inDesaNama.style.backgroundColor = "#ffffff"; }
+	
+	// Bersihkan dan buka kunci untuk Kode Dusun
     const inDusunKode = document.getElementById("mw_kode_dusun");
     if (inDusunKode) {
       inDusunKode.value = "";
