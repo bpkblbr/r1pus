@@ -2275,9 +2275,20 @@
 
       // Proses Mutasi Pindah jika ditandai
       if (document.getElementById("is_pindah_dalam_kab").value === "true") {
+        // Cari bulan aktif terakhir yang berstatus 'PINDAH' (1 s.d. 12)
+        let detectedBulanPindah = 1;
+        const monthInputsMap = ["kb_1","kb_2","kb_3","kb_4","kb_5","kb_6","kb_7","kb_8","kb_9","kb_10","kb_11","kb_12"];
+        for (let mIdx = 0; mIdx < monthInputsMap.length; mIdx++) {
+          const valBulan = document.getElementById(monthInputsMap[mIdx]).value.toUpperCase();
+          if (valBulan === "PINDAH") {
+            detectedBulanPindah = mIdx + 1;
+            break;
+          }
+        }
+
         const mutasiPayload = {
           tahun: thn,
-          bulan_pindah: parseInt(document.getElementById("tahun_input").value || 1, 10),
+          bulan_pindah: detectedBulanPindah, // Diperbaiki: mengambil angka bulan 1-12 dengan benar
           id_pus_asal: idPus,
           kode_kec_asal: kdKec,
           kode_desa_asal: kdDesa,
@@ -2298,6 +2309,10 @@
         const { error: mutasiError } = await db.from('mutasi_pus').insert([mutasiPayload]);
         if (mutasiError) {
           console.error("Gagal mengirim tiket mutasi:", mutasiError.message);
+          Swal.fire('Peringatan Mutasi', 'Data tersimpan, namun gagal membuat tiket mutasi ke wilayah tujuan: ' + mutasiError.message, 'warning');
+        } else {
+          // Reset flag pindah setelah berhasil terkirim
+          document.getElementById("is_pindah_dalam_kab").value = "false";
         }
       }      
 
