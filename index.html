@@ -3412,9 +3412,16 @@
    function resetMwForm() {
     document.getElementById("mw_id").value = "";
     document.getElementById("mw_dusun_nama").value = "";
-    document.getElementById("mw_kode_dusun").value = "";
     document.getElementById("mw_jumlah_rt").value = "1";
     document.getElementById("btnSaveMw").innerText = "💾 SIMPAN WILAYAH";
+
+    // Bersihkan dan buka kunci untuk Kode Dusun
+    const inDusunKode = document.getElementById("mw_kode_dusun");
+    if (inDusunKode) {
+      inDusunKode.value = "";
+      inDusunKode.readOnly = false;
+      inDusunKode.style.backgroundColor = "#ffffff";
+    }
 
     const inProvNama = document.getElementById("mw_provinsi_nama");
     const inProvKode = document.getElementById("mw_kode_prov");
@@ -3432,7 +3439,7 @@
       namaKab = typeof kabObj === 'object' ? Object.values(kabObj)[0] : kabObj;
     }
 
-    // Cek apakah data kecamatan untuk kode login ini sudah ada di database/cache
+    // Cek apakah data kecamatan untuk kode login ini sudah terdaftar di database/cache
     let namaKec = "";
     let isKecRegisteredInDB = false;
     if (userKodeKab && dataKecamatan[userKodeKab] && dataKecamatan[userKodeKab][userKodeKec]) {
@@ -3463,7 +3470,7 @@
       inDesaKode.style.backgroundColor = "#ffffff";
 
     } else {
-      // 2. Jika Admin Kabupaten ATAU Admin Kecamatan TAPI data belum masuk di DB -> Bebas / Tidak dilock
+      // 2. Jika Admin Kabupaten ATAU Admin Kecamatan TAPI data belum masuk di DB -> Biarkan KOSONG dan TERBUKA
       inProvNama.readOnly = false; inProvKode.readOnly = false;
       inProvNama.style.backgroundColor = "#ffffff"; inProvKode.style.backgroundColor = "#ffffff";
 
@@ -3480,15 +3487,10 @@
       inProvKode.value = "52";
       inKabNama.value = namaKab || "LOMBOK BARAT";
       inKabKode.value = userKodeKab || "01";
-
-      // Jika user adalah Admin Kecamatan yang datanya masih kosong, bantu set kodenya
-      if (isKecRole()) {
-        inKecKode.value = userKodeKec;
-      } else {
-        inKecNama.value = "";
-        inKecKode.value = "";
-      }
-
+      
+      // Kosongkan nama dan kode kecamatan agar operator bisa mengisinya sendiri untuk pertama kali
+      inKecNama.value = "";
+      inKecKode.value = "";
       inDesaNama.value = "";
       inDesaKode.value = "";
     }
