@@ -3412,133 +3412,80 @@
    function resetMwForm() {
     document.getElementById("mw_id").value = "";
     document.getElementById("mw_dusun_nama").value = "";
+    document.getElementById("mw_kode_dusun").value = "";
     document.getElementById("mw_jumlah_rt").value = "1";
     document.getElementById("btnSaveMw").innerText = "💾 SIMPAN WILAYAH";
 
-    // Kosongkan nilai agar placeholder "KODE" muncul
-    const inKecKode = document.getElementById("mw_kode_kec");
-    const inDesaKode = document.getElementById("mw_kode_desa");
-    const inDusunKode = document.getElementById("mw_kode_dusun");
-
-    if (inKecKode) { inKecKode.value = ""; inKecKode.readOnly = false; inKecKode.style.backgroundColor = "#ffffff"; }
-    if (inDesaKode) { inDesaKode.value = ""; inDesaKode.readOnly = false; inDesaKode.style.backgroundColor = "#ffffff"; }
-    if (inDusunKode) { inDusunKode.value = ""; inDusunKode.readOnly = false; inDusunKode.style.backgroundColor = "#ffffff"; }
-
-    const inKecNama = document.getElementById("mw_kecamatan_nama");
-    const inDesaNama = document.getElementById("mw_desa_nama");
-
-    if (inKecNama) { inKecNama.value = ""; inKecNama.readOnly = false; inKecNama.style.backgroundColor = "#ffffff"; }
-    if (inDesaNama) { inDesaNama.value = ""; inDesaNama.readOnly = false; inDesaNama.style.backgroundColor = "#ffffff"; }
-  
     const inProvNama = document.getElementById("mw_provinsi_nama");
     const inProvKode = document.getElementById("mw_kode_prov");
     const inKabNama = document.getElementById("mw_kabupaten_nama");
     const inKabKode = document.getElementById("mw_kode_kab");
     const inKecNama = document.getElementById("mw_kecamatan_nama");
     const inKecKode = document.getElementById("mw_kode_kec");
+    
     const inDesaNama = document.getElementById("mw_desa_nama");
     const inDesaKode = document.getElementById("mw_kode_desa");
 
-    // Ambil nama kabupaten dari cache jika ada
+    // Ambil nama wilayah dari cache
     let namaKab = "";
     if (userKodeKab && dataKabupaten[userKodeKab]) {
       let kabObj = dataKabupaten[userKodeKab];
       namaKab = typeof kabObj === 'object' ? Object.values(kabObj)[0] : kabObj;
     }
 
-    // Cek apakah data kecamatan untuk kode login ini sudah terdaftar di database/cache
     let namaKec = "";
-    let isKecRegisteredInDB = false;
     if (userKodeKab && dataKecamatan[userKodeKab] && dataKecamatan[userKodeKab][userKodeKec]) {
       namaKec = dataKecamatan[userKodeKab][userKodeKec];
-      isKecRegisteredInDB = true;
     }
 
-    if (isKecRole() && isKecRegisteredInDB) {
-      // 1. Jika Admin Kecamatan DAN data kecamatannya SUDAH MASUK di DB -> Lock Provinsi s.d Kecamatan
+    // Cek Level Role (Admin Kecamatan vs Admin Kabupaten)
+    if (isKecRole()) {
+      // 1. Admin Kecamatan: LOCK Provinsi sampai Kecamatan sesuai login, Desa bebas
       inProvNama.readOnly = true; inProvKode.readOnly = true;
       inProvNama.style.backgroundColor = "#e9ecef"; inProvKode.style.backgroundColor = "#e9ecef";
 
       inKabNama.value = namaKab || "LOMBOK BARAT";
-function resetMwForm() {
-  document.getElementById("mw_id").value = "";
-  document.getElementById("mw_dusun_nama").value = "";
-  document.getElementById("mw_jumlah_rt").value = "1";
-  document.getElementById("btnSaveMw").innerText = "💾 SIMPAN WILAYAH";
+      inKabKode.value = userKodeKab || "01";
+      inKabNama.readOnly = true; inKabKode.readOnly = true;
+      inKabNama.style.backgroundColor = "#e9ecef"; inKabKode.style.backgroundColor = "#e9ecef";
 
-  const inProvNama = document.getElementById("mw_provinsi_nama");
-  const inProvKode = document.getElementById("mw_kode_prov");
-  const inKabNama = document.getElementById("mw_kabupaten_nama");
-  const inKabKode = document.getElementById("mw_kode_kab");
-  const inKecNama = document.getElementById("mw_kecamatan_nama");
-  const inKecKode = document.getElementById("mw_kode_kec");
-  const inDesaNama = document.getElementById("mw_desa_nama");
-  const inDesaKode = document.getElementById("mw_kode_desa");
-  const inDusunKode = document.getElementById("mw_kode_dusun");
+      inKecNama.value = namaKec;
+      inKecKode.value = userKodeKec;
+      inKecNama.readOnly = true; inKecKode.readOnly = true;
+      inKecNama.style.backgroundColor = "#e9ecef"; inKecKode.style.backgroundColor = "#e9ecef";
 
-  if (inDusunKode) { 
-    inDusunKode.value = ""; 
-    inDusunKode.readOnly = false; 
-    inDusunKode.style.backgroundColor = "#ffffff"; 
+      // Desa tetap bisa diinput oleh Admin Kecamatan
+      inDesaNama.value = "";
+      inDesaKode.value = "";
+      inDesaNama.readOnly = false;
+      inDesaKode.readOnly = false;
+      inDesaNama.style.backgroundColor = "#ffffff";
+      inDesaKode.style.backgroundColor = "#ffffff";
+
+    } else {
+      // 2. Admin Kabupaten: BEBAS (Semua kolom dari Provinsi sampai Desa dapat diisi manual)
+      inProvNama.readOnly = false; inProvKode.readOnly = false;
+      inProvNama.style.backgroundColor = "#ffffff"; inProvKode.style.backgroundColor = "#ffffff";
+
+      inKabNama.readOnly = false; inKabKode.readOnly = false;
+      inKabNama.style.backgroundColor = "#ffffff"; inKabKode.style.backgroundColor = "#ffffff";
+
+      inKecNama.readOnly = false; inKecKode.readOnly = false;
+      inKecNama.style.backgroundColor = "#ffffff"; inKecKode.style.backgroundColor = "#ffffff";
+
+      inDesaNama.readOnly = false; inDesaKode.readOnly = false;
+      inDesaNama.style.backgroundColor = "#ffffff"; inDesaKode.style.backgroundColor = "#ffffff";
+
+      inProvNama.value = "NUSA TENGGARA BARAT";
+      inProvKode.value = "52";
+      inKabNama.value = "LOMBOK BARAT";
+      inKabKode.value = "01";
+      inKecNama.value = "";
+      inKecKode.value = "";
+      inDesaNama.value = "";
+      inDesaKode.value = "";
+    }
   }
-
-  let namaKab = "";
-  if (userKodeKab && dataKabupaten[userKodeKab]) {
-    let kabObj = dataKabupaten[userKodeKab];
-    namaKab = typeof kabObj === 'object' ? Object.values(kabObj)[0] : kabObj;
-  }
-
-  let namaKec = "";
-  let isKecRegisteredInDB = false;
-  if (userKodeKab && dataKecamatan[userKodeKab] && dataKecamatan[userKodeKab][userKodeKec]) {
-    namaKec = dataKecamatan[userKodeKab][userKodeKec];
-    isKecRegisteredInDB = true;
-  }
-
-  if (isKecRole() && isKecRegisteredInDB) {
-    inProvNama.readOnly = true; inProvKode.readOnly = true;
-    inProvNama.style.backgroundColor = "#e9ecef"; inProvKode.style.backgroundColor = "#e9ecef";
-
-    inKabNama.value = namaKab || "LOMBOK BARAT";
-    inKabKode.value = userKodeKab || "01";
-    inKabNama.readOnly = true; inKabKode.readOnly = true;
-    inKabNama.style.backgroundColor = "#e9ecef"; inKabKode.style.backgroundColor = "#e9ecef";
-
-    inKecNama.value = namaKec;
-    inKecKode.value = userKodeKec;
-    inKecNama.readOnly = true; inKecKode.readOnly = true;
-    inKecNama.style.backgroundColor = "#e9ecef"; inKecKode.style.backgroundColor = "#e9ecef";
-
-    inDesaNama.value = "";
-    inDesaKode.value = "";
-    inDesaNama.readOnly = false;
-    inDesaKode.readOnly = false;
-    inDesaNama.style.backgroundColor = "#ffffff";
-    inDesaKode.style.backgroundColor = "#ffffff";
-  } else {
-    inProvNama.readOnly = false; inProvKode.readOnly = false;
-    inProvNama.style.backgroundColor = "#ffffff"; inProvKode.style.backgroundColor = "#ffffff";
-
-    inKabNama.readOnly = false; inKabKode.readOnly = false;
-    inKabNama.style.backgroundColor = "#ffffff"; inKabKode.style.backgroundColor = "#ffffff";
-
-    inKecNama.readOnly = false; inKecKode.readOnly = false;
-    inKecNama.style.backgroundColor = "#ffffff"; inKecKode.style.backgroundColor = "#ffffff";
-
-    inDesaNama.readOnly = false; inDesaKode.readOnly = false;
-    inDesaNama.style.backgroundColor = "#ffffff"; inDesaKode.style.backgroundColor = "#ffffff";
-
-    inProvNama.value = "NUSA TENGGARA BARAT";
-    inProvKode.value = "52";
-    inKabNama.value = namaKab || "LOMBOK BARAT";
-    inKabKode.value = userKodeKab || "01";
-    
-    inKecNama.value = "";
-    inKecKode.value = "";
-    inDesaNama.value = "";
-    inDesaKode.value = "";
-  }
-}
   async function handleSaveMasterWilayah(event) {
     event.preventDefault();
     const btn = document.getElementById("btnSaveMw");
