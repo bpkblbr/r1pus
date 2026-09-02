@@ -1074,12 +1074,28 @@
     const cKec = document.getElementById("recapFilterKecContainer");
     const cDes = document.getElementById("recapFilterDesaContainer");
     const cDsn = document.getElementById("recapFilterDusunContainer");
-    
+    const thHeader = document.getElementById("thHeaderWilayah");
+
+    // Atur visibilitas filter dropdown input
     cKec.style.display = (t === "Kecamatan" || t === "Desa" || t === "Dusun") ? "block" : "none";
     cDes.style.display = (t === "Desa" || t === "Dusun") ? "block" : "none";
     cDsn.style.display = (t === "Dusun") ? "block" : "none";
 
-    document.getElementById("thHeaderWilayah").innerText = t ? t.toUpperCase() : "WILAYAH";
+    // Set kolom tabel wilayah 1 level di bawah tingkat yang dipilih
+    if (t === "Kabupaten") {
+      thHeader.innerText = "KECAMATAN";
+    } else if (t === "Kecamatan") {
+      thHeader.innerText = "DESA";
+    } else if (t === "Desa") {
+      thHeader.innerText = "DUSUN";
+    } else if (t === "Dusun") {
+      thHeader.innerText = "RT";
+    } else {
+      thHeader.innerText = "WILAYAH";
+    }
+
+    // Reset tabel saat filter tingkat berubah
+    document.getElementById("recapTableBody").innerHTML = "<tr><td colspan='22' style='text-align:center; padding: 20px;'>Silakan atur filter dan klik Tampilkan Rekap</td></tr>";
   }
 
   function onRecapKecamatanChange() {
@@ -1432,10 +1448,17 @@
     const bulan = document.getElementById("recapBulan").value;
     const monthKey = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"][bulan - 1];
 
+    if (!tingkat) {
+      Swal.fire("Perhatian", "Silakan pilih Tingkat Wilayah terlebih dahulu!", "warning");
+      return;
+    }
+
     const tbody = document.getElementById("recapTableBody");
     tbody.innerHTML = "<tr><td colspan='22' style='text-align:center;'>Memuat data rekapitulasi...</td></tr>";
 
     let query = db.from('data_pus').select('*').eq('tahun', tahun);
+
+    // Filter query berdasarkan pilihan bertingkat
     if (tingkat === "Kecamatan" || tingkat === "Desa" || tingkat === "Dusun") {
       let kec = document.getElementById("recapKecamatan").value;
       if (kec) query = query.eq('kode_kec', kec);
@@ -1451,21 +1474,34 @@
 
     const { data, error } = await query;
     if (error || !data) {
-      tbody.innerHTML = "<tr><td colspan='22' style='text-align:center; color:red;'>Gagal memuat rekap.</td></tr>";
+      tbody.innerHTML = "<tr><td colspan='22' style='text-align:center; color:red;'>Gagal memuat rekap: " + (error ? error.message : "Data kosong") + "</td></tr>";
       return;
     }
 
-    // Kelompokkan data berdasarkan tingkat wilayah
+    if (data.length === 0) {
+      tbody.innerHTML = "<tr><td colspan='22' style='text-align:center; color:red;'>Data tidak ditemukan untuk periode/wilayah yang dipilih.</td></tr>";
+      return;
+    }
+
+    // Pemetaan nama wilayah satu tingkat di bawah pilihan:
     let grouped = {};
     data.forEach(r => {
-      let groupName = "Semua";
-      if (tingkat === "Kabupaten") groupName = r.kabupaten_nama;
-      else if (tingkat === "Kecamatan") groupName = r.kecamatan_nama;
-      else if (tingkat === "Desa") groupName = r.desa_nama;
-      else if (tingkat === "Dusun") groupName = r.dusun_nama;
+      let groupName = "-";
+      if (tingkat === "Kabupaten") {
+        groupName = r.kecamatan_nama || ("KECAMATAN " + r.kode_kec);
+      } else if (tingkat === "Kecamatan") {
+        groupName = r.desa_nama || ("DESA " + r.kode_desa);
+      } else if (tingkat === "Desa") {
+        groupName = r.dusun_nama || ("DUSUN " + r.kode_dusun);
+      } else if (tingkat === "Dusun") {
+        groupName = r.rt_nama || ("RT " + r.kode_rt);
+      }
 
       if (!grouped[groupName]) {
-        grouped[groupName] = { name: groupName, total: 0, ber_kb: 0, pil: 0, stk: 0, kdm: 0, imp: 0, iud: 0, mow: 0, mop: 0, non_kb: 0, hamil: 0, ias: 0, iat: 0, tial: 0, tki: 0, non_pus: 0, cerai: 0, mngl: 0, pindah: 0 };
+        grouped[groupName] = { 
+          name: groupName, total: 0, ber_kb: 0, pil: 0, stk: 0, kdm: 0, imp: 0, iud: 0, mow: 0, mop: 0, 
+          non_kb: 0, hamil: 0, ias: 0, iat: 0, tial: 0, tki: 0, non_pus: 0, cerai: 0, mngl: 0, pindah: 0 
+        };
       }
       
       let st = (r[monthKey] || "").toUpperCase();
@@ -1487,9 +1523,9 @@
         if (st.includes("IAT")) grouped[groupName].iat++;
         if (st.includes("TIAL")) grouped[groupName].tial++;
         if (st.includes("TKI")) grouped[groupName].tki++;
-      } else if (st.includes("BUKAN PUS") || st.includes("CERAI") || st.includes("MENINGGAL") || st.includes("PINDAH")) {
+      } else if (st.includes("BUKAN PUS") || st.includes("CERAI") || st.includes("MENINGGAL") || st.includes("PINDAH") || st.includes("BERCERAI")) {
         grouped[groupName].non_pus++;
-        if (st.includes("CERAI")) grouped[groupName].cerai++;
+        if (st.includes("CERAI") || st.includes("BERCERAI")) grouped[groupName].cerai++;
         if (st.includes("MENINGGAL")) grouped[groupName].mngl++;
         if (st.includes("PINDAH")) grouped[groupName].pindah++;
       }
@@ -1497,10 +1533,12 @@
 
     tbody.innerHTML = "";
     let idx = 1;
+    let totalAll = { total: 0, ber_kb: 0, pil: 0, stk: 0, kdm: 0, imp: 0, iud: 0, mow: 0, mop: 0, non_kb: 0, hamil: 0, ias: 0, iat: 0, tial: 0, tki: 0, non_pus: 0, cerai: 0, mngl: 0, pindah: 0 };
+
     for (let k in grouped) {
       let g = grouped[k];
       tbody.innerHTML += `<tr>
-        <td>${idx++}</td>
+        <td style="text-align:center;">${idx++}</td>
         <td style="text-align:left; font-weight:bold;">${g.name}</td>
         <td><b>${g.total}</b></td>
         <td style="background:#d4edda; font-weight:bold;">${g.ber_kb}</td>
@@ -1510,7 +1548,23 @@
         <td style="background:#e2e3e5; font-weight:bold;">${g.non_pus}</td>
         <td>${g.cerai}</td><td>${g.mngl}</td><td>${g.pindah}</td>
       </tr>`;
+
+      for (let prop in totalAll) {
+        totalAll[prop] += g[prop];
+      }
     }
+
+    // Baris Jumlah / Total
+    tbody.innerHTML += `<tr style="background:#e9ecef; font-weight:bold;">
+      <td colspan="2" style="text-align:center; color:#1f4e78;">JUMLAH / TOTAL</td>
+      <td>${totalAll.total}</td>
+      <td style="background:#c3e6cb;">${totalAll.ber_kb}</td>
+      <td>${totalAll.pil}</td><td>${totalAll.stk}</td><td>${totalAll.kdm}</td><td>${totalAll.imp}</td><td>${totalAll.iud}</td><td>${totalAll.mow}</td><td>${totalAll.mop}</td>
+      <td style="background:#f5c6cb;">${totalAll.non_kb}</td>
+      <td>${totalAll.hamil}</td><td>${totalAll.ias}</td><td>${totalAll.iat}</td><td>${totalAll.tial}</td><td>${totalAll.tki}</td>
+      <td style="background:#d6d8d9;">${totalAll.non_pus}</td>
+      <td>${totalAll.cerai}</td><td>${totalAll.mngl}</td><td>${totalAll.pindah}</td>
+    </tr>`;
   }
 
   // --- BNBA DATA FETCH DENGAN FILTER TINGKAT ---
