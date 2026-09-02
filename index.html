@@ -1286,44 +1286,50 @@
   // Fungsi klasifikasi status yang fleksibel (menangani format panjang maupun singkat)
   function evaluateKbStatus(rawStatus) {
     let s = String(rawStatus || "").trim().toUpperCase();
-    if (!s || s === "--KOSONG--" || s === "-" || s === "KOSONG") {
+    if (!s || s === "--KOSONG--" || s === "-" || s === "KOSONG" || s === "NULL") {
       return { type: "EMPTY", method: "", reason: "", cat: "" };
     }
 
-    // Bersihkan teks awalan jika masih ada data lama
-    s = s.replace(/^PESERTA KB\s*-\s*/, "")
-         .replace(/^BUKAN PESERTA KB\s*-\s*/, "")
-         .replace(/^BUKAN PUS\s*-\s*/, "");
+    // Bersihkan prefix umum
+    s = s.replace(/^PESERTA KB\s*[-–:]*\s*/i, "")
+         .replace(/^BUKAN PESERTA KB\s*[-–:]*\s*/i, "")
+         .replace(/^BUKAN PESERTA\s*[-–:]*\s*/i, "")
+         .replace(/^BUKAN PUS\s*[-–:]*\s*/i, "")
+         .trim();
 
-    // 1. Kategori PESERTA KB (Metode Kontrasepsi)
+    // 1. Kategori MUTASI / BUKAN PUS
+    if (s.includes("CERAI") || s.includes("BERCERAI")) return { type: "BUKAN_PUS", cat: "CERAI" };
+    if (s.includes("MENINGGAL")) return { type: "BUKAN_PUS", cat: "MENINGGAL" };
+    if (s.includes("PINDAH")) return { type: "BUKAN_PUS", cat: "PINDAH" };
+    if (s.includes("50")) return { type: "BUKAN_PUS", cat: "50+" };
+
+    // 2. Kategori BUKAN PESERTA KB (Dahulukan ini agar tidak salah terdeteksi)
+    if (s === "HAMIL" || s.startsWith("HAMIL")) return { type: "BUKAN_PESERTA", reason: "HAMIL" };
+    if (s === "IAS" || s.startsWith("IAS")) return { type: "BUKAN_PESERTA", reason: "IAS" };
+    if (s === "IAT" || s.startsWith("IAT")) return { type: "BUKAN_PESERTA", reason: "IAT" };
+    if (s === "TIAL" || s.startsWith("TIAL")) return { type: "BUKAN_PESERTA", reason: "TIAL" };
+    if (s === "TKI" || s.startsWith("TKI")) return { type: "BUKAN_PESERTA", reason: "TKI" };
+    if (s.includes("TIDAK") || s.includes("TDK") || s.includes("BUKAN")) {
+      return { type: "BUKAN_PESERTA", reason: "TIAL" }; // Fallback jika teks umum
+    }
+
+    // 3. Kategori PESERTA KB (Gunakan Exact Match)
     const metodeKB = ["STK", "PIL", "KDM", "IMP", "IUD", "MOW", "MOP"];
     for (let m of metodeKB) {
-      if (s === m || s.startsWith(m + " ") || s.includes(m)) {
+      // Cocokkan jika persis sama, atau ada spasi/strip (misal: "STK 3 BULAN", "PIL-KB")
+      if (s === m || s.startsWith(m + " ") || s.startsWith(m + "-") || s.startsWith(m + "/")) {
         const isMkjp = ["IMP", "IUD", "MOW", "MOP"].includes(m);
         return { type: "PESERTA_KB", method: m, isMkjp: isMkjp };
       }
     }
 
-    // 2. Kategori BUKAN PESERTA KB
-    const alasanBukanKB = ["HAMIL", "IAS", "IAT", "TIAL", "TKI"];
-    for (let a of alasanBukanKB) {
-      if (s === a || s.startsWith(a + " ") || s.includes(a)) {
-        return { type: "BUKAN_PESERTA", reason: a };
+    // Jika kata kunci metode ditemukan di tengah kalimat
+    for (let m of metodeKB) {
+      let regex = new RegExp("\\b" + m + "\\b", "i");
+      if (regex.test(s)) {
+        const isMkjp = ["IMP", "IUD", "MOW", "MOP"].includes(m);
+        return { type: "PESERTA_KB", method: m, isMkjp: isMkjp };
       }
-    }
-
-    // 3. Kategori MUTASI / BUKAN PUS
-    if (s.includes("CERAI") || s.includes("BERCERAI")) {
-      return { type: "BUKAN_PUS", cat: "CERAI" };
-    }
-    if (s.includes("MENINGGAL")) {
-      return { type: "BUKAN_PUS", cat: "MENINGGAL" };
-    }
-    if (s.includes("PINDAH")) {
-      return { type: "BUKAN_PUS", cat: "PINDAH" };
-    }
-    if (s.includes("50")) {
-      return { type: "BUKAN_PUS", cat: "50+" };
     }
 
     return { type: "UNKNOWN", raw: s };
@@ -1919,16 +1925,17 @@
   async function fetchRecap() {
     const tingkat = document.getElementById("recapTingkat").value;
     const tahun = parseInt(document.getElementById("recapTahun").value, 10);
-    const bulan = parseInt(document.getElementById("recapBulan").value, 10);
-    const mKeys = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"];
-    const monthKey = mKeys[bulan - 1];
-    const prevMonthKey = bulan > 1 ? mKeys[bulan - 2] : null;
-
     const bulanVal = document.getElementById("recapBulan").value;
+    
     if (!bulanVal) {
       Swal.fire("Perhatian", "Silakan pilih Bulan terlebih dahulu!", "warning");
       return;
     }
+    const bulan = parseInt(bulanVal, 10); // Perbaikan: hanya dideklarasikan satu kali
+
+    const mKeys = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"];
+    const monthKey = mKeys[bulan - 1];
+    const prevMonthKey = bulan > 1 ? mKeys[bulan - 2] : null;
 
     if (!tingkat) {
       Swal.fire("Perhatian", "Silakan pilih Tingkat Wilayah terlebih dahulu!", "warning");
@@ -1937,8 +1944,6 @@
 
     const tbody = document.getElementById("recapTableBody");
     tbody.innerHTML = "<tr><td colspan='31' style='text-align:center;'>Mengambil seluruh data rekapitulasi...</td></tr>";
-    
-    const bulan = parseInt(bulanVal, 10);
 
     let filterKec = isDesaRole() || isKecRole() ? userKodeKec : document.getElementById("recapKecamatan").value;
     let filterDesa = isDesaRole() ? userKodeDesa : (document.getElementById("recapDesa") ? document.getElementById("recapDesa").value : "");
@@ -2003,48 +2008,47 @@
           key = rawRt ? "RT " + rawRt.padStart(3, '0') : String(r.rt_nama || "").trim().toUpperCase();
         }
 
-        // Validasi agar tidak terjadi TypeError jika key kosong/tidak terdaftar
         if (!key) return;
         if (!grouped[key]) grouped[key] = emptyRecapItem(key);
 
-        // 1. Evaluasi status bulan berjalan dan bulan sebelumnya
         const cur = evaluateKbStatus(r[monthKey]);
         const prev = prevMonthKey ? evaluateKbStatus(r[prevMonthKey]) : null;
 
         grouped[key].total_pus++;
         
-        // 2. Evaluasi PUS BARU:
-        let isFirstTimeRecorded = false;
-        if (bulan === 1) {
-          let createdAtYear = r.timestamp ? new Date(r.timestamp).getFullYear() : tahun;
-          if (createdAtYear === tahun && (cur.type === "PESERTA_KB" || cur.type === "BUKAN_PESERTA")) {
-            isFirstTimeRecorded = true;
-          }
-        } else {
-          let hasPreviousRecord = false;
-          for (let i = 0; i < bulan - 1; i++) {
-            let pastVal = String(r[mKeys[i]] || "").trim();
-            if (pastVal && pastVal !== "--KOSONG--" && pastVal !== "-") {
-              hasPreviousRecord = true;
-              break;
-            }
-          }
-          if (!hasPreviousRecord) {
-            isFirstTimeRecorded = true;
+        // 1. Evaluasi PUS BARU:
+        // Cek apakah pasangan ini memiliki data sebelum bulan yang sedang dilihat
+        let hasPastRecord = false;
+        for (let i = 0; i < bulan - 1; i++) {
+          let pastVal = String(r[mKeys[i]] || "").trim();
+          if (pastVal && pastVal !== "--KOSONG--" && pastVal !== "-" && pastVal !== "KOSONG") {
+            hasPastRecord = true;
+            break;
           }
         }
 
         let umurIstri = parseInt(r.umur_istri || 0, 10);
-        let isPusBaruValid = isFirstTimeRecorded && 
-                             (cur.type === "PESERTA_KB" || cur.type === "BUKAN_PESERTA") && 
-                             cur.type !== "BUKAN_PUS" && 
-                             umurIstri < 50;
 
-        if (isPusBaruValid) {
+        // Kriteria PUS BARU:
+        // - Jika Bulan 1 (Januari): Dihitung baru jika timestamp pendaftarannya di tahun berjalan
+        // - Jika Bulan 2-12: Dihitung baru jika bulan-bulan sebelumnya belum pernah terisi
+        let isNewPus = false;
+        if (bulan === 1) {
+          let createdAtYear = r.timestamp ? new Date(r.timestamp).getFullYear() : tahun;
+          if (createdAtYear === tahun && (cur.type === "PESERTA_KB" || cur.type === "BUKAN_PESERTA")) {
+            isNewPus = true;
+          }
+        } else {
+          if (!hasPastRecord && (cur.type === "PESERTA_KB" || cur.type === "BUKAN_PESERTA")) {
+            isNewPus = true;
+          }
+        }
+
+        if (isNewPus && cur.type !== "BUKAN_PUS" && umurIstri < 50) {
           grouped[key].pus_baru++;
         }
 
-        // 3. Evaluasi PESERTA KB AKTIF & AKSEPTOR KB BARU
+        // 2. Evaluasi PESERTA KB AKTIF & AKSEPTOR KB BARU
         if (cur.type === "PESERTA_KB") {
           grouped[key].ber_kb++;
           if (cur.method === "PIL") grouped[key].pil++;
@@ -2058,7 +2062,8 @@
           if (cur.isMkjp) grouped[key].mkjp++;
           else grouped[key].non_mkjp++;
 
-          // Akseptor KB Baru
+          // Akseptor KB Baru:
+          // A. Pasca Persalinan / Pasca DO (Bulan lalu jelas-jelas tercatat BUKAN_PESERTA)
           if (prev && prev.type === "BUKAN_PESERTA") {
             grouped[key].kb_baru_total++;
             if (prev.reason === "HAMIL") {
@@ -2066,19 +2071,22 @@
             } else {
               grouped[key].kb_baru_pasca_do++;
             }
-          } else if (isPusBaruValid) {
+          } 
+          // B. Baru Murni: HANYA jika pasangan tersebut memang PUS Baru yang langsung ikut KB
+          else if (isNewPus && (!prev || prev.type === "EMPTY")) {
             grouped[key].kb_baru_total++;
             grouped[key].kb_baru_murni++;
           }
 
-          // Ganti Cara
-          if (prev && prev.type === "PESERTA_KB" && prev.method !== cur.method) {
+          // Ganti Cara: Bulan lalu Peserta KB, bulan ini metodenya beda
+          if (prev && prev.type === "PESERTA_KB" && prev.method && prev.method !== cur.method) {
             grouped[key].ganti_cara++;
           }
 
-        // 4. BUKAN PESERTA KB
+        // 3. Evaluasi BUKAN PESERTA KB (TDK-KB)
         } else if (cur.type === "BUKAN_PESERTA") {
-          grouped[key].tidak_kb++;
+          grouped[key].tidak_kb++; // Ini akan terhitung dengan benar sekarang!
+          
           if (cur.reason === "HAMIL") {
             grouped[key].hamil++;
             if (prev && prev.reason !== "HAMIL") {
@@ -2089,7 +2097,7 @@
           else if (cur.reason === "TIAL") grouped[key].tial++;
           else if (cur.reason === "TKI") grouped[key].tki++;
 
-        // 5. BUKAN PUS / MUTASI
+        // 4. Evaluasi BUKAN PUS / MUTASI
         } else if (cur.type === "BUKAN_PUS" || umurIstri >= 50) {
           grouped[key].bukan_pus++;
           if (cur.cat === "CERAI") grouped[key].bcr++;
@@ -2240,7 +2248,7 @@
     const bulan = parseInt(document.getElementById("chartBulan").value, 10);
     const mKeys = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"];
     const monthKey = mKeys[bulan - 1];
-    const prevMonthKey = bulan > 1 ? mKeys[bulan - 2] : null;
+    const prevMonthKey = bulan > 1 ? mKeys[bulan - 2] : null;    
     
     const bulanVal = document.getElementById("chartBulan").value;
     if (!bulanVal) {
