@@ -341,19 +341,19 @@
         <div class="form-group">
           <label for="tahun_input">Tahun:</label>
           <select id="tahun_input" name="tahun_input" required>
-			      <option value="2025">2025</option>
-			      <option value="2026">2026</option>
-			      <option value="2027">2027</option>
-			      <option value="2028">2028</option>
-			      <option value="2029">2029</option>
-			      <option value="2030">2030</option>
-            <option value="2031">2030</option>
-            <option value="2032">2030</option>
-            <option value="2033">2030</option>
-            <option value="2034">2030</option>
-            <option value="2030">2035</option>
-		      </select>
-        </div>
+			<option value="2025">2025</option>
+			<option value="2026">2026</option>
+			<option value="2027">2027</option>
+			<option value="2028">2028</option>
+			<option value="2029">2029</option>
+			<option value="2030">2030</option>
+			<option value="2031">2031</option>
+			<option value="2032">2032</option>
+			<option value="2033">2033</option>
+			<option value="2034">2034</option>
+			<option value="2035">2035</option>5
+		  </select>
+		</div>
 
         <div class="section-title">I. DATA WILAYAH</div>
         <div class="form-group">
@@ -1304,13 +1304,14 @@
     if (s.includes("50")) return { type: "BUKAN_PUS", cat: "50+" };
 
     // 2. Kategori BUKAN PESERTA KB (Dahulukan ini agar tidak salah terdeteksi)
-    if (s === "HAMIL" || s.startsWith("HAMIL")) return { type: "BUKAN_PESERTA", reason: "HAMIL" };
-    if (s === "IAS" || s.startsWith("IAS")) return { type: "BUKAN_PESERTA", reason: "IAS" };
-    if (s === "IAT" || s.startsWith("IAT")) return { type: "BUKAN_PESERTA", reason: "IAT" };
-    if (s === "TIAL" || s.startsWith("TIAL")) return { type: "BUKAN_PESERTA", reason: "TIAL" };
-    if (s === "TKI" || s.startsWith("TKI")) return { type: "BUKAN_PESERTA", reason: "TKI" };
+    // 2. Kategori BUKAN PESERTA KB (Cek spesifik dan fleksibel)
+    if (s.includes("HAMIL")) return { type: "BUKAN_PESERTA", reason: "HAMIL" };
+    if (s === "IAS" || s.startsWith("IAS") || /\bIAS\b/.test(s)) return { type: "BUKAN_PESERTA", reason: "IAS" };
+    if (s === "IAT" || s.startsWith("IAT") || /\bIAT\b/.test(s)) return { type: "BUKAN_PESERTA", reason: "IAT" };
+    if (s === "TIAL" || s.startsWith("TIAL") || /\bTIAL\b/.test(s)) return { type: "BUKAN_PESERTA", reason: "TIAL" };
+    if (s === "TKI" || s.startsWith("TKI") || /\bTKI\b/.test(s)) return { type: "BUKAN_PESERTA", reason: "TKI" };
     if (s.includes("TIDAK") || s.includes("TDK") || s.includes("BUKAN")) {
-      return { type: "BUKAN_PESERTA", reason: "TIAL" }; // Fallback jika teks umum
+      return { type: "BUKAN_PESERTA", reason: "TIAL" };
     }
 
     // 3. Kategori PESERTA KB (Gunakan Exact Match)
@@ -1927,20 +1928,20 @@
     const tahun = parseInt(document.getElementById("recapTahun").value, 10);
     const bulanVal = document.getElementById("recapBulan").value;
     
-    if (!bulanVal) {
-      Swal.fire("Perhatian", "Silakan pilih Bulan terlebih dahulu!", "warning");
-      return;
-    }
-    const bulan = parseInt(bulanVal, 10); // Perbaikan: hanya dideklarasikan satu kali
-
-    const mKeys = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"];
-    const monthKey = mKeys[bulan - 1];
-    const prevMonthKey = bulan > 1 ? mKeys[bulan - 2] : null;
-
     if (!tingkat) {
       Swal.fire("Perhatian", "Silakan pilih Tingkat Wilayah terlebih dahulu!", "warning");
       return;
     }
+
+    if (!bulanVal) {
+      Swal.fire("Perhatian", "Silakan pilih Bulan terlebih dahulu!", "warning");
+      return;
+    }
+
+    const bulan = parseInt(bulanVal, 10);
+    const mKeys = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"];
+    const monthKey = mKeys[bulan - 1];
+    const prevMonthKey = bulan > 1 ? mKeys[bulan - 2] : null;
 
     const tbody = document.getElementById("recapTableBody");
     tbody.innerHTML = "<tr><td colspan='31' style='text-align:center;'>Mengambil seluruh data rekapitulasi...</td></tr>";
@@ -2245,22 +2246,22 @@
   async function fetchChartData() {
     const tingkat = document.getElementById("chartTingkat").value;
     const tahun = parseInt(document.getElementById("chartTahun").value, 10);
-    const bulan = parseInt(document.getElementById("chartBulan").value, 10);
-    const mKeys = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"];
-    const monthKey = mKeys[bulan - 1];
-    const prevMonthKey = bulan > 1 ? mKeys[bulan - 2] : null;    
-    
     const bulanVal = document.getElementById("chartBulan").value;
-    if (!bulanVal) {
-      Swal.fire("Perhatian", "Silakan pilih Bulan terlebih dahulu!", "warning");
-      return;
-    }
-    const bulan = parseInt(bulanVal, 10);
 
     if (!tingkat) {
       Swal.fire("Perhatian", "Silakan pilih Tingkat Wilayah terlebih dahulu!", "warning");
       return;
     }
+    
+    if (!bulanVal) {
+      Swal.fire("Perhatian", "Silakan pilih Bulan terlebih dahulu!", "warning");
+      return;
+    }
+
+    const bulan = parseInt(bulanVal, 10);
+    const mKeys = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"];
+    const monthKey = mKeys[bulan - 1];
+    const prevMonthKey = bulan > 1 ? mKeys[bulan - 2] : null;    
 
     let filterKec = isDesaRole() || isKecRole() ? userKodeKec : document.getElementById("chartKecamatan").value;
     let filterDesa = isDesaRole() ? userKodeDesa : (document.getElementById("chartDesa") ? document.getElementById("chartDesa").value : "");
