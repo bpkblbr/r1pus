@@ -363,19 +363,19 @@
         <div class="form-group">
           <label for="tahun_input">Tahun:</label>
           <select id="tahun_input" name="tahun_input" required>
-			      <option value="2025">2025</option>
-			      <option value="2026">2026</option>
-			      <option value="2027">2027</option>
-			      <option value="2028">2028</option>
-			      <option value="2029">2029</option>
-			      <option value="2030">2030</option>
-			      <option value="2031">2031</option>
-			      <option value="2032">2032</option>
-			      <option value="2033">2033</option>
-			      <option value="2034">2034</option>
-			      <option value="2035">2035</option>5
-		      </select>
-		    </div>
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+            <option value="2028">2028</option>
+            <option value="2029">2029</option>
+            <option value="2030">2030</option>
+            <option value="2031">2031</option>
+            <option value="2032">2032</option>
+            <option value="2033">2033</option>
+            <option value="2034">2034</option>
+            <option value="2035">2035</option>
+          </select>
+        </div>
 
         <div class="section-title">I. DATA WILAYAH</div>
         <div class="form-group">
@@ -1213,7 +1213,7 @@
       tr.innerHTML = `
         <td><b>${m.toUpperCase()}</b></td>
         <td>
-          <select id="kb_${idx+1}">
+          <select id="kb_${idx+1}" onchange="onKbMonthChange(${idx+1})">
             <option value="">--KOSONG--</option>
             <optgroup label="PESERTA KB">
               <option value="STK">STK</option>
@@ -1233,14 +1233,13 @@
             </optgroup>
             <optgroup label="MUTASI">
               <option value="BERCERAI">BERCERAI</option>
-              <option value="SUAMI ISTRI MENINGGAL">SUAMI/ISTRI MENINGGAL</option>
+              <option value="SUAMI/ISTRI MENINGGAL">SUAMI/ISTRI MENINGGAL</option>
               <option value="PINDAH">PINDAH</option>
             </optgroup>
           </select>
         </td>`;
       tbody.appendChild(tr);
     });
-  };
 
   async function loadMasterWilayahFromDB() {
     const { data, error } = await db.from('master_wilayah').select('*');
@@ -1870,6 +1869,12 @@
       btnTambahTahun.style.display = isKabRole() ? "inline-block" : "none";
     }
 
+    checkPendingMutasiNotifications();
+  }
+
+  // =========================================================================
+  // FUNGSI INBOX & NOTIFIKASI MUTASI MASUK (BERDIRI SENDIRI DI TOP-LEVEL)
+  // =========================================================================
   let cachedPendingMutasiList = [];
 
   async function checkPendingMutasiNotifications() {
@@ -1942,14 +1947,14 @@
     const item = cachedPendingMutasiList[index];
     if (!item || !item.payload) return;
 
-    const payloadData = JSON.parse(item.payload);
+    const payloadData = typeof item.payload === "string" ? JSON.parse(item.payload) : item.payload;
 
     closeInboxMutasiModal();
     showFormView();
     resetInputForm();
 
     document.getElementById("id_mutasi_tiket").value = item.id;
-    document.getElementById("id_pus").value = ""; // Dikosongkan agar dibuatkan ID PUS baru di wilayah tujuan
+    document.getElementById("id_pus").value = "";
 
     if (document.getElementById("tahun_input")) {
       document.getElementById("tahun_input").value = payloadData.tahun || item.tahun;
@@ -1976,7 +1981,7 @@
     Swal.fire({
       icon: 'info',
       title: 'Data Mutasi Dimuat!',
-      text: `Data PUS [${item.nama_istri}] berhasil disalin. Silakan lengkapi pilihan DUSUN dan RT di wilayah Anda, lalu klik SIMPAN DATA.`
+      text: `Data PUS [${item.nama_istri}] berhasil disalin. Silakan lengkapi DUSUN dan RT di wilayah Anda, lalu klik SIMPAN DATA.`
     });
   }  
 
@@ -2141,11 +2146,10 @@
 
     if (error) {
       Swal.fire('Gagal Menyimpan', error.message, 'error');
-    } else {
-      Swal.fire('Berhasil', `Data PUS ${idPus} tersimpan!`, 'success');    
-      resetInputForm();
+      return;
     }
-    
+
+    // PROSES TIKET MUTASI DI DALAM FUNGSI SUBMIT
     if (document.getElementById("is_pindah_dalam_kab").value === "true") {
       const mutasiPayload = {
         tahun: thn,
@@ -2168,11 +2172,14 @@
       await db.from('mutasi_pus').insert([mutasiPayload]);
     }
 
-    // Jika sedang memproses data dari tiket inbox, ubah status tiket menjadi PROCESSED:
+    // Jika sedang memproses data tiket mutasi masuk, ubah statusnya menjadi PROCESSED
     const tiketId = document.getElementById("id_mutasi_tiket").value;
     if (tiketId) {
       await db.from('mutasi_pus').update({ status: 'PROCESSED' }).eq('id', tiketId);
     }
+
+    Swal.fire('Berhasil', `Data PUS ${idPus} tersimpan!`, 'success');    
+    resetInputForm();
   }
 
   // --- REKAPITULASI DENGAN FILTER TINGKAT ---
