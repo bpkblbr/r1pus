@@ -775,6 +775,95 @@
   </div>
 </div>
 
+<!-- MODAL KELOLA LOGIN PENGGUNA (SUPABASE) -->
+<div id="modalManageUsers" class="modal">
+  <div class="modal-content" style="max-width: 800px; width: 95%;">
+    <span class="close" onclick="closeManageUsersModal()">&times;</span>
+    <h3 style="margin-top:0; color:#1f4e78; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
+      🔑 KELOLA LOGIN PENGGUNA
+    </h3>
+
+    <!-- TAB SWITCHER -->
+    <div style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #cbd5e1; padding-bottom: 10px;">
+      <button type="button" id="tabBtnUserForm" class="btn-nav btn-action" onclick="switchUserTab('form')">➕ Input / Edit Akun</button>
+      <button type="button" id="tabBtnUserList" class="btn-nav btn-secondary" onclick="switchUserTab('list')">📋 Daftar Akun</button>
+    </div>
+
+    <!-- TAB 1: FORM INPUT / EDIT AKUN -->
+    <div id="userTabForm" style="display: block;">
+      <form id="formUserAccount" onsubmit="handleSaveUserAccount(event)">
+        <input type="hidden" id="user_id" value="">
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label>Username:</label>
+          <input type="text" id="user_name_input" placeholder="Masukkan Username" required style="text-transform: none;">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label>Password:</label>
+          <input type="text" id="user_pass_input" placeholder="Masukkan Password" required style="text-transform: none;">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label>Role Pengguna:</label>
+          <select id="user_role_select" onchange="onUserRoleChange()" required>
+            <option value="">-- PILIH ROLE PENGGUNA --</option>
+            <option value="User Desa">User Desa</option>
+            <option value="Admin Kec">Admin Kec</option>
+            <option value="Admin Kab" id="optRoleKab">Admin Kab</option>
+          </select>
+        </div>
+
+        <div id="userKecRow" class="form-group" style="display: none; margin-bottom: 12px;">
+          <label>Kecamatan:</label>
+          <select id="user_kec_select" onchange="onUserKecChange()">
+            <option value="">-- PILIH KECAMATAN --</option>
+          </select>
+        </div>
+
+        <div id="userDesaRow" class="form-group" style="display: none; margin-bottom: 15px;">
+          <label>Desa:</label>
+          <select id="user_desa_select">
+            <option value="">-- PILIH DESA --</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button type="submit" id="btnSaveUserAcc" class="btn-submit" style="margin-top: 0; flex: 1;">💾 SIMPAN AKUN</button>
+          <button type="button" class="btn-nav btn-secondary" onclick="resetUserForm()">Bersihkan</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- TAB 2: TABEL DAFTAR AKUN -->
+    <div id="userTabList" style="display: none;">
+      <div style="margin-bottom: 10px; display: flex; gap: 8px;">
+        <input type="text" id="filterUsersInput" placeholder="Cari Username / Role / Kecamatan / Desa..." oninput="renderUsersTable()" style="flex: 1;">
+        <button type="button" class="btn-nav btn-secondary" onclick="loadUsersList()">🔄 Segarkan</button>
+      </div>
+
+      <div style="max-height: 350px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
+        <table class="kb-table" style="font-size: 12px; width: 100%; margin-top: 0;">
+          <thead>
+            <tr>
+              <th style="background: #1f4e78; color: white;">NO</th>
+              <th style="background: #1f4e78; color: white;">USERNAME</th>
+              <th style="background: #1f4e78; color: white;">PASSWORD</th>
+              <th style="background: #1f4e78; color: white;">ROLE</th>
+              <th style="background: #1f4e78; color: white;">KECAMATAN</th>
+              <th style="background: #1f4e78; color: white;">DESA</th>
+              <th style="background: #1f4e78; color: white;">AKSI</th>
+            </tr>
+          </thead>
+          <tbody id="usersTbody">
+            <tr><td colspan="7" style="text-align: center; padding: 15px;">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- JAVASCRIPT LOGIC DENGAN SUPABASE INTEGRATION -->
 <script>
   const SUPABASE_URL = 'https://fxtffszvtyrtllugxlxe.supabase.co';
@@ -1768,8 +1857,279 @@
     });
   }
 
+  let allUsersData = [];
+
   function openManageUsersModal() {
-    Swal.fire('Kelola Pengguna', 'Gunakan dashboard Supabase untuk manajemen pengguna (tabel users).', 'info');
+    switchUserTab('form');
+    resetUserForm();
+    populateUserKecDropdown();
+
+    // Sembunyikan role Admin Kab jika yang login bukan role Kabupaten
+    const isKab = (userRole.indexOf("KAB") !== -1 || userRole === "ADMIN");
+    const optKab = document.getElementById("optRoleKab");
+    if (optKab) optKab.style.display = isKab ? "block" : "none";
+
+    document.getElementById("modalManageUsers").style.display = "block";
+  }
+
+  function closeManageUsersModal() {
+    document.getElementById("modalManageUsers").style.display = "none";
+  }
+
+  function switchUserTab(tab) {
+    const isForm = (tab === 'form');
+    document.getElementById("userTabForm").style.display = isForm ? "block" : "none";
+    document.getElementById("userTabList").style.display = isForm ? "none" : "block";
+
+    document.getElementById("tabBtnUserForm").className = isForm ? "btn-nav btn-action" : "btn-nav btn-secondary";
+    document.getElementById("tabBtnUserList").className = isForm ? "btn-nav btn-secondary" : "btn-nav btn-action";
+
+    if (!isForm) {
+      loadUsersList();
+    }
+  }
+
+  function populateUserKecDropdown() {
+    const isKab = (userRole.indexOf("KAB") !== -1 || userRole === "ADMIN");
+    const selKec = document.getElementById("user_kec_select");
+    selKec.innerHTML = '<option value="">-- PILIH KECAMATAN --</option>';
+
+    const added = {};
+    for (let kdKab in dataKecamatan) {
+      for (let kd in dataKecamatan[kdKab]) {
+        let cleanKd = String(kd).padStart(2, '0');
+        if (!added[cleanKd]) {
+          added[cleanKd] = true;
+          selKec.add(new Option(dataKecamatan[kdKab][kd].toUpperCase(), cleanKd));
+        }
+      }
+    }
+
+    if (!isKab && userKodeKec) {
+      selKec.value = userKodeKec.padStart(2, '0');
+      selKec.disabled = true;
+      onUserKecChange();
+    } else {
+      selKec.disabled = false;
+    }
+  }
+
+  function onUserKecChange() {
+    const isKab = (userRole.indexOf("KAB") !== -1 || userRole === "ADMIN");
+    const kdKec = isKab ? document.getElementById("user_kec_select").value : userKodeKec;
+    const selDesa = document.getElementById("user_desa_select");
+    selDesa.innerHTML = '<option value="">-- PILIH DESA --</option>';
+
+    if (!kdKec) return;
+    let cleanKd = String(kdKec).padStart(2, '0');
+    let desas = dataDesa[cleanKd] || {};
+
+    for (let kd in desas) {
+      selDesa.add(new Option(desas[kd].toUpperCase(), String(kd).padStart(4, '0')));
+    }
+  }
+
+  function onUserRoleChange() {
+    const roleVal = document.getElementById("user_role_select").value;
+    const kecRow = document.getElementById("userKecRow");
+    const desaRow = document.getElementById("userDesaRow");
+
+    if (roleVal === "Admin Kab" || roleVal === "") {
+      kecRow.style.display = "none";
+      desaRow.style.display = "none";
+    } else if (roleVal === "Admin Kec") {
+      kecRow.style.display = "flex";
+      desaRow.style.display = "none";
+    } else { // "User Desa"
+      kecRow.style.display = "flex";
+      desaRow.style.display = "flex";
+    }
+  }
+
+  function resetUserForm() {
+    document.getElementById("formUserAccount").reset();
+    document.getElementById("user_id").value = "";
+    document.getElementById("user_name_input").readOnly = false;
+    document.getElementById("btnSaveUserAcc").innerText = "💾 SIMPAN AKUN";
+    onUserRoleChange();
+  }
+
+  async function handleSaveUserAccount(event) {
+    event.preventDefault();
+    const btn = document.getElementById("btnSaveUserAcc");
+    btn.disabled = true;
+    btn.innerText = "Menyimpan...";
+
+    const roleVal = document.getElementById("user_role_select").value;
+    const userId = document.getElementById("user_id").value;
+    const isKab = (userRole.indexOf("KAB") !== -1 || userRole === "ADMIN");
+
+    const kecVal = (roleVal === "Admin Kab") ? "" : (isKab ? document.getElementById("user_kec_select").value : userKodeKec);
+    const desaVal = (roleVal === "User Desa") ? document.getElementById("user_desa_select").value : "";
+
+    const payload = {
+      username: document.getElementById("user_name_input").value.trim(),
+      password_hash: document.getElementById("user_pass_input").value.trim(),
+      role: roleVal,
+      kode_kab: userKodeKab || "01",
+      kode_kec: kecVal,
+      kode_desa: desaVal
+    };
+
+    try {
+      let res;
+      if (userId) {
+        // Mode Update
+        res = await db.from('users').update(payload).eq('id', userId);
+      } else {
+        // Mode Tambah Baru
+        res = await db.from('users').insert([payload]);
+      }
+
+      if (res.error) throw res.error;
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Tersimpan!',
+        text: 'Data akun pengguna berhasil disimpan.',
+        timer: 1500,
+        showConfirmButton: false
+      });
+
+      resetUserForm();
+
+    } catch (err) {
+      Swal.fire('Gagal Menyimpan', err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerText = userId ? "💾 PERBARUI AKUN" : "💾 SIMPAN AKUN";
+    }
+  }
+
+  async function loadUsersList() {
+    const tbody = document.getElementById("usersTbody");
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 15px;">Memuat data...</td></tr>`;
+
+    let query = db.from('users').select('*').order('username', { ascending: true });
+
+    // Jika bukan Admin Kab, hanya tampilkan akun di bawah kecamatannya
+    const isKab = (userRole.indexOf("KAB") !== -1 || userRole === "ADMIN");
+    if (!isKab && userKodeKec) {
+      query = query.eq('kode_kec', userKodeKec);
+    }
+
+    const { data, error } = await query;
+    if (error || !data) {
+      tbody.innerHTML = `<tr><td colspan="7" style="color:red; text-align: center; padding: 15px;">Gagal memuat: ${error ? error.message : 'Error koneksi'}</td></tr>`;
+      return;
+    }
+
+    allUsersData = data;
+    renderUsersTable();
+  }
+
+  function renderUsersTable() {
+    const filter = (document.getElementById("filterUsersInput").value || "").toLowerCase().trim();
+    const tbody = document.getElementById("usersTbody");
+    tbody.innerHTML = "";
+
+    function getNamaKec(kd) {
+      if (!kd) return "-";
+      for (let kab in dataKecamatan) {
+        if (dataKecamatan[kab][kd]) return dataKecamatan[kab][kd];
+      }
+      return kd;
+    }
+
+    function getNamaDesa(kdKec, kdDesa) {
+      if (!kdDesa) return "-";
+      if (dataDesa[kdKec] && dataDesa[kdKec][kdDesa]) return dataDesa[kdKec][kdDesa];
+      return kdDesa;
+    }
+
+    const filtered = allUsersData.filter(item => {
+      const nmKec = getNamaKec(item.kode_kec).toLowerCase();
+      const nmDesa = getNamaDesa(item.kode_kec, item.kode_desa).toLowerCase();
+      return (item.username || '').toLowerCase().includes(filter) ||
+             (item.role || '').toLowerCase().includes(filter) ||
+             nmKec.includes(filter) ||
+             nmDesa.includes(filter);
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 15px; color: #777;">Tidak ada akun ditemukan.</td></tr>`;
+      return;
+    }
+
+    filtered.forEach((item, idx) => {
+      const tr = document.createElement("tr");
+      const nmKec = getNamaKec(item.kode_kec);
+      const nmDesa = getNamaDesa(item.kode_kec, item.kode_desa);
+
+      tr.innerHTML = `
+        <td style="text-align:center;">${idx + 1}</td>
+        <td><b>${item.username}</b></td>
+        <td style="font-family: monospace; background:#f8fafc;">${item.password_hash || ''}</td>
+        <td style="text-align:center;">
+          <span style="padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; background: ${item.role === 'Admin Kab' ? '#fee2e2; color:#991b1b' : (item.role === 'Admin Kec' ? '#fef3c7; color:#92400e' : '#e0f2fe; color:#075985')}">
+            ${item.role}
+          </span>
+        </td>
+        <td>${nmKec}</td>
+        <td>${nmDesa}</td>
+        <td style="text-align:center; white-space:nowrap;">
+          <button type="button" class="btn-nav btn-warning" style="padding: 3px 6px; font-size: 11px;" onclick="populateUserToForm('${item.id}')">✏️</button>
+          <button type="button" class="btn-nav btn-danger" style="padding: 3px 6px; font-size: 11px;" onclick="confirmDeleteUser('${item.id}', '${item.username}')">🗑️</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function populateUserToForm(id) {
+    const item = allUsersData.find(u => String(u.id) === String(id));
+    if (!item) return;
+
+    document.getElementById("user_id").value = item.id;
+    document.getElementById("user_name_input").value = item.username;
+    document.getElementById("user_pass_input").value = item.password_hash;
+    document.getElementById("user_role_select").value = item.role;
+
+    onUserRoleChange();
+    populateUserKecDropdown();
+
+    if (item.kode_kec) {
+      document.getElementById("user_kec_select").value = item.kode_kec.padStart(2, '0');
+      onUserKecChange();
+    }
+    if (item.kode_desa) {
+      document.getElementById("user_desa_select").value = item.kode_desa.padStart(4, '0');
+    }
+
+    document.getElementById("btnSaveUserAcc").innerText = "💾 PERBARUI AKUN";
+    switchUserTab('form');
+  }
+
+  function confirmDeleteUser(id, username) {
+    Swal.fire({
+      title: 'Hapus Akun Pengguna?',
+      text: `Yakin ingin menghapus akun [${username}]?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Ya, Hapus!'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const { error } = await db.from('users').delete().eq('id', id);
+        if (error) {
+          Swal.fire("Gagal", error.message, "error");
+        } else {
+          Swal.fire("Terhapus!", "Akun pengguna berhasil dihapus.", "success");
+          loadUsersList();
+        }
+      }
+    });
   }
 
   function showFormView() {
