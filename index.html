@@ -1310,6 +1310,56 @@
     }
     populateAllKecamatanDropdowns();
   }
+  
+  function applyMutationAndAgeLocks() {
+  const umurIstri = parseInt(document.getElementById("umur_istri").value || 0, 10);
+  let mutationTriggeredIndex = -1;
+
+  // 1. Deteksi apakah ada bulan yang berstatus Mutasi (CERAI, SUAMI/ISTRI MENINGGAL, PINDAH)
+  for (let i = 1; i <= 12; i++) {
+    const sel = document.getElementById("kb_" + i);
+    if (!sel) continue;
+    const val = String(sel.value || "").toUpperCase();
+    
+    if (val === "BERCERAI" || val === "SUAMI/ISTRI MENINGGAL" || val === "PINDAH") {
+      mutationTriggeredIndex = i;
+      break; // Mutasi pertama yang ditemukan menjadi titik awal penguncian
+    }
+  }
+
+  // 2. Evaluasi penguncian untuk setiap bulan (1 s.d. 12)
+  for (let i = 1; i <= 12; i++) {
+    const sel = document.getElementById("kb_" + i);
+    if (!sel) continue;
+
+    let shouldLock = false;
+    let lockReasonText = "";
+
+    // Aturan A: Jika ada mutasi di bulan ke-N, maka bulan ke-N dan seterusnya dikunci
+    if (mutationTriggeredIndex !== -1 && i >= mutationTriggeredIndex) {
+      shouldLock = true;
+      lockReasonText = "TERKUNCI (MUTASI)";
+    } 
+    // Aturan B: Jika umur istri sudah mencapai 50 tahun atau lebih (Asumsi batasan tahun pelaporan/usia)
+    else if (umurIstri >= 50) {
+      // Jika umur sudah 50, kunci seluruh bulan atau sesuaikan (disini kita kunci semua jika >= 50)
+      shouldLock = true;
+      lockReasonText = "TERKUNCI (USIA 50+)";
+    }
+
+    if (shouldLock) {
+      // Jika bulan ini belum memiliki status mutasi/50+, tapi terimbas lock karena bulan sebelumnya mutasi, 
+      // berikan nilai otomatis atau biarkan kosong terkunci.
+      sel.disabled = true;
+      sel.style.backgroundColor = "#e9ecef";
+      sel.title = lockReasonText;
+    } else {
+      sel.disabled = false;
+      sel.style.backgroundColor = "#ffffff";
+      sel.title = "";
+    }
+  }
+}
 
   function populateAllKecamatanDropdowns() {
     const recapKec = document.getElementById("recapKecamatan");
@@ -1438,14 +1488,18 @@
     }
   }
 
-  function onKbMonthChange(monthIndex) {
-    const sel = document.getElementById("kb_" + monthIndex);
-    const val = sel ? sel.value : "";
+  ffunction onKbMonthChange(monthIndex) {
+  const sel = document.getElementById("kb_" + monthIndex);
+  const val = sel ? sel.value : "";
 
-    if (val === "PINDAH") {
-      promptPindahDomisili(monthIndex);
-    }
+  // Jalankan logika mutasi pindah jika memilih PINDAH
+  if (val === "PINDAH") {
+    promptPindahDomisili(monthIndex);
   }
+
+  // Terapkan aturan lock/unlock bulan setelah pilihan berubah
+  applyMutationAndAgeLocks();
+}
 
   function promptPindahDomisili(monthIndex) {
     const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
@@ -2145,12 +2199,17 @@
   }
 
   function hitungUmurIstri() {
-    const tgl = document.getElementById("tgl_lahir_istri").value;
-    if (tgl) {
-      const age = new Date().getFullYear() - new Date(tgl).getFullYear();
-      document.getElementById("umur_istri").value = age >= 0 ? age : 0;
-    }
+  const tgl = document.getElementById("tgl_lahir_istri").value;
+  if (tgl) {
+    const age = new Date().getFullYear() - new Date(tgl).getFullYear();
+    document.getElementById("umur_istri").value = age >= 0 ? age : 0;
+  } else {
+    document.getElementById("umur_istri").value = 0;
   }
+  
+  // Perbarui status lock bulan berdasarkan perubahan umur
+  applyMutationAndAgeLocks();
+}
 
   function checkJumlahAnak() {
     const val = parseInt(document.getElementById("jumlah_anak").value, 10);
@@ -3111,7 +3170,8 @@
       let mKey = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"][i-1];
       setSelectValueCaseInsensitive("kb_" + i, d[mKey]);
     }
-    
+	
+	applyMutationAndAgeLocks();    
     initNavigationRT(d.kode_kec, d.kode_desa, d.kode_dusun, d.kode_rt, d.tahun, d.id_pus, d.dusun_nama);
   }
 
@@ -3956,6 +4016,7 @@
       resetDropdown("dusun", "kode_dusun");
       resetDropdown("rt", "kode_rt");
     }
+	applyMutationAndAgeLocks();
   }
   function togglePassword() {
     const passInput = document.getElementById("login_password");
