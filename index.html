@@ -647,7 +647,9 @@
       <div style="overflow-x: auto; margin-top: 15px;">
         <table id="bnbaTable" class="kb-table" style="font-size: 11px; white-space: nowrap;">
           <thead id="bnbaTableHeader"></thead>
-          <tbody id="bnbaTableBody"><tr><td colspan="15" style="text-align:center; padding: 20px;">Silakan atur filter dan klik Tampilkan Data BNBA</td></tr></tbody>
+          <tbody id="bnbaTableBody">
+            <tr><td colspan="29" style="text-align:center; padding: 20px;">Silakan atur filter dan klik Tampilkan Data BNBA</td></tr>
+          </tbody>
         </table>
       </div>
     </div>
@@ -2459,12 +2461,50 @@
     const thead = document.getElementById("bnbaTableHeader");
     const tbody = document.getElementById("bnbaTableBody");
 
-    thead.innerHTML = `<tr><th>NO</th><th>ID PUS</th><th>KECAMATAN</th><th>DESA</th><th>DUSUN</th><th>RT</th><th>NAMA ISTRI</th><th>NIK ISTRI</th><th>STATUS DESEMBER</th></tr>`;
-    tbody.innerHTML = "<tr><td colspan='9' style='text-align:center;'>Memuat data BNBA...</td></tr>";
+    // 1. Susun Header Tabel Lengkap 29 Kolom
+    thead.innerHTML = `<tr>
+      <th style="background:#1f4e78; color:white; width:35px;">NO.</th>
+      <th style="background:#1f4e78; color:white;">ID PUS</th>
+      <th style="background:#1f4e78; color:white;">PROVINSI</th>
+      <th style="background:#1f4e78; color:white;">KABUPATEN</th>
+      <th style="background:#1f4e78; color:white;">KECAMATAN</th>
+      <th style="background:#1f4e78; color:white;">DESA</th>
+      <th style="background:#1f4e78; color:white;">DUSUN</th>
+      <th style="background:#1f4e78; color:white;">RT</th>
+      <th style="background:#1f4e78; color:white;">NAMA SUAMI</th>
+      <th style="background:#1f4e78; color:white;">NIK SUAMI</th>
+      <th style="background:#1f4e78; color:white;">NAMA ISTRI</th>
+      <th style="background:#1f4e78; color:white;">NIK ISTRI</th>
+      <th style="background:#1f4e78; color:white;">TGL LAHIR ISTRI</th>
+      <th style="background:#1f4e78; color:white;">UMUR ISTRI</th>
+      <th style="background:#1f4e78; color:white;">JML ANAK</th>
+      <th style="background:#1f4e78; color:white;">UMUR ANAK TERKECIL</th>
+      <th style="background:#1f4e78; color:white;">PESERTA JKN</th>
+      <th style="background:#28a745; color:white;">JAN</th>
+      <th style="background:#28a745; color:white;">FEB</th>
+      <th style="background:#28a745; color:white;">MAR</th>
+      <th style="background:#28a745; color:white;">APR</th>
+      <th style="background:#28a745; color:white;">MEI</th>
+      <th style="background:#28a745; color:white;">JUN</th>
+      <th style="background:#28a745; color:white;">JUL</th>
+      <th style="background:#28a745; color:white;">AGU</th>
+      <th style="background:#28a745; color:white;">SEP</th>
+      <th style="background:#28a745; color:white;">OKT</th>
+      <th style="background:#28a745; color:white;">NOV</th>
+      <th style="background:#28a745; color:white;">DES</th>
+    </tr>`;
+
+    tbody.innerHTML = "<tr><td colspan='29' style='text-align:center; padding: 20px;'>Memuat data BNBA lengkap...</td></tr>";
+
+    if (!tingkat) {
+      Swal.fire("Perhatian", "Silakan pilih Tingkat Wilayah terlebih dahulu!", "warning");
+      tbody.innerHTML = "<tr><td colspan='29' style='text-align:center; color:red;'>Tingkat wilayah belum dipilih.</td></tr>";
+      return;
+    }
 
     let query = db.from('data_pus').select('*').eq('tahun', tahun);
 
-    // KUNCI QUERY BERDASARKAN ROLE
+    // Filter Berdasarkan Kewenangan Login
     if (isDesaRole()) {
       query = query.eq('kode_kec', userKodeKec).eq('kode_desa', userKodeDesa);
       if (tingkat === "Dusun" || tingkat === "RT") {
@@ -2508,24 +2548,46 @@
       }
     }
 
-    const { data, error } = await query.limit(500);
+    const { data, error } = await query.order('id_pus', { ascending: true }).limit(1000);
+
     if (error || !data || data.length === 0) {
-      tbody.innerHTML = "<tr><td colspan='9' style='text-align:center; color:red;'>Data tidak ditemukan.</td></tr>";
+      tbody.innerHTML = "<tr><td colspan='29' style='text-align:center; color:red; padding: 20px;'>Data tidak ditemukan.</td></tr>";
       return;
     }
 
+    // 2. Render 29 Kolom Data
     tbody.innerHTML = "";
     data.forEach((r, idx) => {
       tbody.innerHTML += `<tr>
-        <td>${idx+1}</td>
-        <td><b>${r.id_pus}</b></td>
-        <td>${r.kecamatan_nama}</td>
-        <td>${r.desa_nama}</td>
-        <td>${r.dusun_nama}</td>
-        <td>${r.rt_nama}</td>
-        <td>${r.nama_istri}</td>
-        <td>${r.nik_istri}</td>
-        <td>${r.kb_des || '-'}</td>
+        <td style="text-align:center; font-weight:bold;">${idx + 1}</td>
+        <td style="font-weight:bold;">${r.id_pus || '-'}</td>
+        <td>${r.provinsi_nama || '-'}</td>
+        <td>${r.kabupaten_nama || '-'}</td>
+        <td>${r.kecamatan_nama || '-'}</td>
+        <td>${r.desa_nama || '-'}</td>
+        <td>${r.dusun_nama || '-'}</td>
+        <td style="text-align:center;">${r.kode_rt || r.rt_nama || '-'}</td>
+        <td style="text-align:left;">${r.nama_suami || '-'}</td>
+        <td style="font-family: monospace;">${r.nik_suami || '-'}</td>
+        <td style="text-align:left; font-weight:bold;">${r.nama_istri || '-'}</td>
+        <td style="font-family: monospace;">${r.nik_istri || '-'}</td>
+        <td style="text-align:center;">${r.tgl_lahir_istri || '-'}</td>
+        <td style="text-align:center;">${r.umur_istri || '0'}</td>
+        <td style="text-align:center;">${r.jumlah_anak || '0'}</td>
+        <td style="text-align:center;">${r.umur_anak_terkecil || '0'}</td>
+        <td style="text-align:center;">${r.peserta_jkn || '-'}</td>
+        <td style="text-align:center;">${r.kb_jan || '-'}</td>
+        <td style="text-align:center;">${r.kb_feb || '-'}</td>
+        <td style="text-align:center;">${r.kb_mar || '-'}</td>
+        <td style="text-align:center;">${r.kb_apr || '-'}</td>
+        <td style="text-align:center;">${r.kb_mei || '-'}</td>
+        <td style="text-align:center;">${r.kb_jun || '-'}</td>
+        <td style="text-align:center;">${r.kb_jul || '-'}</td>
+        <td style="text-align:center;">${r.kb_agu || '-'}</td>
+        <td style="text-align:center;">${r.kb_sep || '-'}</td>
+        <td style="text-align:center;">${r.kb_okt || '-'}</td>
+        <td style="text-align:center;">${r.kb_nov || '-'}</td>
+        <td style="text-align:center;">${r.kb_des || '-'}</td>
       </tr>`;
     });
   }
@@ -2895,12 +2957,22 @@
     initNavigationRT(d.kode_kec, d.kode_desa, d.kode_dusun, d.kode_rt, d.tahun, d.id_pus, d.dusun_nama);
   }
 
-  // --- EKSPOR PDF & EXCEL ---
-  function exportTableToExcel(tableId, filename) {
-    const table = document.getElementById(tableId);
-    if (!table) return;
-    const wb = XLSX.utils.table_to_book(table, { sheet: "Sheet1" });
-    XLSX.writeFile(wb, filename + ".xlsx");
+  function exportBnbaToPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('landscape', 'pt', 'a2'); // Menggunakan ukuran A2 Landscape agar 29 kolom muat rapi
+
+    doc.setFontSize(16);
+    doc.text("DATA BNBA PASANGAN USIA SUBUR", 40, 35);
+
+    doc.autoTable({
+      html: '#bnbaTable',
+      startY: 50,
+      styles: { fontSize: 7, cellPadding: 3, halign: 'center' },
+      headStyles: { fillColor: [31, 78, 120], textColor: 255 },
+      theme: 'grid'
+    });
+
+    doc.save("DATA_BNBA_PASANGAN_USIA_SUBUR.pdf");
   }
 
   function exportRecapToExcel() { exportTableToExcel('recapTable', 'REKAP_PUS'); }
