@@ -934,67 +934,68 @@
       <form id="formMasterWilayah" onsubmit="handleSaveMasterWilayah(event)">
         <input type="hidden" id="mw_id" value="">
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 10px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 12px;">
           <div>
-            <label>Provinsi & Kode (2):</label>
-            <div style="display: flex; gap: 5px;">
-              <input type="text" id="mw_provinsi_nama" value="NUSA TENGGARA BARAT" required placeholder="NAMA PROVINSI">
-              <input type="text" id="mw_kode_prov" value="52" maxlength="2" required placeholder="KD" style="width: 60px; text-align:center;">
+            <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #475569; font-weight: bold;">Provinsi & Kode (2 Digit):</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="mw_provinsi_nama" value="NUSA TENGGARA BARAT" required placeholder="NAMA PROVINSI" style="flex: 1;">
+              <input type="text" id="mw_kode_prov" value="52" maxlength="2" required placeholder="KD" style="width: 70px; text-align: center; background-color: #f8fafc;">
             </div>
           </div>
           <div>
-            <label>Kabupaten & Kode (2):</label>
-            <div style="display: flex; gap: 5px;">
-              <input type="text" id="mw_kabupaten_nama" value="LOMBOK BARAT" required placeholder="NAMA KABUPATEN">
-              <input type="text" id="mw_kode_kab" value="01" maxlength="2" required placeholder="KD" style="width: 60px; text-align:center;">
-            </div>
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 10px;">
-          <div>
-            <label>Kecamatan & Kode (2):</label>
-            <div style="display: flex; gap: 5px;">
-              <input type="text" id="mw_kecamatan_nama" required placeholder="NAMA KECAMATAN">
-              <input type="text" id="mw_kode_kec" maxlength="2" required placeholder="KD" style="width: 60px; text-align:center;">
-            </div>
-          </div>
-          <div>
-            <label>Desa & Kode (4):</label>
-            <div style="display: flex; gap: 5px;">
-              <input type="text" id="mw_desa_nama" required placeholder="NAMA DESA">
-              <input type="text" id="mw_kode_desa" maxlength="4" required placeholder="KD" style="width: 70px; text-align:center;">
+            <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #475569; font-weight: bold;">Kabupaten & Kode (2 Digit):</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="mw_kabupaten_nama" value="LOMBOK BARAT" required placeholder="NAMA KABUPATEN" style="flex: 1;">
+              <input type="text" id="mw_kode_kab" value="01" maxlength="2" required placeholder="KD" style="width: 70px; text-align: center; background-color: #f8fafc;">
             </div>
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 12px;">
           <div>
-            <label>Nama Dusun:</label>
-            <input type="text" id="mw_dusun_nama" required placeholder="NAMA DUSUN">
+            <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #475569; font-weight: bold;">Kecamatan & Kode (2 Digit):</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="mw_kecamatan_nama" required placeholder="NAMA KECAMATAN" style="flex: 1;">
+              <input type="text" id="mw_kode_kec" maxlength="2" required placeholder="KD" style="width: 70px; text-align: center;">
+            </div>
           </div>
           <div>
-            <label>Kode Dusun (4):</label>
-            <input type="text" id="mw_kode_dusun" maxlength="4" required placeholder="0001" style="text-align:center;">
-          </div>
-          <div>
-            <label>Jumlah RT:</label>
-            <input type="number" id="mw_jumlah_rt" min="1" value="1" required style="text-align:center;">
+            <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #475569; font-weight: bold;">Desa & Kode (4 Digit):</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="mw_desa_nama" required placeholder="NAMA DESA" style="flex: 1;">
+              <input type="text" id="mw_kode_desa" maxlength="4" required placeholder="KD" style="width: 70px; text-align: center;">
+            </div>
           </div>
         </div>
 
-        <div style="display: flex; gap: 10px;">
-          <button type="submit" id="btnSaveMw" class="btn-submit" style="margin-top:0; flex:1;">💾 SIMPAN</button>
-          <button type="button" class="btn-nav btn-secondary" onclick="resetMwForm()">Bersihkan</button>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 20px;">
+          <div>
+            <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #475569; font-weight: bold;">Dusun & Kode Dusun (4 Digit):</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="mw_dusun_nama" required placeholder="NAMA DUSUN" style="flex: 1;">
+              <input type="text" id="mw_kode_dusun" maxlength="4" required placeholder="0001" style="width: 70px; text-align: center;">
+            </div>
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #475569; font-weight: bold;">Jumlah RT:</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="number" id="mw_jumlah_rt" min="1" value="1" required placeholder="Jml" style="width: 100px; text-align: center;">
+            </div>
+          </div>
         </div>
 
-        <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+          <button type="submit" id="btnSaveMw" class="btn-submit" style="margin-top:0; flex:1; padding: 12px; font-size: 14px;">💾 SIMPAN WILAYAH</button>
+          <button type="button" class="btn-nav btn-secondary" style="padding: 12px 18px;" onclick="resetMwForm()">Bersihkan</button>
+        </div>
+
+        <div style="background: #f1f5f9; padding: 12px; border-radius: 6px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
           <span style="font-size: 12px; color: #475569;">Ingin input wilayah massal?</span>
           <button type="button" class="btn-nav btn-warning" style="font-size: 11px; padding: 6px 10px;" onclick="downloadWilayahTemplate()">📥 Download Template</button>
         </div>
         <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 15px;">
-          <input type="file" id="excelWilayahInput" accept=".xlsx, .xls" style="font-size: 12px; flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 6px;">
-          <button type="button" class="btn-action" style="padding: 8px 12px; font-size: 12px;" onclick="handleUploadWilayahExcel(document.getElementById('excelWilayahInput').files[0])">🚀 Upload</button>
+          <input type="file" id="excelWilayahInput" accept=".xlsx, .xls" style="font-size: 12px; flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 6px; background: #fff;">
+          <button type="button" class="btn-action" style="padding: 9px 14px; font-size: 12px;" onclick="handleUploadWilayahExcel(document.getElementById('excelWilayahInput').files[0])">🚀 Upload</button>
         </div>
         <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
       </form>
