@@ -1070,7 +1070,8 @@
   }
 
   window.onload = function() {
-    loadMasterWilayahFromDB();
+    resetLoginForm();
+	loadMasterWilayahFromDB();
     const tbody = document.getElementById("kbTableBody");
     tbody.innerHTML = ""; 
     months.forEach((m, idx) => {
@@ -1242,6 +1243,22 @@
 
     return { type: "UNKNOWN", raw: s };
   }
+  
+  function resetLoginForm() {
+    const u = document.getElementById("login_username");
+    const p = document.getElementById("login_password");
+    if (u) u.value = "";
+    if (p) {
+      p.value = "";
+      p.type = "password";
+    }
+    const eyeOpen = document.getElementById("eyeOpenSvg");
+    const eyeClosed = document.getElementById("eyeClosedSvg");
+    if (eyeOpen && eyeClosed) {
+      eyeOpen.style.display = "block";
+      eyeClosed.style.display = "none";
+    }
+  }
 
   // --- LOGIC DROPDOWN BERTINGKAT REKAP ---
   function onRecapTingkatChange() {
@@ -1301,21 +1318,35 @@
 
     document.getElementById("recapTableBody").innerHTML = "<tr><td colspan='22' style='text-align:center; padding: 20px;'>Silakan atur filter dan klik Tampilkan Rekap</td></tr>";
   }
+  
+  function resetRecapFilters() {
+    const tingkat = document.getElementById("recapTingkat");
+    if (tingkat && !isDesaRole()) tingkat.value = "";
+    
+    document.getElementById("recapKecamatan").value = "";
+    document.getElementById("recapDesa").innerHTML = '<option value="">-- PILIH DESA --</option>';
+    document.getElementById("recapDusun").innerHTML = '<option value="">-- PILIH DUSUN --</option>';
+    onRecapTingkatChange();
+  }
 
   function onRecapKecamatanChange() {
     const kec = document.getElementById("recapKecamatan").value;
     populateDesaByKec(kec, "recapDesa");
-    document.getElementById("recapDusun").innerHTML = '<option value="">-- PILIH DUSUN --</option>';
+    // Reset dropdown turunan di bawahnya
+    const dsn = document.getElementById("recapDusun");
+    if (dsn) dsn.innerHTML = '<option value="">-- PILIH DUSUN --</option>';
   }
 
   function onRecapDesaChange() {
-    const kec = document.getElementById("recapKecamatan").value;
+    const kec = isKabRole() ? document.getElementById("recapKecamatan").value : userKodeKec;
     const desa = document.getElementById("recapDesa").value;
     const sel = document.getElementById("recapDusun");
     sel.innerHTML = '<option value="">-- PILIH DUSUN --</option>';
-    const dsn = getDusunList(kec, desa);
-    if (dsn) {
-      for (let kd in dsn) sel.add(new Option(dsn[kd].nama.toUpperCase(), kd));
+    if (kec && desa) {
+      const dsn = getDusunList(kec, desa);
+      if (dsn) {
+        for (let kd in dsn) sel.add(new Option(dsn[kd].nama.toUpperCase(), kd));
+      }
     }
   }
 
@@ -1370,6 +1401,17 @@
     }
   }
 
+  function resetBnbaFilters() {
+    const tingkat = document.getElementById("bnbaTingkat");
+    if (tingkat && !isDesaRole()) tingkat.value = "";
+
+    document.getElementById("bnbaKecamatan").value = "";
+    document.getElementById("bnbaDesa").innerHTML = '<option value="">-- PILIH DESA --</option>';
+    document.getElementById("bnbaDusun").innerHTML = '<option value="">-- PILIH DUSUN --</option>';
+    document.getElementById("bnbaRt").innerHTML = '<option value="">-- PILIH RT --</option>';
+    onBnbaTingkatChange();
+  }
+
   function onBnbaKecamatanChange() {
     const kec = document.getElementById("bnbaKecamatan").value;
     populateDesaByKec(kec, "bnbaDesa");
@@ -1378,27 +1420,35 @@
   }
 
   function onBnbaDesaChange() {
-    const kec = document.getElementById("bnbaKecamatan").value;
+    const kec = isKabRole() ? document.getElementById("bnbaKecamatan").value : userKodeKec;
     const desa = document.getElementById("bnbaDesa").value;
-    const sel = document.getElementById("bnbaDusun");
-    sel.innerHTML = '<option value="">-- PILIH DUSUN --</option>';
-    const dsn = getDusunList(kec, desa);
-    if (dsn) {
-      for (let kd in dsn) sel.add(new Option(dsn[kd].nama.toUpperCase(), kd));
+    const dsnSel = document.getElementById("bnbaDusun");
+    const rtSel = document.getElementById("bnbaRt");
+    dsnSel.innerHTML = '<option value="">-- PILIH DUSUN --</option>';
+    rtSel.innerHTML = '<option value="">-- PILIH RT --</option>';
+
+    if (kec && desa) {
+      const dsn = getDusunList(kec, desa);
+      if (dsn) {
+        for (let kd in dsn) dsnSel.add(new Option(dsn[kd].nama.toUpperCase(), kd));
+      }
     }
   }
 
   function onBnbaDusunChange() {
-    const kec = document.getElementById("bnbaKecamatan").value;
-    const desa = document.getElementById("bnbaDesa").value;
+    const kec = isKabRole() ? document.getElementById("bnbaKecamatan").value : userKodeKec;
+    const desa = isDesaRole() ? userKodeDesa : document.getElementById("bnbaDesa").value;
     const dusun = document.getElementById("bnbaDusun").value;
     const sel = document.getElementById("bnbaRt");
     sel.innerHTML = '<option value="">-- PILIH RT --</option>';
-    const dsn = getDusunList(kec, desa);
-    if (dsn && dsn[dusun]) {
-      for (let i = 1; i <= dsn[dusun].jumlah_rt; i++) {
-        let formatted = String(i).padStart(3, '0');
-        sel.add(new Option("RT " + formatted, formatted));
+
+    if (kec && desa && dusun) {
+      const dsn = getDusunList(kec, desa);
+      if (dsn && dsn[dusun]) {
+        for (let i = 1; i <= dsn[dusun].jumlah_rt; i++) {
+          let formatted = String(i).padStart(3, '0');
+          sel.add(new Option("RT " + formatted, formatted));
+        }
       }
     }
   }
@@ -1447,6 +1497,16 @@
     }
   }
 
+  function resetChartFilters() {
+    const tingkat = document.getElementById("chartTingkat");
+    if (tingkat && !isDesaRole()) tingkat.value = "";
+
+    document.getElementById("chartKecamatan").value = "";
+    document.getElementById("chartDesa").innerHTML = '<option value="">-- PILIH DESA --</option>';
+    document.getElementById("chartDusun").innerHTML = '<option value="">-- PILIH DUSUN --</option>';
+    onChartTingkatChange();
+  }
+
   function onChartKecamatanChange() {
     const kec = document.getElementById("chartKecamatan").value;
     populateDesaByKec(kec, "chartDesa");
@@ -1454,13 +1514,15 @@
   }
 
   function onChartDesaChange() {
-    const kec = document.getElementById("chartKecamatan").value;
+    const kec = isKabRole() ? document.getElementById("chartKecamatan").value : userKodeKec;
     const desa = document.getElementById("chartDesa").value;
     const sel = document.getElementById("chartDusun");
     sel.innerHTML = '<option value="">-- PILIH DUSUN --</option>';
-    const dsn = getDusunList(kec, desa);
-    if (dsn) {
-      for (let kd in dsn) sel.add(new Option(dsn[kd].nama.toUpperCase(), kd));
+    if (kec && desa) {
+      const dsn = getDusunList(kec, desa);
+      if (dsn) {
+        for (let kd in dsn) sel.add(new Option(dsn[kd].nama.toUpperCase(), kd));
+      }
     }
   }
 
@@ -1720,11 +1782,10 @@
     submitBtn.innerText = "SIMPAN DATA";
 
     if (error) {
-      Swal.fire('Gagal Menyimpan', error.message, 'error');
-    } else {
-      Swal.fire('Berhasil', `Data PUS ${idPus} tersimpan!`, 'success');
-      if (!isEditMode) resetInputForm();
-    }
+    Swal.fire('Gagal Menyimpan', error.message, 'error');
+  } else {
+    Swal.fire('Berhasil', `Data PUS ${idPus} tersimpan!`, 'success');    
+    resetInputForm();
   }
 
   // --- REKAPITULASI DENGAN FILTER TINGKAT ---
@@ -2444,9 +2505,25 @@
 
     document.getElementById("searchModal").style.display = "block";
   }
-  function closeSearchModal() { document.getElementById("searchModal").style.display = "none"; }
+  function closeSearchModal() {
+    document.getElementById("searchModal").style.display = "none";
+    document.getElementById("searchKeyword").value = "";
+    document.getElementById("searchResults").innerHTML = "";
+    if (!isKecRole() && !isDesaRole()) {
+      document.getElementById("searchKecamatan").value = "";
+    }
+    document.getElementById("searchDesa").innerHTML = '<option value="">-- PILIH DESA --</option>';
+    document.getElementById("searchDusun").innerHTML = '<option value="">-- PILIH DUSUN --</option>';
+    document.getElementById("searchRt").innerHTML = '<option value="">-- PILIH RT --</option>';
+  }
   function openImportExcelModal() { document.getElementById("modalImportExcel").style.display = "block"; }
-  function closeImportExcelModal() { document.getElementById("modalImportExcel").style.display = "none"; }
+  function closeImportExcelModal() {
+    document.getElementById("modalImportExcel").style.display = "none";
+    const f = document.getElementById("formImportExcel");
+    if (f) f.reset();
+    const details = document.getElementById("detailsPanduanImport");
+    if (details) details.removeAttribute("open");
+  }
 
   function triggerOpenNewYear() {
     Swal.fire({
@@ -2473,6 +2550,7 @@
 
   function closeMasterWilayahModal() {
     document.getElementById("modalMasterWilayah").style.display = "none";
+    resetMwForm();
   }
 
   function switchMwTab(tab) {
@@ -2660,6 +2738,7 @@
 
   function closeManageUsersModal() {
     document.getElementById("modalManageUsers").style.display = "none";
+    resetUserForm();
   }
 
   function switchUserTab(tab) {
@@ -3106,6 +3185,18 @@
 
   function handleLogout() {
     currentUser = "";
+    userRole = "";
+    userKodeKab = "";
+    userKodeKec = "";
+    userKodeDesa = "";
+
+    // Reset seluruh modul dan form
+    resetLoginForm();
+    resetInputForm();
+    resetRecapFilters();
+    resetBnbaFilters();
+    resetChartFilters();
+
     document.getElementById("appContainer").style.display = "none";
     document.getElementById("loginContainer").style.display = "block";
   }
