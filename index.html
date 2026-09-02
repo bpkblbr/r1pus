@@ -985,8 +985,18 @@
           <button type="submit" id="btnSaveMw" class="btn-submit" style="margin-top:0; flex:1;">💾 SIMPAN WILAYAH</button>
           <button type="button" class="btn-nav btn-secondary" onclick="resetMwForm()">Bersihkan</button>
         </div>
+
+        <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 12px; color: #475569;">Ingin input wilayah massal?</span>
+          <button type="button" class="btn-nav btn-warning" style="font-size: 11px; padding: 6px 10px;" onclick="downloadWilayahTemplate()">📥 Download Template</button>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 15px;">
+          <input type="file" id="excelWilayahInput" accept=".xlsx, .xls" style="font-size: 12px; flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 6px;">
+          <button type="button" class="btn-action" style="padding: 8px 12px; font-size: 12px;" onclick="handleUploadWilayahExcel(document.getElementById('excelWilayahInput').files[0])">🚀 Upload</button>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
       </form>
-    </div>
+    </div>    
 
     <!-- TAB 2: DAFTAR WILAYAH TERDAFTAR -->
     <div id="mwTabList" style="display: none;">
@@ -1074,6 +1084,16 @@
           <button type="submit" id="btnSaveUserAcc" class="btn-submit" style="margin-top: 0; flex: 1;">💾 SIMPAN AKUN</button>
           <button type="button" class="btn-nav btn-secondary" onclick="resetUserForm()">Bersihkan</button>
         </div>
+
+        <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 12px; color: #475569;">Ingin buat akun massal?</span>
+          <button type="button" class="btn-nav btn-warning" style="font-size: 11px; padding: 6px 10px;" onclick="downloadUserTemplate()">📥 Download Template</button>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 15px;">
+          <input type="file" id="excelUserInput" accept=".xlsx, .xls" style="font-size: 12px; flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 6px;">
+          <button type="button" class="btn-action" style="padding: 8px 12px; font-size: 12px;" onclick="handleUploadUserExcel(document.getElementById('excelUserInput').files[0])">🚀 Upload</button>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
       </form>
     </div>
 
@@ -4371,6 +4391,130 @@
       } finally {
         btn.disabled = false;
         btn.innerText = "🚀 UPLOAD KE DATABASE";
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+  
+  // ==========================================
+  // MODUL DOWNLOAD & UPLOAD EXCEL MASTER WILAYAH
+  // ==========================================
+  function downloadWilayahTemplate() {
+    const headers = [
+      "Provinsi", "Kode Provinsi", "Kabupaten", "Kode Kabupaten",
+      "Kecamatan", "Kode Kecamatan", "Desa", "Kode Desa",
+      "Dusun", "Kode Dusun", "Jumlah RT"
+    ];
+
+    const sampleRow = [
+      "NUSA TENGGARA BARAT", "52", "LOMBOK BARAT", "01",
+      "LEMBAR", "05", "MAREJE", "0001",
+      "DUSUN SATU", "0001", "5"
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
+    ws['!cols'] = headers.map(() => ({ wch: 20 }));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "TEMPLATE_WILAYAH");
+    XLSX.writeFile(wb, "TEMPLATE_MASTER_WILAYAH.xlsx");
+  }
+
+  async function handleUploadWilayahExcel(file) {
+    if (!file) {
+      Swal.fire("Perhatian", "Silakan pilih file Excel wilayah terlebih dahulu!", "warning");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, defval: "" });
+
+        if (rows.length <= 1) {
+          Swal.fire("Kosong", "File Excel tidak memiliki data baris!", "warning");
+          return;
+        }
+
+        const payloadList = rows.slice(1).map(r => ({
+          provinsi: String(r[0] || "").trim().toUpperCase(),
+          kode_prov: String(r[1] || "").trim().padStart(2, '0'),
+          kabupaten: String(r[2] || "").trim().toUpperCase(),
+          kode_kab: String(r[3] || "").trim().padStart(2, '0'),
+          kecamatan: String(r[4] || "").trim().toUpperCase(),
+          kode_kec: String(r[5] || "").trim().padStart(2, '0'),
+          desa: String(r[6] || "").trim().toUpperCase(),
+          kode_desa: String(r[7] || "").trim().padStart(4, '0'),
+          dusun: String(r[8] || "").trim().toUpperCase(),
+          kode_dusun: String(r[9] || "").trim().padStart(4, '0'),
+          jumlah_rt: parseInt(r[10] || 1, 10)
+        })).filter(item => item.dusun !== "");
+
+        const { error } = await db.from('master_wilayah').upsert(payloadList, { onConflict: 'kode_kec,kode_desa,kode_dusun' });
+        if (error) throw error;
+
+        Swal.fire("Berhasil", `Sebanyak ${payloadList.length} wilayah berhasil diimpor!`, "success");
+        loadRegisteredWilayahList();
+        loadMasterWilayahFromDB();
+      } catch (err) {
+        Swal.fire("Error", "Gagal memproses file wilayah: " + err.message, "error");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+
+  // ==========================================
+  // MODUL DOWNLOAD & UPLOAD EXCEL KELOLA LOGIN
+  // ==========================================
+  function downloadUserTemplate() {
+    const headers = ["Username", "Password", "Role", "Kode Kabupaten", "Kode Kecamatan", "Kode Desa"];
+    const sampleRow = ["desamareje", "rahasia123", "User Desa", "01", "05", "0001"];
+
+    const ws = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
+    ws['!cols'] = headers.map(() => ({ wch: 18 }));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "TEMPLATE_USERS");
+    XLSX.writeFile(wb, "TEMPLATE_KELOLA_LOGIN.xlsx");
+  }
+
+  async function handleUploadUserExcel(file) {
+    if (!file) {
+      Swal.fire("Perhatian", "Silakan pilih file Excel pengguna terlebih dahulu!", "warning");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, defval: "" });
+
+        if (rows.length <= 1) {
+          Swal.fire("Kosong", "File Excel tidak memiliki data baris!", "warning");
+          return;
+        }
+
+        const payloadList = rows.slice(1).map(r => ({
+          username: String(r[0] || "").trim(),
+          password_hash: String(r[1] || "").trim(),
+          role: String(r[2] || "User Desa").trim(),
+          kode_kab: String(r[3] || "01").trim().padStart(2, '0'),
+          kode_kec: String(r[4] || "").trim().padStart(2, '0'),
+          kode_desa: String(r[5] || "").trim().padStart(4, '0')
+        })).filter(item => item.username !== "");
+
+        const { error } = await db.from('users').upsert(payloadList, { onConflict: 'username' });
+        if (error) throw error;
+
+        Swal.fire("Berhasil", `Sebanyak ${payloadList.length} akun pengguna berhasil disinkronkan!`, "success");
+        loadUsersList();
+      } catch (err) {
+        Swal.fire("Error", "Gagal memproses file pengguna: " + err.message, "error");
       }
     };
     reader.readAsArrayBuffer(file);
