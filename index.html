@@ -2086,9 +2086,61 @@
     submitBtn.disabled = true;
     submitBtn.innerText = "Menyimpan...";
 
+    // --- VALIDASI NIK GANDA DENGAN PENGECUALIAN ---
     const isEditMode = (document.getElementById("id_pus").value.trim() !== "");
-    let idPus = document.getElementById("id_pus").value.trim();
+    const nikIstriVal = document.getElementById("nik_istri").value.trim();
     const thn = parseInt(document.getElementById("tahun_input").value, 10);
+
+    // Pengecualian 1: NIK Dummy 16 digit angka 9 diizinkan ganda
+    const isDummyNik = (nikIstriVal === "9999999999999999");
+
+    if (!isEditMode && !isDummyNik) {
+      // Cek apakah NIK ini sudah pernah ada di database pada tahun yang sama
+      const { data: existingRows } = await db
+        .from('data_pus')
+        .select('*')
+        .eq('nik_istri', nikIstriVal)
+        .eq('tahun', thn);
+
+      if (existingRows && existingRows.length > 0) {
+        // Pengecualian 2: Cek apakah status terakhir data lama adalah CERAI, MENINGGAL, atau PINDAH
+        let isAllowedDuplicate = false;
+        
+        for (let oldData of existingRows) {
+          // Cari status bulan terakhir yang terisi pada data lama
+          let lastStatus = "";
+          const mKeys = ["kb_des", "kb_nov", "kb_okt", "kb_sep", "kb_agu", "kb_jul", "kb_jun", "kb_mei", "kb_apr", "kb_mar", "kb_feb", "kb_jan"];
+          for (let mk of mKeys) {
+            if (oldData[mk] && oldData[mk] !== "--KOSONG--" && oldData[mk] !== "-") {
+              lastStatus = oldData[mk].toUpperCase();
+              break;
+            }
+          }
+
+          // Jika status sebelumnya adalah Mutasi, izinkan input baru (misal: janda/cerai menikah lagi)
+          if (
+            lastStatus.includes("CERAI") || 
+            lastStatus.includes("MENINGGAL") || 
+            lastStatus.includes("PINDAH")
+          ) {
+            isAllowedDuplicate = true;
+            break;
+          }
+        }
+
+        // Jika bukan mutasi (masih aktif), tolak input
+        if (!isAllowedDuplicate) {
+          submitBtn.disabled = false;
+          submitBtn.innerText = "SIMPAN DATA";
+          Swal.fire({
+            icon: 'warning',
+            title: 'NIK Istri Duplikat!',
+            html: `NIK Istri <b>${nikIstriVal}</b> sudah terdaftar aktif atas nama <b>${existingRows[0].nama_istri}</b> (Desa ${existingRows[0].desa_nama}) dengan ID PUS: <b>${existingRows[0].id_pus}</b>.<br><br><small style="color:red;">*Pengecualian hanya berlaku untuk status Cerai, Meninggal, Pindah, atau NIK 9999999999999999.</small>`
+          });
+          return;
+        }
+      }
+    }
 
     const kdProv = document.getElementById("kode_prov").value.padStart(2, '0');
     const kdKab  = document.getElementById("kode_kab").value.padStart(2, '0');
@@ -2150,6 +2202,31 @@
     if (error) {
       Swal.fire('Gagal Menyimpan', error.message, 'error');
       return;
+    }
+
+    // Cek NIK Istri Ganda pada input baru
+    const isEditMode = (document.getElementById("id_pus").value.trim() !== "");
+    const nikIstriVal = document.getElementById("nik_istri").value.trim();
+    const thn = parseInt(document.getElementById("tahun_input").value, 10);
+
+    if (!isEditMode) {
+      const { data: existingNik } = await db
+        .from('data_pus')
+        .select('id_pus, nama_istri, desa_nama')
+        .eq('nik_istri', nikIstriVal)
+        .eq('tahun', thn)
+        .maybeSingle();
+
+      if (existingNik) {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "SIMPAN DATA";
+        Swal.fire({
+          icon: 'warning',
+          title: 'NIK Istri Duplikat!',
+          html: `NIK <b>${nikIstriVal}</b> sudah terdaftar pada tahun ${thn} atas nama <b>${existingNik.nama_istri}</b> (Desa: ${existingNik.desa_nama}) dengan ID PUS: <b>${existingNik.id_pus}</b>.`
+        });
+        return;
+      }
     }
 
     // PROSES TIKET MUTASI DI DALAM FUNGSI SUBMIT
@@ -3932,7 +4009,24 @@
         btn.innerText = "Mengunggah Data...";
 
         const payloadList = [];
+        const seenNiks = new Set();
+
         dataRows.forEach((r, idx) => {
+          if (!r[15] && !r[17]) return;
+
+          let nikIstri = String(r[18] || "").trim();
+          let statusDes = String(r[35] || "").toUpperCase();
+
+          // Kriteria Pengecualian Duplikat di file yang sama:
+          let isDummy = (nikIstri === "9999999999999999");
+          let isMutasi = statusDes.includes("CERAI") || statusDes.includes("MENINGGAL") || statusDes.includes("PINDAH");
+
+          if (!isDummy && !isMutasi) {
+            if (seenNiks.has(nikIstri)) {
+              return; // Lewati baris ini karena NIK aktif ganda di dalam file Excel
+            }
+            seenNiks.add(nikIstri);
+          }
           if (!r[15] && !r[17]) return; // Lewati jika nama suami & istri kosong
 
           let kdProv = String(r[4] || "").trim().padStart(2, '0');
@@ -3986,6 +4080,22 @@
             kb_des: String(r[35] || "")
           });
         });
+
+        const seenNiks = new Set();
+        const uniquePayloadList = [];
+        let duplicateCount = 0;
+
+        payloadList.forEach(item => {
+          if (seenNiks.has(item.nik_istri)) {
+          duplicateCount++; // Lewati data jika NIK istri duplikat di dalam file yang sama
+        } else {
+          seenNiks.add(item.nik_istri);
+          uniquePayloadList.push(item);
+        }
+      });
+
+  // Kirim hanya data unik dengan konflik pada NIK istri
+  const { error } = await db.from('data_pus').upsert(uniquePayloadList, { onConflict: 'nik_istri,tahun' });
 
         // Simpan kolektif ke Supabase
         const { error } = await db.from('data_pus').upsert(payloadList, { onConflict: 'id_pus,tahun' });
