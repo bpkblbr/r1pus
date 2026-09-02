@@ -2286,37 +2286,35 @@
   }
 
   function hitungUmurIstri() {
-  const tglLahirInput = document.getElementById("tgl_lahir_istri").value;
-  const umurInput = document.getElementById("umur_istri");
-  const tahunPelaporan = parseInt(document.getElementById("tahun_input").value || new Date().getFullYear(), 10);
+    const tglLahirInput = document.getElementById("tgl_lahir_istri").value;
+    const umurInput = document.getElementById("umur_istri");
+    const tahunPelaporan = parseInt(document.getElementById("tahun_input").value || new Date().getFullYear(), 10);
 
-  if (!tglLahirInput) {
-    umurInput.value = 0;
-    applyMutationAndAgeLocks();
-    return;
-  }
+    if (!tglLahirInput) {
+      umurInput.value = 0;
+      applyMutationAndAgeLocks();
+      return;
+    }
 
-  const dob = new Date(tglLahirInput);
-  const birthYear = dob.getFullYear();
-  const birthMonth = dob.getMonth(); // 0 - 11
-  const birthDay = dob.getDate();
+    const dob = new Date(tglLahirInput);
+    const birthYear = dob.getFullYear();
+    const birthMonth = dob.getMonth(); 
+    const birthDay = dob.getDate();
 
-  // Jadikan tanggal acuan akhir tahun pelaporan atau tanggal hari ini
-  // Di sini kita hitung berdasarkan akhir tahun pelaporan yang dipilih (misal: 31 Desember tahun tersebut)
-  const refDate = new Date(tahunPelaporan, 11, 31); // 31 Desember tahun pelaporan
+    const refDate = new Date(tahunPelaporan, 11, 31); 
 
-  let age = refDate.getFullYear() - birthYear;
-  const monthDiff = refDate.getMonth() - birthMonth;
+    let age = refDate.getFullYear() - birthYear;
+    const monthDiff = refDate.getMonth() - birthMonth;
 
-  // Jika bulan pelaporan belum mencapai bulan ulang tahunnya, atau di bulan yang sama tapi tanggalnya belum sampai
-  if (monthDiff < 0 || (monthDiff === 0 && refDate.getDate() < birthDay)) {
-    age--;  
-  }
-  umurInput.value = age >= 0 ? age : 0;
+    if (monthDiff < 0 || (monthDiff === 0 && refDate.getDate() < birthDay)) {
+      age--;  
+	}
+
+    umurInput.value = age >= 0 ? age : 0;
   
-  // Perbarui status lock bulan berdasarkan umur dinamis yang baru
-  applyMutationAndAgeLocks();
- }
+    // Perbarui status lock bulan berdasarkan umur dinamis yang baru
+    applyMutationAndAgeLocks();
+  }
   
   function checkJumlahAnak() {
     const val = parseInt(document.getElementById("jumlah_anak").value, 10);
