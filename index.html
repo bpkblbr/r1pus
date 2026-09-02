@@ -341,13 +341,18 @@
         <div class="form-group">
           <label for="tahun_input">Tahun:</label>
           <select id="tahun_input" name="tahun_input" required>
-            <option value="2025">2025</option>
-            <option value="2026" selected>2026</option>
-            <option value="2027">2027</option>
-            <option value="2028">2028</option>
-            <option value="2029">2029</option>
-            <option value="2030">2030</option>
-          </select>
+			      <option value="2025">2025</option>
+			      <option value="2026">2026</option>
+			      <option value="2027">2027</option>
+			      <option value="2028">2028</option>
+			      <option value="2029">2029</option>
+			      <option value="2030">2030</option>
+            <option value="2031">2030</option>
+            <option value="2032">2030</option>
+            <option value="2033">2030</option>
+            <option value="2034">2030</option>
+            <option value="2030">2035</option>
+		      </select>
         </div>
 
         <div class="section-title">I. DATA WILAYAH</div>
@@ -487,15 +492,33 @@
           <div style="display: flex; gap: 10px;">
             <select id="recapTahun" style="flex:1;">
               <option value="2025">2025</option>
-              <option value="2026" selected>2026</option>
+              <option value="2026">2026</option>
               <option value="2027">2027</option>
               <option value="2028">2028</option>
+              <option value="2029">2029</option>
+              <option value="2030">2030</option>
+              <option value="2031">2031</option>
+              <option value="2032">2032</option>
+              <option value="2033">2033</option>
+              <option value="2034">2034</option>
+              <option value="2035">2035</option>
             </select>
             <select id="recapBulan" style="flex:1;">
-              <option value="1">JANUARI</option><option value="2">FEBRUARI</option><option value="3">MARET</option><option value="4">APRIL</option><option value="5">MEI</option><option value="6">JUNI</option>
-              <option value="7">JULI</option><option value="8">AGUSTUS</option><option value="9">SEPTEMBER</option><option value="10">OKTOBER</option><option value="11">NOVEMBER</option><option value="12" selected>DESEMBER</option>
+              <option value="" selected>-- PILIH BULAN --</option>
+              <option value="1">JANUARI</option>
+              <option value="2">FEBRUARI</option>
+              <option value="3">MARET</option>
+              <option value="4">APRIL</option>
+              <option value="5">MEI</option>
+              <option value="6">JUNI</option>
+              <option value="7">JULI</option>
+              <option value="8">AGUSTUS</option>
+              <option value="9">SEPTEMBER</option>
+              <option value="10">OKTOBER</option>
+              <option value="11">NOVEMBER</option>
+              <option value="12">DESEMBER</option>
             </select>
-          </div>
+            </div>
         </div>
         
         <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
@@ -575,7 +598,21 @@
             <select id="bnbaRt"><option value="">-- PILIH RT --</option></select>
           </div>
           
-          <div><select id="bnbaTahun"><option value="2026" selected>2026</option><option value="2025">2025</option></select></div>
+          <div>
+            <select id="bnbaTahun">
+              <option value="2025">2025</option>
+              <option value="2026">2026</option>
+              <option value="2027">2027</option>
+              <option value="2028">2028</option>
+              <option value="2029">2029</option>
+              <option value="2030">2030</option>
+              <option value="2031">2031</option>
+              <option value="2032">2032</option>
+              <option value="2033">2033</option>
+              <option value="2034">2034</option>
+              <option value="2035">2035</option>
+            </select>
+          </div>
         </div>
 
         <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
@@ -628,12 +665,31 @@
           <div style="display: flex; gap: 10px;">
             <select id="chartTahun" style="flex:1;">
               <option value="2025">2025</option>
-              <option value="2026" selected>2026</option>
+              <option value="2026">2026</option>
               <option value="2027">2027</option>
+              <option value="2028">2028</option>
+              <option value="2029">2029</option>
+              <option value="2030">2030</option>
+              <option value="2031">2031</option>
+              <option value="2032">2032</option>
+              <option value="2033">2033</option>
+              <option value="2034">2034</option>
+              <option value="2035">2035</option>
             </select>
             <select id="chartBulan" style="flex:1;">
-              <option value="1">JANUARI</option><option value="2">FEBRUARI</option><option value="3">MARET</option><option value="4">APRIL</option><option value="5">MEI</option><option value="6">JUNI</option>
-              <option value="7">JULI</option><option value="8">AGUSTUS</option><option value="9">SEPTEMBER</option><option value="10">OKTOBER</option><option value="11">NOVEMBER</option><option value="12" selected>DESEMBER</option>
+              <option value="" selected>-- PILIH BULAN --</option>
+              <option value="1">JANUARI</option>
+              <option value="2">FEBRUARI</option>
+              <option value="3">MARET</option>
+              <option value="4">APRIL</option>
+              <option value="5">MEI</option>
+              <option value="6">JUNI</option>
+              <option value="7">JULI</option>
+              <option value="8">AGUSTUS</option>
+              <option value="9">SEPTEMBER</option>
+              <option value="10">OKTOBER</option>
+              <option value="11">NOVEMBER</option>
+              <option value="12">DESEMBER</option>
             </select>
           </div>
         </div>
@@ -1069,9 +1125,36 @@
     }
   }
 
+  // Helper untuk mengatur dropdown tahun ke tahun berjalan secara dinamis
+  function setDefaultYearAndMonth() {
+    const currentYear = String(new Date().getFullYear());
+
+    const yearSelects = ["tahun_input", "recapTahun", "bnbaTahun", "chartTahun", "import_tahun_select"];
+    yearSelects.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        // Jika tahun berjalan belum ada di daftar opsi, tambahkan otomatis
+        let exists = Array.from(el.options).some(opt => opt.value === currentYear);
+        if (!exists) {
+          el.add(new Option(currentYear, currentYear));
+        }
+        el.value = currentYear;
+      }
+    });
+
+    // Set dropdown bulan ke default kosong (-- PILIH BULAN --)
+    const monthSelects = ["recapBulan", "chartBulan"];
+    monthSelects.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+  }
+
   window.onload = function() {
     resetLoginForm();
-	loadMasterWilayahFromDB();
+    loadMasterWilayahFromDB();
+    setDefaultYearAndMonth();
+    
     const tbody = document.getElementById("kbTableBody");
     tbody.innerHTML = ""; 
     months.forEach((m, idx) => {
@@ -1082,20 +1165,20 @@
           <select id="kb_${idx+1}">
             <option value="">--KOSONG--</option>
             <optgroup label="PESERTA KB">
-              <option value="PESERTA KB - STK">PESERTA KB - STK</option>
-              <option value="PESERTA KB - PIL">PESERTA KB - PIL</option>
-              <option value="PESERTA KB - KDM">PESERTA KB - KDM</option>
-              <option value="PESERTA KB - IMP">PESERTA KB - IMP</option>
-              <option value="PESERTA KB - IUD">PESERTA KB - IUD</option>
-              <option value="PESERTA KB - MOW">PESERTA KB - MOW</option>
-              <option value="PESERTA KB - MOP">PESERTA KB - MOP</option>
+              <option value="STK">STK</option>
+              <option value="PIL">PIL</option>
+              <option value="KDM">KDM</option>
+              <option value="IMP">IMP</option>
+              <option value="IUD">IUD</option>
+              <option value="MOW">MOW</option>
+              <option value="MOP">MOP</option>
             </optgroup>
             <optgroup label="BUKAN PESERTA KB">
-              <option value="BUKAN PESERTA KB - IAS">BUKAN PESERTA KB - IAS</option>
-              <option value="BUKAN PESERTA KB - IAT">BUKAN PESERTA KB - IAT</option>
-              <option value="BUKAN PESERTA KB - TIAL">BUKAN PESERTA KB - TIAL</option>
-              <option value="BUKAN PESERTA KB - HAMIL">BUKAN PESERTA KB - HAMIL</option>
-              <option value="BUKAN PESERTA KB - TKI">BUKAN PESERTA KB - TKI</option>
+              <option value="IAS">IAS</option>
+              <option value="IAT">IAT</option>
+              <option value="TIAL">TIAL</option>
+              <option value="HAMIL">HAMIL</option>
+              <option value="TKI">TKI</option>
             </optgroup>
             <optgroup label="MUTASI">
               <option value="BERCERAI">BERCERAI</option>
@@ -1202,43 +1285,45 @@
   
   // Fungsi klasifikasi status yang fleksibel (menangani format panjang maupun singkat)
   function evaluateKbStatus(rawStatus) {
-    const s = String(rawStatus || "").trim().toUpperCase();
-    if (!s || s === "--KOSONG--" || s === "-") return { type: "EMPTY", method: "" };
-
-    // 1. Peserta KB
-    if (s.includes("PESERTA KB") || ["STK", "PIL", "KDM", "IMP", "IUD", "MOW", "MOP"].some(m => s === m || s.includes(m))) {
-      let method = "";
-      if (s.includes("PIL")) method = "PIL";
-      else if (s.includes("STK")) method = "STK";
-      else if (s.includes("KDM")) method = "KDM";
-      else if (s.includes("IMP")) method = "IMP";
-      else if (s.includes("IUD")) method = "IUD";
-      else if (s.includes("MOW")) method = "MOW";
-      else if (s.includes("MOP")) method = "MOP";
-
-      const isMkjp = ["IMP", "IUD", "MOW", "MOP"].includes(method);
-      return { type: "PESERTA_KB", method: method, isMkjp: isMkjp };
+    let s = String(rawStatus || "").trim().toUpperCase();
+    if (!s || s === "--KOSONG--" || s === "-" || s === "KOSONG") {
+      return { type: "EMPTY", method: "", reason: "", cat: "" };
     }
 
-    // 2. Bukan Peserta KB
-    if (s.includes("BUKAN PESERTA") || ["HAMIL", "IAS", "IAT", "TIAL", "TKI"].some(m => s === m || s.includes(m))) {
-      let reason = "";
-      if (s.includes("HAMIL")) reason = "HAMIL";
-      else if (s.includes("IAS")) reason = "IAS";
-      else if (s.includes("IAT")) reason = "IAT";
-      else if (s.includes("TIAL")) reason = "TIAL";
-      else if (s.includes("TKI")) reason = "TKI";
-      return { type: "BUKAN_PESERTA", reason: reason };
+    // Bersihkan teks awalan jika masih ada data lama
+    s = s.replace(/^PESERTA KB\s*-\s*/, "")
+         .replace(/^BUKAN PESERTA KB\s*-\s*/, "")
+         .replace(/^BUKAN PUS\s*-\s*/, "");
+
+    // 1. Kategori PESERTA KB (Metode Kontrasepsi)
+    const metodeKB = ["STK", "PIL", "KDM", "IMP", "IUD", "MOW", "MOP"];
+    for (let m of metodeKB) {
+      if (s === m || s.startsWith(m + " ") || s.includes(m)) {
+        const isMkjp = ["IMP", "IUD", "MOW", "MOP"].includes(m);
+        return { type: "PESERTA_KB", method: m, isMkjp: isMkjp };
+      }
     }
 
-    // 3. Mutasi / Bukan PUS
-    if (s.includes("BUKAN PUS") || s.includes("CERAI") || s.includes("MENINGGAL") || s.includes("PINDAH") || s.includes("50")) {
-      let cat = "";
-      if (s.includes("CERAI")) cat = "CERAI";
-      else if (s.includes("MENINGGAL")) cat = "MENINGGAL";
-      else if (s.includes("PINDAH")) cat = "PINDAH";
-      else if (s.includes("50")) cat = "50+";
-      return { type: "BUKAN_PUS", cat: cat };
+    // 2. Kategori BUKAN PESERTA KB
+    const alasanBukanKB = ["HAMIL", "IAS", "IAT", "TIAL", "TKI"];
+    for (let a of alasanBukanKB) {
+      if (s === a || s.startsWith(a + " ") || s.includes(a)) {
+        return { type: "BUKAN_PESERTA", reason: a };
+      }
+    }
+
+    // 3. Kategori MUTASI / BUKAN PUS
+    if (s.includes("CERAI") || s.includes("BERCERAI")) {
+      return { type: "BUKAN_PUS", cat: "CERAI" };
+    }
+    if (s.includes("MENINGGAL")) {
+      return { type: "BUKAN_PUS", cat: "MENINGGAL" };
+    }
+    if (s.includes("PINDAH")) {
+      return { type: "BUKAN_PUS", cat: "PINDAH" };
+    }
+    if (s.includes("50")) {
+      return { type: "BUKAN_PUS", cat: "50+" };
     }
 
     return { type: "UNKNOWN", raw: s };
@@ -1326,6 +1411,13 @@
     document.getElementById("recapKecamatan").value = "";
     document.getElementById("recapDesa").innerHTML = '<option value="">-- PILIH DESA --</option>';
     document.getElementById("recapDusun").innerHTML = '<option value="">-- PILIH DUSUN --</option>';
+
+    const thn = document.getElementById("recapTahun");
+    if (thn) thn.value = String(new Date().getFullYear());
+    
+    const bln = document.getElementById("recapBulan");
+    if (bln) bln.value = ""; // Default -- PILIH BULAN --
+
     onRecapTingkatChange();
   }
 
@@ -1504,6 +1596,13 @@
     document.getElementById("chartKecamatan").value = "";
     document.getElementById("chartDesa").innerHTML = '<option value="">-- PILIH DESA --</option>';
     document.getElementById("chartDusun").innerHTML = '<option value="">-- PILIH DUSUN --</option>';
+
+    const thn = document.getElementById("chartTahun");
+    if (thn) thn.value = String(new Date().getFullYear());
+
+    const bln = document.getElementById("chartBulan");
+    if (bln) bln.value = ""; // Default -- PILIH BULAN --
+
     onChartTingkatChange();
   }
 
@@ -1825,6 +1924,12 @@
     const monthKey = mKeys[bulan - 1];
     const prevMonthKey = bulan > 1 ? mKeys[bulan - 2] : null;
 
+    const bulanVal = document.getElementById("recapBulan").value;
+    if (!bulanVal) {
+      Swal.fire("Perhatian", "Silakan pilih Bulan terlebih dahulu!", "warning");
+      return;
+    }
+
     if (!tingkat) {
       Swal.fire("Perhatian", "Silakan pilih Tingkat Wilayah terlebih dahulu!", "warning");
       return;
@@ -1832,6 +1937,8 @@
 
     const tbody = document.getElementById("recapTableBody");
     tbody.innerHTML = "<tr><td colspan='31' style='text-align:center;'>Mengambil seluruh data rekapitulasi...</td></tr>";
+    
+    const bulan = parseInt(bulanVal, 10);
 
     let filterKec = isDesaRole() || isKecRole() ? userKodeKec : document.getElementById("recapKecamatan").value;
     let filterDesa = isDesaRole() ? userKodeDesa : (document.getElementById("recapDesa") ? document.getElementById("recapDesa").value : "");
@@ -1896,16 +2003,17 @@
           key = rawRt ? "RT " + rawRt.padStart(3, '0') : String(r.rt_nama || "").trim().toUpperCase();
         }
 
-        // PENCEGAHAN TYPEERROR: Validasi key
+        // Validasi agar tidak terjadi TypeError jika key kosong/tidak terdaftar
         if (!key) return;
         if (!grouped[key]) grouped[key] = emptyRecapItem(key);
 
+        // 1. Evaluasi status bulan berjalan dan bulan sebelumnya
         const cur = evaluateKbStatus(r[monthKey]);
         const prev = prevMonthKey ? evaluateKbStatus(r[prevMonthKey]) : null;
 
         grouped[key].total_pus++;
         
-        // Evaluasi PUS Baru
+        // 2. Evaluasi PUS BARU:
         let isFirstTimeRecorded = false;
         if (bulan === 1) {
           let createdAtYear = r.timestamp ? new Date(r.timestamp).getFullYear() : tahun;
@@ -1936,7 +2044,7 @@
           grouped[key].pus_baru++;
         }
 
-        // Peserta KB
+        // 3. Evaluasi PESERTA KB AKTIF & AKSEPTOR KB BARU
         if (cur.type === "PESERTA_KB") {
           grouped[key].ber_kb++;
           if (cur.method === "PIL") grouped[key].pil++;
@@ -1950,6 +2058,7 @@
           if (cur.isMkjp) grouped[key].mkjp++;
           else grouped[key].non_mkjp++;
 
+          // Akseptor KB Baru
           if (prev && prev.type === "BUKAN_PESERTA") {
             grouped[key].kb_baru_total++;
             if (prev.reason === "HAMIL") {
@@ -1962,11 +2071,12 @@
             grouped[key].kb_baru_murni++;
           }
 
+          // Ganti Cara
           if (prev && prev.type === "PESERTA_KB" && prev.method !== cur.method) {
             grouped[key].ganti_cara++;
           }
 
-        // Bukan Peserta KB (Struktur IF-ELSE yang sudah diperbaiki tanda kurungnya)
+        // 4. BUKAN PESERTA KB
         } else if (cur.type === "BUKAN_PESERTA") {
           grouped[key].tidak_kb++;
           if (cur.reason === "HAMIL") {
@@ -1979,7 +2089,7 @@
           else if (cur.reason === "TIAL") grouped[key].tial++;
           else if (cur.reason === "TKI") grouped[key].tki++;
 
-        // Bukan PUS / Mutasi
+        // 5. BUKAN PUS / MUTASI
         } else if (cur.type === "BUKAN_PUS" || umurIstri >= 50) {
           grouped[key].bukan_pus++;
           if (cur.cat === "CERAI") grouped[key].bcr++;
@@ -2131,6 +2241,13 @@
     const mKeys = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"];
     const monthKey = mKeys[bulan - 1];
     const prevMonthKey = bulan > 1 ? mKeys[bulan - 2] : null;
+    
+    const bulanVal = document.getElementById("chartBulan").value;
+    if (!bulanVal) {
+      Swal.fire("Perhatian", "Silakan pilih Bulan terlebih dahulu!", "warning");
+      return;
+    }
+    const bulan = parseInt(bulanVal, 10);
 
     if (!tingkat) {
       Swal.fire("Perhatian", "Silakan pilih Tingkat Wilayah terlebih dahulu!", "warning");
@@ -3139,6 +3256,9 @@
     document.getElementById("pusForm").reset();
     document.getElementById("id_pus").value = "";
 
+    const thnInput = document.getElementById("tahun_input");
+    if (thnInput) thnInput.value = String(new Date().getFullYear());
+
     const provSel = document.getElementById("provinsi");
     const kabSel = document.getElementById("kabupaten");
     const kecSel = document.getElementById("kecamatan");
@@ -3146,7 +3266,6 @@
     const dusunSel = document.getElementById("dusun");
     const rtSel = document.getElementById("rt");
 
-    // Ambil kode provinsi default
     let defaultProv = "52";
     if (userKodeKab) {
       for (let p in dataKabupaten) {
@@ -3155,49 +3274,36 @@
     }
 
     if (isDesaRole()) {
-      // Kunci Provinsi, Kabupaten, Kecamatan, dan Desa
       setSelectValueCaseInsensitive("provinsi", defaultProv);
       provSel.style.pointerEvents = "none";
-
       updateKabupaten(userKodeKab);
       kabSel.style.pointerEvents = "none";
-
       updateKecamatan(userKodeKec);
       kecSel.style.pointerEvents = "none";
-
       updateDesa(userKodeDesa);
       desaSel.style.pointerEvents = "none";
-
       dusunSel.style.pointerEvents = "auto";
       dusunSel.disabled = false;
       rtSel.style.pointerEvents = "auto";
       rtSel.disabled = true;
-
     } else if (isKecRole()) {
-      // Kunci Provinsi, Kabupaten, dan Kecamatan
       setSelectValueCaseInsensitive("provinsi", defaultProv);
       provSel.style.pointerEvents = "none";
-
       updateKabupaten(userKodeKab);
       kabSel.style.pointerEvents = "none";
-
       updateKecamatan(userKodeKec);
       kecSel.style.pointerEvents = "none";
-
       desaSel.style.pointerEvents = "auto";
       desaSel.disabled = false;
       dusunSel.style.pointerEvents = "auto";
       rtSel.style.pointerEvents = "auto";
-
     } else {
-      // Admin Kabupaten: Semua terbuka bebas
       provSel.style.pointerEvents = "auto";
       kabSel.style.pointerEvents = "auto";
       kecSel.style.pointerEvents = "auto";
       desaSel.style.pointerEvents = "auto";
       dusunSel.style.pointerEvents = "auto";
       rtSel.style.pointerEvents = "auto";
-
       provSel.disabled = false;
       provSel.value = "";
       resetDropdown("kabupaten", "kode_kab");
@@ -3242,12 +3348,12 @@
     ];
 
     const sampleRow = [
-      "", "2026", "", "NUSA TENGGARA BARAT", "52", "LOMBOK BARAT", "01",
+		  "", "2026", "", "NUSA TENGGARA BARAT", "52", "LOMBOK BARAT", "01",
       "LEMBAR", "05", "MAREJE", "0001", "DUSUN SATU", "0001",
       "RT 001", "001", "AHMAD SUAMI", "5201050101850001", "SITI ISTRI", "5201054101900001",
       "1990-05-15", "36", "2", "3",
-      "PBI", "PESERTA KB - IMP", "PESERTA KB - IMP", "PESERTA KB - IMP", "PESERTA KB - IMP", "PESERTA KB - IMP",
-      "PESERTA KB - IMP", "PESERTA KB - IMP", "PESERTA KB - IMP", "PESERTA KB - IMP", "PESERTA KB - IMP", "PESERTA KB - IMP", "PESERTA KB - IMP"
+      "PBI", "IMP", "IMP", "IMP", "IMP", "IMP",
+      "IMP", "IMP", "IMP", "IMP", "IMP", "IMP", "IMP"
     ];
 
     const ws1 = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
