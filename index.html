@@ -2086,15 +2086,16 @@
     submitBtn.disabled = true;
     submitBtn.innerText = "Menyimpan...";
 
+    // --- VALIDASI NIK GANDA KHUSUS ISTRI ---
     const isEditMode = (document.getElementById("id_pus").value.trim() !== "");
-    let idPus = document.getElementById("id_pus").value.trim();
-    const thn = parseInt(document.getElementById("tahun_input").value, 10);
     const nikIstriVal = document.getElementById("nik_istri").value.trim();
+    const thn = parseInt(document.getElementById("tahun_input").value, 10);
 
     // Pengecualian 1: NIK Dummy 16 digit angka 9 diizinkan ganda
     const isDummyNik = (nikIstriVal === "9999999999999999");
 
     if (!isEditMode && !isDummyNik) {
+      // Hanya cek berdasarkan nik_istri dan tahun
       const { data: existingRows } = await db
         .from('data_pus')
         .select('*')
@@ -3933,6 +3934,10 @@
   // LOGIKA PARSING DAN INSERT FILE EXCEL KE TABEL DATA_PUS SUPABASE
   async function handleUploadExcelFile(event) {
     event.preventDefault();
+
+    const detailsEl = document.getElementById("detailsPanduanImport");
+    if (detailsEl) detailsEl.removeAttribute("open");
+
     const fileInput = document.getElementById("excelFileInput");
     const file = fileInput.files[0];
     const targetTahun = parseInt(document.getElementById("import_tahun_select").value, 10);
@@ -3944,7 +3949,36 @@
     }
 
     btn.disabled = true;
-    btn.innerText = "Membaca File...";
+    btn.innerText = "Membaca Database & File...";
+
+    // 1. Ambil daftar NIK Istri yang SUDAH ADA di Supabase untuk tahun ini
+    const { data: dbExistingRows } = await db
+      .from('data_pus')
+      .select('nik_istri, kb_jan, kb_feb, kb_mar, kb_apr, kb_mei, kb_jun, kb_jul, kb_agu, kb_sep, kb_okt, kb_nov, kb_des')
+      .eq('tahun', targetTahun);
+
+    const dbActiveIstriNiks = new Set();
+    if (dbExistingRows) {
+      const mKeys = ["kb_des", "kb_nov", "kb_okt", "kb_sep", "kb_agu", "kb_jul", "kb_jun", "kb_mei", "kb_apr", "kb_mar", "kb_feb", "kb_jan"];
+      dbExistingRows.forEach(row => {
+        let nik = String(row.nik_istri || "").trim();
+        if (nik && nik !== "9999999999999999") {
+          let isMutasi = false;
+          for (let mk of mKeys) {
+            let val = String(row[mk] || "").toUpperCase();
+            if (val && val !== "--KOSONG--" && val !== "-") {
+              if (val.includes("CERAI") || val.includes("MENINGGAL") || val.includes("PINDAH")) {
+                isMutasi = true;
+              }
+              break;
+            }
+          }
+          if (!isMutasi) {
+            dbActiveIstriNiks.add(nik);
+          }
+        }
+      });
+    }
 
     const reader = new FileReader();
     reader.onload = async function(e) {
@@ -3963,28 +3997,47 @@
         }
 
         const dataRows = rows.slice(1);
-        btn.innerText = "Mengunggah Data...";
+        btn.innerText = "Memproses Validasi & Upload...";
 
         const payloadList = [];
-        const seenNiks = new Set();
-        let duplicateCount = 0;
+        const seenIstriNiksInExcel = new Set();
+        let skippedDuplicateDbCount = 0;
+        let skippedDuplicateExcelCount = 0;
 
         dataRows.forEach((r, idx) => {
           if (!r[15] && !r[17]) return; // Lewati jika nama suami & istri kosong
 
-          let nikIstri = String(r[18] || "").trim();
+          // Otomatisasi NIK Istri kosong/tidak valid menjadi 16 digit angka 9
+          let rawNikIstri = String(r[18] || "").replace(/[^0-9]/g, "").trim();
+          let nikIstri = (rawNikIstri.length === 16) ? rawNikIstri : "9999999999999999";
+
+          // Otomatisasi NIK Suami kosong/tidak valid (tidak dipakai untuk cek duplikat)
+          let rawNikSuami = String(r[16] || "").replace(/[^0-9]/g, "").trim();
+          let nikSuami = (rawNikSuami.length === 16) ? rawNikSuami : "9999999999999999";
+
           let statusDes = String(r[35] || "").toUpperCase();
-
-          // Kriteria Pengecualian Duplikat
-          let isDummy = (nikIstri === "9999999999999999");
-          let isMutasi = statusDes.includes("CERAI") || statusDes.includes("MENINGGAL") || statusDes.includes("PINDAH");
-
-          if (!isDummy && !isMutasi && nikIstri) {
-            if (seenNiks.has(nikIstri)) {
-              duplicateCount++;
-              return; // Lewati baris duplikat di file yang sama
+          let isMutasi = false;
+          for (let col = 24; col <= 35; col++) {
+            let val = String(r[col] || "").toUpperCase();
+            if (val.includes("CERAI") || val.includes("MENINGGAL") || val.includes("PINDAH")) {
+              isMutasi = true;
+              break;
             }
-            seenNiks.add(nikIstri);
+          }
+
+          let isDummy = (nikIstri === "9999999999999999");
+
+          // Evaluasi Duplikat Khusus Istri
+          if (!isDummy && !isMutasi && nikIstri) {
+            if (dbActiveIstriNiks.has(nikIstri)) {
+              skippedDuplicateDbCount++;
+              return;
+            }
+            if (seenIstriNiksInExcel.has(nikIstri)) {
+              skippedDuplicateExcelCount++;
+              return;
+            }
+            seenIstriNiksInExcel.add(nikIstri);
           }
 
           let kdProv = String(r[4] || "").trim().padStart(2, '0');
@@ -4016,7 +4069,7 @@
             rt_nama: String(r[13] || "").toUpperCase(),
             kode_rt: kdRt,
             nama_suami: String(r[15] || "").toUpperCase(),
-            nik_suami: String(r[16] || ""),
+            nik_suami: nikSuami,
             nama_istri: String(r[17] || "").toUpperCase(),
             nik_istri: nikIstri,
             tgl_lahir_istri: r[19] || null,
@@ -4039,14 +4092,25 @@
           });
         });
 
-        // Simpan kolektif ke Supabase satu kali saja
+        if (payloadList.length === 0) {
+          Swal.fire("Tidak Ada Data Baru", "Seluruh baris dilewati karena NIK Istri sudah terdaftar aktif di database Supabase atau duplikat di file.", "warning");
+          btn.disabled = false;
+          btn.innerText = "🚀 UPLOAD KE DATABASE";
+          return;
+        }
+
         const { error: upsertError } = await db.from('data_pus').upsert(payloadList, { onConflict: 'id_pus,tahun' });
         if (upsertError) throw upsertError;
+
+        let duplicateNotes = [];
+        if (skippedDuplicateDbCount > 0) duplicateNotes.push(`${skippedDuplicateDbCount} NIK Istri sudah ada di database`);
+        if (skippedDuplicateExcelCount > 0) duplicateNotes.push(`${skippedDuplicateExcelCount} NIK Istri ganda di dalam file`);
 
         Swal.fire({
           icon: 'success',
           title: 'Upload Berhasil!',
-          html: `Sebanyak <b>${payloadList.length}</b> data PUS berhasil disinkronkan ke Supabase.<br>${duplicateCount > 0 ? `<small style="color:orange;">(${duplicateCount} data NIK ganda di file dilewati)</small>` : ''}`
+          html: `Sebanyak <b>${payloadList.length}</b> data PUS berhasil disinkronkan ke Supabase.<br>
+                 ${duplicateNotes.length > 0 ? `<small style="color:orange;">(Dilewati: ${duplicateNotes.join(', ')})</small>` : ''}`
         });
         closeImportExcelModal();
 
