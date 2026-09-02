@@ -1240,6 +1240,7 @@
         </td>`;
       tbody.appendChild(tr);
     });
+  };
 
   async function loadMasterWilayahFromDB() {
     const { data, error } = await db.from('master_wilayah').select('*');
