@@ -673,6 +673,108 @@
   </div>
 </div>
 
+<!-- MODAL KELOLA MASTER WILAYAH (SUPABASE) -->
+<div id="modalMasterWilayah" class="modal">
+  <div class="modal-content" style="max-width: 800px; width: 95%;">
+    <span class="close" onclick="closeMasterWilayahModal()">&times;</span>
+    <h3 style="margin-top:0; color:#1f4e78; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">📍 KELOLA MASTER WILAYAH</h3>
+
+    <!-- TAB SWITCHER -->
+    <div style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #cbd5e1; padding-bottom: 10px;">
+      <button type="button" id="tabBtnFormMw" class="btn-nav btn-action" onclick="switchMwTab('form')">➕ Input / Edit Wilayah</button>
+      <button type="button" id="tabBtnListMw" class="btn-nav btn-secondary" onclick="switchMwTab('list')">📋 Daftar Wilayah Terdaftar</button>
+    </div>
+
+    <!-- TAB 1: FORM INPUT & EDIT -->
+    <div id="mwTabForm" style="display: block;">
+      <form id="formMasterWilayah" onsubmit="handleSaveMasterWilayah(event)">
+        <input type="hidden" id="mw_id" value="">
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 10px;">
+          <div>
+            <label>Provinsi & Kode (2):</label>
+            <div style="display: flex; gap: 5px;">
+              <input type="text" id="mw_provinsi_nama" value="NUSA TENGGARA BARAT" required placeholder="NAMA PROVINSI">
+              <input type="text" id="mw_kode_prov" value="52" maxlength="2" required placeholder="KD" style="width: 60px; text-align:center;">
+            </div>
+          </div>
+          <div>
+            <label>Kabupaten & Kode (2):</label>
+            <div style="display: flex; gap: 5px;">
+              <input type="text" id="mw_kabupaten_nama" value="LOMBOK BARAT" required placeholder="NAMA KABUPATEN">
+              <input type="text" id="mw_kode_kab" value="01" maxlength="2" required placeholder="KD" style="width: 60px; text-align:center;">
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 10px;">
+          <div>
+            <label>Kecamatan & Kode (2):</label>
+            <div style="display: flex; gap: 5px;">
+              <input type="text" id="mw_kecamatan_nama" required placeholder="NAMA KECAMATAN">
+              <input type="text" id="mw_kode_kec" maxlength="2" required placeholder="KD" style="width: 60px; text-align:center;">
+            </div>
+          </div>
+          <div>
+            <label>Desa & Kode (4):</label>
+            <div style="display: flex; gap: 5px;">
+              <input type="text" id="mw_desa_nama" required placeholder="NAMA DESA">
+              <input type="text" id="mw_kode_desa" maxlength="4" required placeholder="KD" style="width: 70px; text-align:center;">
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+          <div>
+            <label>Nama Dusun:</label>
+            <input type="text" id="mw_dusun_nama" required placeholder="NAMA DUSUN">
+          </div>
+          <div>
+            <label>Kode Dusun (4):</label>
+            <input type="text" id="mw_kode_dusun" maxlength="4" required placeholder="0001" style="text-align:center;">
+          </div>
+          <div>
+            <label>Jumlah RT:</label>
+            <input type="number" id="mw_jumlah_rt" min="1" value="1" required style="text-align:center;">
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button type="submit" id="btnSaveMw" class="btn-submit" style="margin-top:0; flex:1;">💾 SIMPAN WILAYAH</button>
+          <button type="button" class="btn-nav btn-secondary" onclick="resetMwForm()">Bersihkan</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- TAB 2: DAFTAR WILAYAH TERDAFTAR -->
+    <div id="mwTabList" style="display: none;">
+      <div style="margin-bottom: 10px; display: flex; gap: 8px;">
+        <input type="text" id="filterMwInput" placeholder="Cari Kecamatan / Desa / Dusun..." oninput="renderRegisteredWilayahTable()" style="flex:1;">
+        <button type="button" class="btn-nav btn-secondary" onclick="loadRegisteredWilayahList()">🔄 Segarkan</button>
+      </div>
+      <div style="max-height: 350px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
+        <table class="kb-table" style="font-size: 11.5px; width: 100%; margin-top: 0;">
+          <thead>
+            <tr>
+              <th style="background:#1f4e78; color:white;">NO</th>
+              <th style="background:#1f4e78; color:white;">KECAMATAN</th>
+              <th style="background:#1f4e78; color:white;">DESA</th>
+              <th style="background:#1f4e78; color:white;">KD DESA</th>
+              <th style="background:#1f4e78; color:white;">DUSUN</th>
+              <th style="background:#1f4e78; color:white;">KD DSN</th>
+              <th style="background:#1f4e78; color:white;">JML RT</th>
+              <th style="background:#1f4e78; color:white;">AKSI</th>
+            </tr>
+          </thead>
+          <tbody id="mwRegisteredTbody">
+            <tr><td colspan="8" style="text-align:center; padding: 15px;">Memuat data wilayah...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- JAVASCRIPT LOGIC DENGAN SUPABASE INTEGRATION -->
 <script>
   const SUPABASE_URL = 'https://fxtffszvtyrtllugxlxe.supabase.co';
@@ -1486,8 +1588,184 @@
     });
   }
 
+  let allRegisteredWilayahData = [];
+
   function openMasterWilayahModal() {
-    Swal.fire('Master Wilayah', 'Gunakan dashboard Supabase untuk mengelola master_wilayah secara kolektif.', 'info');
+    switchMwTab('form');
+    resetMwForm();
+    document.getElementById("modalMasterWilayah").style.display = "block";
+  }
+
+  function closeMasterWilayahModal() {
+    document.getElementById("modalMasterWilayah").style.display = "none";
+  }
+
+  function switchMwTab(tab) {
+    const isForm = (tab === 'form');
+    document.getElementById("mwTabForm").style.display = isForm ? "block" : "none";
+    document.getElementById("mwTabList").style.display = isForm ? "none" : "block";
+
+    document.getElementById("tabBtnFormMw").className = isForm ? "btn-nav btn-action" : "btn-nav btn-secondary";
+    document.getElementById("tabBtnListMw").className = isForm ? "btn-nav btn-secondary" : "btn-nav btn-action";
+
+    if (!isForm) {
+      loadRegisteredWilayahList();
+    }
+  }
+
+  function resetMwForm() {
+    document.getElementById("mw_id").value = "";
+    document.getElementById("mw_dusun_nama").value = "";
+    document.getElementById("mw_kode_dusun").value = "";
+    document.getElementById("mw_jumlah_rt").value = "1";
+    document.getElementById("btnSaveMw").innerText = "💾 SIMPAN WILAYAH";
+  }
+
+  async function handleSaveMasterWilayah(event) {
+    event.preventDefault();
+    const btn = document.getElementById("btnSaveMw");
+    btn.disabled = true;
+    btn.innerText = "Menyimpan...";
+
+    const mwId = document.getElementById("mw_id").value;
+    const payload = {
+      provinsi: document.getElementById("mw_provinsi_nama").value.trim().toUpperCase(),
+      kode_prov: document.getElementById("mw_kode_prov").value.trim().padStart(2, '0'),
+      kabupaten: document.getElementById("mw_kabupaten_nama").value.trim().toUpperCase(),
+      kode_kab: document.getElementById("mw_kode_kab").value.trim().padStart(2, '0'),
+      kecamatan: document.getElementById("mw_kecamatan_nama").value.trim().toUpperCase(),
+      kode_kec: document.getElementById("mw_kode_kec").value.trim().padStart(2, '0'),
+      desa: document.getElementById("mw_desa_nama").value.trim().toUpperCase(),
+      kode_desa: document.getElementById("mw_kode_desa").value.trim().padStart(4, '0'),
+      dusun: document.getElementById("mw_dusun_nama").value.trim().toUpperCase(),
+      kode_dusun: document.getElementById("mw_kode_dusun").value.trim().padStart(4, '0'),
+      jumlah_rt: parseInt(document.getElementById("mw_jumlah_rt").value || 1, 10)
+    };
+
+    try {
+      let res;
+      if (mwId) {
+        // Mode Update
+        res = await db.from('master_wilayah').update(payload).eq('id', mwId);
+      } else {
+        // Mode Insert Baru
+        res = await db.from('master_wilayah').insert([payload]);
+      }
+
+      if (res.error) throw res.error;
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Tersimpan!',
+        text: 'Data wilayah berhasil disimpan ke database.',
+        timer: 1500,
+        showConfirmButton: false
+      });
+
+      resetMwForm();
+      await loadMasterWilayahFromDB(); // Perbarui cache wilayah di aplikasi
+
+    } catch (err) {
+      Swal.fire('Gagal Menyimpan', err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerText = mwId ? "💾 PERBARUI WILAYAH" : "💾 SIMPAN WILAYAH";
+    }
+  }
+
+  async function loadRegisteredWilayahList() {
+    const tbody = document.getElementById("mwRegisteredTbody");
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:15px;">Memuat data...</td></tr>`;
+
+    const { data, error } = await db.from('master_wilayah').select('*').order('kecamatan', { ascending: true });
+    if (error || !data) {
+      tbody.innerHTML = `<tr><td colspan="8" style="color:red; text-align:center; padding:15px;">Gagal memuat: ${error ? error.message : 'Koneksi error'}</td></tr>`;
+      return;
+    }
+
+    allRegisteredWilayahData = data;
+    renderRegisteredWilayahTable();
+  }
+
+  function renderRegisteredWilayahTable() {
+    const filter = (document.getElementById("filterMwInput").value || "").toUpperCase().trim();
+    const tbody = document.getElementById("mwRegisteredTbody");
+    tbody.innerHTML = "";
+
+    const filtered = allRegisteredWilayahData.filter(item => 
+      (item.desa || '').toUpperCase().includes(filter) ||
+      (item.dusun || '').toUpperCase().includes(filter) ||
+      (item.kecamatan || '').toUpperCase().includes(filter) ||
+      (item.kode_desa || '').includes(filter) ||
+      (item.kode_dusun || '').includes(filter)
+    );
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:15px; color:#777;">Data wilayah tidak ditemukan.</td></tr>`;
+      return;
+    }
+
+    filtered.forEach((item, idx) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="text-align:center;">${idx + 1}</td>
+        <td>${item.kecamatan} (${item.kode_kec})</td>
+        <td><b>${item.desa}</b></td>
+        <td style="text-align:center;">${item.kode_desa}</td>
+        <td><b>${item.dusun}</b></td>
+        <td style="text-align:center;">${item.kode_dusun}</td>
+        <td style="text-align:center; font-weight:bold; color:#0284c7;">${item.jumlah_rt}</td>
+        <td style="text-align:center; white-space:nowrap;">
+          <button type="button" class="btn-nav btn-warning" style="padding:3px 6px; font-size:11px;" onclick="populateMwToForm('${item.id}')">✏️</button>
+          <button type="button" class="btn-nav btn-danger" style="padding:3px 6px; font-size:11px;" onclick="confirmDeleteMw('${item.id}', '${item.dusun}')">🗑️</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function populateMwToForm(id) {
+    const item = allRegisteredWilayahData.find(w => String(w.id) === String(id));
+    if (!item) return;
+
+    document.getElementById("mw_id").value = item.id;
+    document.getElementById("mw_provinsi_nama").value = item.provinsi;
+    document.getElementById("mw_kode_prov").value = item.kode_prov;
+    document.getElementById("mw_kabupaten_nama").value = item.kabupaten;
+    document.getElementById("mw_kode_kab").value = item.kode_kab;
+    document.getElementById("mw_kecamatan_nama").value = item.kecamatan;
+    document.getElementById("mw_kode_kec").value = item.kode_kec;
+    document.getElementById("mw_desa_nama").value = item.desa;
+    document.getElementById("mw_kode_desa").value = item.kode_desa;
+    document.getElementById("mw_dusun_nama").value = item.dusun;
+    document.getElementById("mw_kode_dusun").value = item.kode_dusun;
+    document.getElementById("mw_jumlah_rt").value = item.jumlah_rt;
+
+    document.getElementById("btnSaveMw").innerText = "💾 PERBARUI WILAYAH";
+    switchMwTab('form');
+  }
+
+  function confirmDeleteMw(id, namaDusun) {
+    Swal.fire({
+      title: 'Hapus Wilayah?',
+      text: `Hapus dusun [${namaDusun}] dari database?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Ya, Hapus!'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const { error } = await db.from('master_wilayah').delete().eq('id', id);
+        if (error) {
+          Swal.fire('Gagal', error.message, 'error');
+        } else {
+          Swal.fire('Terhapus!', 'Data wilayah telah dihapus.', 'success');
+          loadRegisteredWilayahList();
+          loadMasterWilayahFromDB();
+        }
+      }
+    });
   }
 
   function openManageUsersModal() {
