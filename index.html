@@ -1067,6 +1067,20 @@
     let cleanDesa = String(kdDesa).padStart(4, '0');
     return dataDusun[cleanKec + "_" + cleanDesa] || null;
   }
+  
+  function isKabRole() {
+    const r = String(userRole || "").toUpperCase();
+    return r.includes("KAB") || r === "ADMIN";
+  }
+
+  function isKecRole() {
+    const r = String(userRole || "").toUpperCase();
+    return r.includes("KEC");
+  }
+
+  function isDesaRole() {
+    return !isKabRole() && !isKecRole();
+  }
 
   // --- LOGIC DROPDOWN BERTINGKAT REKAP ---
   function onRecapTingkatChange() {
@@ -1076,25 +1090,54 @@
     const cDsn = document.getElementById("recapFilterDusunContainer");
     const thHeader = document.getElementById("thHeaderWilayah");
 
-    // Atur visibilitas filter dropdown input
-    cKec.style.display = (t === "Kecamatan" || t === "Desa" || t === "Dusun") ? "block" : "none";
-    cDes.style.display = (t === "Desa" || t === "Dusun") ? "block" : "none";
-    cDsn.style.display = (t === "Dusun") ? "block" : "none";
+    const selKec = document.getElementById("recapKecamatan");
+    const selDes = document.getElementById("recapDesa");
 
-    // Set kolom tabel wilayah 1 level di bawah tingkat yang dipilih
-    if (t === "Kabupaten") {
-      thHeader.innerText = "KECAMATAN";
-    } else if (t === "Kecamatan") {
-      thHeader.innerText = "DESA";
-    } else if (t === "Desa") {
-      thHeader.innerText = "DUSUN";
-    } else if (t === "Dusun") {
-      thHeader.innerText = "RT";
+    if (t === "Kabupaten") thHeader.innerText = "KECAMATAN";
+    else if (t === "Kecamatan") thHeader.innerText = "DESA";
+    else if (t === "Desa") thHeader.innerText = "DUSUN";
+    else if (t === "Dusun") thHeader.innerText = "RT";
+    else thHeader.innerText = "WILAYAH";
+
+    cKec.style.display = "none";
+    cDes.style.display = "none";
+    cDsn.style.display = "none";
+
+    if (isDesaRole()) {
+      // User Desa: Kunci Kecamatan & Desa
+      cKec.style.display = "none";
+      populateDesaByKec(userKodeKec, "recapDesa");
+      setSelectValueCaseInsensitive("recapDesa", userKodeDesa);
+      selDes.disabled = true;
+
+      if (t === "Dusun") {
+        cDes.style.display = "block";
+        cDsn.style.display = "block";
+        onRecapDesaChange();
+      }
+    } else if (isKecRole()) {
+      // Admin Kecamatan: Kunci Kecamatan
+      populateAllKecamatanDropdowns();
+      setSelectValueCaseInsensitive("recapKecamatan", userKodeKec);
+      selKec.disabled = true;
+
+      if (t === "Desa" || t === "Dusun") {
+        cDes.style.display = "block";
+        populateDesaByKec(userKodeKec, "recapDesa");
+        selDes.disabled = false;
+      }
+      if (t === "Dusun") {
+        cDsn.style.display = "block";
+      }
     } else {
-      thHeader.innerText = "WILAYAH";
+      // Admin Kabupaten
+      selKec.disabled = false;
+      selDes.disabled = false;
+      cKec.style.display = (t === "Kecamatan" || t === "Desa" || t === "Dusun") ? "block" : "none";
+      cDes.style.display = (t === "Desa" || t === "Dusun") ? "block" : "none";
+      cDsn.style.display = (t === "Dusun") ? "block" : "none";
     }
 
-    // Reset tabel saat filter tingkat berubah
     document.getElementById("recapTableBody").innerHTML = "<tr><td colspan='22' style='text-align:center; padding: 20px;'>Silakan atur filter dan klik Tampilkan Rekap</td></tr>";
   }
 
@@ -1118,10 +1161,52 @@
   // --- LOGIC DROPDOWN BERTINGKAT BNBA ---
   function onBnbaTingkatChange() {
     const t = document.getElementById("bnbaTingkat").value;
-    document.getElementById("bnbaFilterKecContainer").style.display = (t === "Kecamatan" || t === "Desa" || t === "Dusun" || t === "RT") ? "block" : "none";
-    document.getElementById("bnbaFilterDesaContainer").style.display = (t === "Desa" || t === "Dusun" || t === "RT") ? "block" : "none";
-    document.getElementById("bnbaFilterDusunContainer").style.display = (t === "Dusun" || t === "RT") ? "block" : "none";
-    document.getElementById("bnbaFilterRtContainer").style.display = (t === "RT") ? "block" : "none";
+    const cKec = document.getElementById("bnbaFilterKecContainer");
+    const cDes = document.getElementById("bnbaFilterDesaContainer");
+    const cDsn = document.getElementById("bnbaFilterDusunContainer");
+    const cRt  = document.getElementById("bnbaFilterRtContainer");
+
+    const selKec = document.getElementById("bnbaKecamatan");
+    const selDes = document.getElementById("bnbaDesa");
+
+    cKec.style.display = "none";
+    cDes.style.display = "none";
+    cDsn.style.display = "none";
+    cRt.style.display = "none";
+
+    if (isDesaRole()) {
+      populateDesaByKec(userKodeKec, "bnbaDesa");
+      setSelectValueCaseInsensitive("bnbaDesa", userKodeDesa);
+      selDes.disabled = true;
+
+      if (t === "Dusun" || t === "RT") {
+        cDes.style.display = "block";
+        cDsn.style.display = "block";
+        onBnbaDesaChange();
+      }
+      if (t === "RT") {
+        cRt.style.display = "block";
+      }
+    } else if (isKecRole()) {
+      populateAllKecamatanDropdowns();
+      setSelectValueCaseInsensitive("bnbaKecamatan", userKodeKec);
+      selKec.disabled = true;
+
+      if (t === "Desa" || t === "Dusun" || t === "RT") {
+        cDes.style.display = "block";
+        populateDesaByKec(userKodeKec, "bnbaDesa");
+        selDes.disabled = false;
+      }
+      if (t === "Dusun" || t === "RT") cDsn.style.display = "block";
+      if (t === "RT") cRt.style.display = "block";
+    } else {
+      selKec.disabled = false;
+      selDes.disabled = false;
+      cKec.style.display = (t === "Kecamatan" || t === "Desa" || t === "Dusun" || t === "RT") ? "block" : "none";
+      cDes.style.display = (t === "Desa" || t === "Dusun" || t === "RT") ? "block" : "none";
+      cDsn.style.display = (t === "Dusun" || t === "RT") ? "block" : "none";
+      cRt.style.display = (t === "RT") ? "block" : "none";
+    }
   }
 
   function onBnbaKecamatanChange() {
@@ -1160,9 +1245,45 @@
   // --- LOGIC DROPDOWN BERTINGKAT GRAFIK ---
   function onChartTingkatChange() {
     const t = document.getElementById("chartTingkat").value;
-    document.getElementById("chartFilterKecContainer").style.display = (t === "Kecamatan" || t === "Desa" || t === "Dusun") ? "block" : "none";
-    document.getElementById("chartFilterDesaContainer").style.display = (t === "Desa" || t === "Dusun") ? "block" : "none";
-    document.getElementById("chartFilterDusunContainer").style.display = (t === "Dusun") ? "block" : "none";
+    const cKec = document.getElementById("chartFilterKecContainer");
+    const cDes = document.getElementById("chartFilterDesaContainer");
+    const cDsn = document.getElementById("chartFilterDusunContainer");
+
+    const selKec = document.getElementById("chartKecamatan");
+    const selDes = document.getElementById("chartDesa");
+
+    cKec.style.display = "none";
+    cDes.style.display = "none";
+    cDsn.style.display = "none";
+
+    if (isDesaRole()) {
+      populateDesaByKec(userKodeKec, "chartDesa");
+      setSelectValueCaseInsensitive("chartDesa", userKodeDesa);
+      selDes.disabled = true;
+
+      if (t === "Dusun") {
+        cDes.style.display = "block";
+        cDsn.style.display = "block";
+        onChartDesaChange();
+      }
+    } else if (isKecRole()) {
+      populateAllKecamatanDropdowns();
+      setSelectValueCaseInsensitive("chartKecamatan", userKodeKec);
+      selKec.disabled = true;
+
+      if (t === "Desa" || t === "Dusun") {
+        cDes.style.display = "block";
+        populateDesaByKec(userKodeKec, "chartDesa");
+        selDes.disabled = false;
+      }
+      if (t === "Dusun") cDsn.style.display = "block";
+    } else {
+      selKec.disabled = false;
+      selDes.disabled = false;
+      cKec.style.display = (t === "Kecamatan" || t === "Desa" || t === "Dusun") ? "block" : "none";
+      cDes.style.display = (t === "Desa" || t === "Dusun") ? "block" : "none";
+      cDsn.style.display = (t === "Dusun") ? "block" : "none";
+    }
   }
 
   function onChartKecamatanChange() {
@@ -1241,9 +1362,9 @@
 
       currentUser = data.username;
       userRole = String(data.role || "User Desa").toUpperCase();
-      userKodeKab = data.kode_kab || "";
-      userKodeKec = data.kode_kec || "";
-      userKodeDesa = data.kode_desa || "";
+      userKodeKab = String(data.kode_kab || "").trim().padStart(2, '0');
+      userKodeKec = String(data.kode_kec || "").trim().padStart(2, '0');
+      userKodeDesa = String(data.kode_desa || "").trim().padStart(4, '0');
 
       document.getElementById("userGreetingText").innerText = `Selamat datang, ${data.role} (${data.username})!`;
       document.getElementById("loginContainer").style.display = "none";
@@ -1266,11 +1387,15 @@
     document.getElementById("bnbaSection").style.display = "none";
     document.getElementById("chartSection").style.display = "none";
 
-    // AKTIFKAN TOMBOL ADMIN DASHBOARD
+    // Visibilitas tombol admin dashboard
     const adminBox = document.getElementById("adminSyncContainer");
+    const btnTambahTahun = document.getElementById("btnAdminTambahTahun");
+
     if (adminBox) {
-      const isAdmin = userRole.includes("ADMIN") || userRole.includes("KAB") || userRole.includes("KEC");
-      adminBox.style.display = isAdmin ? "block" : "none";
+      adminBox.style.display = (isKabRole() || isKecRole()) ? "block" : "none";
+    }
+    if (btnTambahTahun) {
+      btnTambahTahun.style.display = isKabRole() ? "inline-block" : "none";
     }
   }
 
@@ -1458,44 +1583,55 @@
 
     let query = db.from('data_pus').select('*').eq('tahun', tahun);
 
-    // Filter query berdasarkan pilihan bertingkat
-    if (tingkat === "Kecamatan" || tingkat === "Desa" || tingkat === "Dusun") {
-      let kec = document.getElementById("recapKecamatan").value;
-      if (kec) query = query.eq('kode_kec', kec);
-    }
-    if (tingkat === "Desa" || tingkat === "Dusun") {
-      let desa = document.getElementById("recapDesa").value;
-      if (desa) query = query.eq('kode_desa', desa);
-    }
-    if (tingkat === "Dusun") {
-      let dusun = document.getElementById("recapDusun").value;
-      if (dusun) query = query.eq('kode_dusun', dusun);
+    // KUNCI QUERY BERDASARKAN ROLE
+    if (isDesaRole()) {
+      query = query.eq('kode_kec', userKodeKec).eq('kode_desa', userKodeDesa);
+      if (tingkat === "Dusun") {
+        let dsn = document.getElementById("recapDusun").value;
+        if (dsn) query = query.eq('kode_dusun', dsn);
+      }
+    } else if (isKecRole()) {
+      query = query.eq('kode_kec', userKodeKec);
+      if (tingkat === "Desa" || tingkat === "Dusun") {
+        let des = document.getElementById("recapDesa").value;
+        if (des) query = query.eq('kode_desa', des);
+      }
+      if (tingkat === "Dusun") {
+        let dsn = document.getElementById("recapDusun").value;
+        if (dsn) query = query.eq('kode_dusun', dsn);
+      }
+    } else {
+      if (tingkat === "Kecamatan" || tingkat === "Desa" || tingkat === "Dusun") {
+        let kec = document.getElementById("recapKecamatan").value;
+        if (kec) query = query.eq('kode_kec', kec);
+      }
+      if (tingkat === "Desa" || tingkat === "Dusun") {
+        let desa = document.getElementById("recapDesa").value;
+        if (desa) query = query.eq('kode_desa', desa);
+      }
+      if (tingkat === "Dusun") {
+        let dusun = document.getElementById("recapDusun").value;
+        if (dusun) query = query.eq('kode_dusun', dusun);
+      }
     }
 
     const { data, error } = await query;
     if (error || !data) {
-      tbody.innerHTML = "<tr><td colspan='22' style='text-align:center; color:red;'>Gagal memuat rekap: " + (error ? error.message : "Data kosong") + "</td></tr>";
+      tbody.innerHTML = "<tr><td colspan='22' style='text-align:center; color:red;'>Gagal memuat rekap.</td></tr>";
       return;
     }
-
     if (data.length === 0) {
-      tbody.innerHTML = "<tr><td colspan='22' style='text-align:center; color:red;'>Data tidak ditemukan untuk periode/wilayah yang dipilih.</td></tr>";
+      tbody.innerHTML = "<tr><td colspan='22' style='text-align:center; color:red;'>Data tidak ditemukan.</td></tr>";
       return;
     }
 
-    // Pemetaan nama wilayah satu tingkat di bawah pilihan:
     let grouped = {};
     data.forEach(r => {
       let groupName = "-";
-      if (tingkat === "Kabupaten") {
-        groupName = r.kecamatan_nama || ("KECAMATAN " + r.kode_kec);
-      } else if (tingkat === "Kecamatan") {
-        groupName = r.desa_nama || ("DESA " + r.kode_desa);
-      } else if (tingkat === "Desa") {
-        groupName = r.dusun_nama || ("DUSUN " + r.kode_dusun);
-      } else if (tingkat === "Dusun") {
-        groupName = r.rt_nama || ("RT " + r.kode_rt);
-      }
+      if (tingkat === "Kabupaten") groupName = r.kecamatan_nama || ("KECAMATAN " + r.kode_kec);
+      else if (tingkat === "Kecamatan") groupName = r.desa_nama || ("DESA " + r.kode_desa);
+      else if (tingkat === "Desa") groupName = r.dusun_nama || ("DUSUN " + r.kode_dusun);
+      else if (tingkat === "Dusun") groupName = r.rt_nama || ("RT " + r.kode_rt);
 
       if (!grouped[groupName]) {
         grouped[groupName] = { 
@@ -1549,12 +1685,9 @@
         <td>${g.cerai}</td><td>${g.mngl}</td><td>${g.pindah}</td>
       </tr>`;
 
-      for (let prop in totalAll) {
-        totalAll[prop] += g[prop];
-      }
+      for (let prop in totalAll) totalAll[prop] += g[prop];
     }
 
-    // Baris Jumlah / Total
     tbody.innerHTML += `<tr style="background:#e9ecef; font-weight:bold;">
       <td colspan="2" style="text-align:center; color:#1f4e78;">JUMLAH / TOTAL</td>
       <td>${totalAll.total}</td>
@@ -1578,21 +1711,49 @@
     tbody.innerHTML = "<tr><td colspan='9' style='text-align:center;'>Memuat data BNBA...</td></tr>";
 
     let query = db.from('data_pus').select('*').eq('tahun', tahun);
-    if (tingkat === "Kecamatan" || tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") {
-      let kec = document.getElementById("bnbaKecamatan").value;
-      if (kec) query = query.eq('kode_kec', kec);
-    }
-    if (tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") {
-      let desa = document.getElementById("bnbaDesa").value;
-      if (desa) query = query.eq('kode_desa', desa);
-    }
-    if (tingkat === "Dusun" || tingkat === "RT") {
-      let dusun = document.getElementById("bnbaDusun").value;
-      if (dusun) query = query.eq('kode_dusun', dusun);
-    }
-    if (tingkat === "RT") {
-      let rt = document.getElementById("bnbaRt").value;
-      if (rt) query = query.eq('kode_rt', rt);
+
+    // KUNCI QUERY BERDASARKAN ROLE
+    if (isDesaRole()) {
+      query = query.eq('kode_kec', userKodeKec).eq('kode_desa', userKodeDesa);
+      if (tingkat === "Dusun" || tingkat === "RT") {
+        let dsn = document.getElementById("bnbaDusun").value;
+        if (dsn) query = query.eq('kode_dusun', dsn);
+      }
+      if (tingkat === "RT") {
+        let rt = document.getElementById("bnbaRt").value;
+        if (rt) query = query.eq('kode_rt', rt);
+      }
+    } else if (isKecRole()) {
+      query = query.eq('kode_kec', userKodeKec);
+      if (tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") {
+        let des = document.getElementById("bnbaDesa").value;
+        if (des) query = query.eq('kode_desa', des);
+      }
+      if (tingkat === "Dusun" || tingkat === "RT") {
+        let dsn = document.getElementById("bnbaDusun").value;
+        if (dsn) query = query.eq('kode_dusun', dsn);
+      }
+      if (tingkat === "RT") {
+        let rt = document.getElementById("bnbaRt").value;
+        if (rt) query = query.eq('kode_rt', rt);
+      }
+    } else {
+      if (tingkat === "Kecamatan" || tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") {
+        let kec = document.getElementById("bnbaKecamatan").value;
+        if (kec) query = query.eq('kode_kec', kec);
+      }
+      if (tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") {
+        let desa = document.getElementById("bnbaDesa").value;
+        if (desa) query = query.eq('kode_desa', desa);
+      }
+      if (tingkat === "Dusun" || tingkat === "RT") {
+        let dusun = document.getElementById("bnbaDusun").value;
+        if (dusun) query = query.eq('kode_dusun', dusun);
+      }
+      if (tingkat === "RT") {
+        let rt = document.getElementById("bnbaRt").value;
+        if (rt) query = query.eq('kode_rt', rt);
+      }
     }
 
     const { data, error } = await query.limit(500);
@@ -1625,17 +1786,37 @@
     const monthKey = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"][bulan - 1];
 
     let query = db.from('data_pus').select('*').eq('tahun', tahun);
-    if (tingkat === "Kecamatan" || tingkat === "Desa" || tingkat === "Dusun") {
-      let kec = document.getElementById("chartKecamatan").value;
-      if (kec) query = query.eq('kode_kec', kec);
-    }
-    if (tingkat === "Desa" || tingkat === "Dusun") {
-      let desa = document.getElementById("chartDesa").value;
-      if (desa) query = query.eq('kode_desa', desa);
-    }
-    if (tingkat === "Dusun") {
-      let dusun = document.getElementById("chartDusun").value;
-      if (dusun) query = query.eq('kode_dusun', dusun);
+
+    // KUNCI QUERY BERDASARKAN ROLE
+    if (isDesaRole()) {
+      query = query.eq('kode_kec', userKodeKec).eq('kode_desa', userKodeDesa);
+      if (tingkat === "Dusun") {
+        let dsn = document.getElementById("chartDusun").value;
+        if (dsn) query = query.eq('kode_dusun', dsn);
+      }
+    } else if (isKecRole()) {
+      query = query.eq('kode_kec', userKodeKec);
+      if (tingkat === "Desa" || tingkat === "Dusun") {
+        let des = document.getElementById("chartDesa").value;
+        if (des) query = query.eq('kode_desa', des);
+      }
+      if (tingkat === "Dusun") {
+        let dsn = document.getElementById("chartDusun").value;
+        if (dsn) query = query.eq('kode_dusun', dsn);
+      }
+    } else {
+      if (tingkat === "Kecamatan" || tingkat === "Desa" || tingkat === "Dusun") {
+        let kec = document.getElementById("chartKecamatan").value;
+        if (kec) query = query.eq('kode_kec', kec);
+      }
+      if (tingkat === "Desa" || tingkat === "Dusun") {
+        let desa = document.getElementById("chartDesa").value;
+        if (desa) query = query.eq('kode_desa', desa);
+      }
+      if (tingkat === "Dusun") {
+        let dusun = document.getElementById("chartDusun").value;
+        if (dusun) query = query.eq('kode_dusun', dusun);
+      }
     }
 
     const { data } = await query;
@@ -1659,14 +1840,12 @@
     document.getElementById("kpiCpr").innerText = data.length > 0 ? ((berKb / data.length) * 100).toFixed(1) + "%" : "0%";
     document.getElementById("kpiMkjpRate").innerText = mkjp;
 
-    // Render Chart Proporsi
     if (chartStatusPropInstance) chartStatusPropInstance.destroy();
     chartStatusPropInstance = new Chart(document.getElementById('chartStatusProp'), {
       type: 'doughnut',
       data: { labels: ['Peserta KB', 'Bukan Peserta'], datasets: [{ data: [berKb, nonKb], backgroundColor: ['#28a745', '#dc3545'] }] }
     });
 
-    // Render Chart Mix Kontrasepsi
     if (chartMixInstance) chartMixInstance.destroy();
     chartMixInstance = new Chart(document.getElementById('chartMixKontrasepsi'), {
       type: 'bar',
@@ -1677,20 +1856,36 @@
   // --- CARI & EDIT DATA ADVANCED ---
   async function executeSearch() {
     const keyword = document.getElementById("searchKeyword").value.trim().toUpperCase();
-    const kec = document.getElementById("searchKecamatan").value;
-    const desa = document.getElementById("searchDesa").value;
-    const dusun = document.getElementById("searchDusun").value;
-    const rt = document.getElementById("searchRt").value;
-
     const container = document.getElementById("searchResults");
     container.innerHTML = "Mencari...";
 
     let query = db.from('data_pus').select('*');
     if (keyword) query = query.or(`id_pus.ilike.%${keyword}%,nama_istri.ilike.%${keyword}%,nik_istri.ilike.%${keyword}%`);
-    if (kec) query = query.eq('kode_kec', kec);
-    if (desa) query = query.eq('kode_desa', desa);
-    if (dusun) query = query.eq('kode_dusun', dusun);
-    if (rt) query = query.eq('kode_rt', rt);
+
+    if (isDesaRole()) {
+      query = query.eq('kode_kec', userKodeKec).eq('kode_desa', userKodeDesa);
+      let dsn = document.getElementById("searchDusun").value;
+      let rt = document.getElementById("searchRt").value;
+      if (dsn) query = query.eq('kode_dusun', dsn);
+      if (rt) query = query.eq('kode_rt', rt);
+    } else if (isKecRole()) {
+      query = query.eq('kode_kec', userKodeKec);
+      let des = document.getElementById("searchDesa").value;
+      let dsn = document.getElementById("searchDusun").value;
+      let rt = document.getElementById("searchRt").value;
+      if (des) query = query.eq('kode_desa', des);
+      if (dsn) query = query.eq('kode_dusun', dsn);
+      if (rt) query = query.eq('kode_rt', rt);
+    } else {
+      let kec = document.getElementById("searchKecamatan").value;
+      let des = document.getElementById("searchDesa").value;
+      let dsn = document.getElementById("searchDusun").value;
+      let rt = document.getElementById("searchRt").value;
+      if (kec) query = query.eq('kode_kec', kec);
+      if (des) query = query.eq('kode_desa', des);
+      if (dsn) query = query.eq('kode_dusun', dsn);
+      if (rt) query = query.eq('kode_rt', rt);
+    }
 
     const { data, error } = await query.limit(20);
     container.innerHTML = "";
@@ -1702,7 +1897,7 @@
     data.forEach(item => {
       let div = document.createElement("div");
       div.className = "search-result-item";
-      div.innerHTML = `<b>ID:</b> ${item.id_pus} | <b>Istri:</b> ${item.nama_istri} (${item.nik_istri}) | <b>Kec:</b> ${item.kecamatan_nama} | <b>Desa:</b> ${item.desa_nama}`;
+      div.innerHTML = `<b>ID:</b> ${item.id_pus} | <b>Istri:</b> ${item.nama_istri} (${item.nik_istri}) | <b>Kec:</b> ${item.kecamatan_nama} | <b>Desa:</b> ${item.desa_nama} | <b>Dusun:</b> ${item.dusun_nama} | <b>RT:</b> ${item.rt_nama}`;
       div.onclick = () => selectDataForEdit(item);
       container.appendChild(div);
     });
@@ -1764,7 +1959,34 @@
   }
 
   // --- MODAL TRIGGER LAINNYA ---
-  function openSearchModal() { document.getElementById("searchModal").style.display = "block"; }
+  function openSearchModal() {
+    document.getElementById("searchKeyword").value = "";
+    document.getElementById("searchResults").innerHTML = "";
+
+    const sKec = document.getElementById("searchKecamatan");
+    const sDes = document.getElementById("searchDesa");
+
+    populateAllKecamatanDropdowns();
+
+    if (isDesaRole()) {
+      setSelectValueCaseInsensitive("searchKecamatan", userKodeKec);
+      sKec.disabled = true;
+      populateDesaByKec(userKodeKec, "searchDesa");
+      setSelectValueCaseInsensitive("searchDesa", userKodeDesa);
+      sDes.disabled = true;
+      onSearchDesaChange();
+    } else if (isKecRole()) {
+      setSelectValueCaseInsensitive("searchKecamatan", userKodeKec);
+      sKec.disabled = true;
+      populateDesaByKec(userKodeKec, "searchDesa");
+      sDes.disabled = false;
+    } else {
+      sKec.disabled = false;
+      sDes.disabled = false;
+    }
+
+    document.getElementById("searchModal").style.display = "block";
+  }
   function closeSearchModal() { document.getElementById("searchModal").style.display = "none"; }
   function openImportExcelModal() { document.getElementById("modalImportExcel").style.display = "block"; }
   function closeImportExcelModal() { document.getElementById("modalImportExcel").style.display = "none"; }
@@ -2245,6 +2467,7 @@
     document.getElementById("recapSection").style.display = "none";
     document.getElementById("bnbaSection").style.display = "none";
     document.getElementById("chartSection").style.display = "none";
+    resetInputForm();
   }
 
   function showRecapView() {
@@ -2253,6 +2476,30 @@
     document.getElementById("recapSection").style.display = "block";
     document.getElementById("bnbaSection").style.display = "none";
     document.getElementById("chartSection").style.display = "none";
+
+    const selTingkat = document.getElementById("recapTingkat");
+    if (isDesaRole()) {
+      selTingkat.innerHTML = `
+        <option value="Desa" selected>DESA</option>
+        <option value="Dusun">DUSUN</option>
+      `;
+    } else if (isKecRole()) {
+      selTingkat.innerHTML = `
+        <option value="">-- PILIH TINGKAT WILAYAH --</option>
+        <option value="Kecamatan">KECAMATAN</option>
+        <option value="Desa">DESA</option>
+        <option value="Dusun">DUSUN</option>
+      `;
+    } else {
+      selTingkat.innerHTML = `
+        <option value="">-- PILIH TINGKAT WILAYAH --</option>
+        <option value="Kabupaten">KABUPATEN</option>
+        <option value="Kecamatan">KECAMATAN</option>
+        <option value="Desa">DESA</option>
+        <option value="Dusun">DUSUN</option>
+      `;
+    }
+    onRecapTingkatChange();
   }
 
   function showBnbaView() {
@@ -2261,6 +2508,33 @@
     document.getElementById("recapSection").style.display = "none";
     document.getElementById("bnbaSection").style.display = "block";
     document.getElementById("chartSection").style.display = "none";
+
+    const selTingkat = document.getElementById("bnbaTingkat");
+    if (isDesaRole()) {
+      selTingkat.innerHTML = `
+        <option value="Desa" selected>DESA</option>
+        <option value="Dusun">DUSUN</option>
+        <option value="RT">RT</option>
+      `;
+    } else if (isKecRole()) {
+      selTingkat.innerHTML = `
+        <option value="">-- PILIH TINGKAT WILAYAH --</option>
+        <option value="Kecamatan">KECAMATAN</option>
+        <option value="Desa">DESA</option>
+        <option value="Dusun">DUSUN</option>
+        <option value="RT">RT</option>
+      `;
+    } else {
+      selTingkat.innerHTML = `
+        <option value="">-- PILIH TINGKAT WILAYAH --</option>
+        <option value="Kabupaten">KABUPATEN</option>
+        <option value="Kecamatan">KECAMATAN</option>
+        <option value="Desa">DESA</option>
+        <option value="Dusun">DUSUN</option>
+        <option value="RT">RT</option>
+      `;
+    }
+    onBnbaTingkatChange();
   }
 
   function showChartAnalyticsView() {
@@ -2269,10 +2543,105 @@
     document.getElementById("recapSection").style.display = "none";
     document.getElementById("bnbaSection").style.display = "none";
     document.getElementById("chartSection").style.display = "block";
+
+    const selTingkat = document.getElementById("chartTingkat");
+    if (isDesaRole()) {
+      selTingkat.innerHTML = `
+        <option value="Desa" selected>DESA</option>
+        <option value="Dusun">DUSUN</option>
+      `;
+    } else if (isKecRole()) {
+      selTingkat.innerHTML = `
+        <option value="">-- PILIH TINGKAT WILAYAH --</option>
+        <option value="Kecamatan">KECAMATAN</option>
+        <option value="Desa">DESA</option>
+        <option value="Dusun">DUSUN</option>
+      `;
+    } else {
+      selTingkat.innerHTML = `
+        <option value="">-- PILIH TINGKAT WILAYAH --</option>
+        <option value="Kabupaten">KABUPATEN</option>
+        <option value="Kecamatan">KECAMATAN</option>
+        <option value="Desa">DESA</option>
+        <option value="Dusun">DUSUN</option>
+      `;
+    }
+    onChartTingkatChange();
   }
 
   function resetFormToNew() { resetInputForm(); }
-  function resetInputForm() { document.getElementById("pusForm").reset(); document.getElementById("id_pus").value = ""; }
+  function resetInputForm() {
+    document.getElementById("pusForm").reset();
+    document.getElementById("id_pus").value = "";
+
+    const provSel = document.getElementById("provinsi");
+    const kabSel = document.getElementById("kabupaten");
+    const kecSel = document.getElementById("kecamatan");
+    const desaSel = document.getElementById("desa");
+    const dusunSel = document.getElementById("dusun");
+    const rtSel = document.getElementById("rt");
+
+    // Ambil kode provinsi default
+    let defaultProv = "52";
+    if (userKodeKab) {
+      for (let p in dataKabupaten) {
+        if (dataKabupaten[p][userKodeKab]) { defaultProv = p; break; }
+      }
+    }
+
+    if (isDesaRole()) {
+      // Kunci Provinsi, Kabupaten, Kecamatan, dan Desa
+      setSelectValueCaseInsensitive("provinsi", defaultProv);
+      provSel.style.pointerEvents = "none";
+
+      updateKabupaten(userKodeKab);
+      kabSel.style.pointerEvents = "none";
+
+      updateKecamatan(userKodeKec);
+      kecSel.style.pointerEvents = "none";
+
+      updateDesa(userKodeDesa);
+      desaSel.style.pointerEvents = "none";
+
+      dusunSel.style.pointerEvents = "auto";
+      dusunSel.disabled = false;
+      rtSel.style.pointerEvents = "auto";
+      rtSel.disabled = true;
+
+    } else if (isKecRole()) {
+      // Kunci Provinsi, Kabupaten, dan Kecamatan
+      setSelectValueCaseInsensitive("provinsi", defaultProv);
+      provSel.style.pointerEvents = "none";
+
+      updateKabupaten(userKodeKab);
+      kabSel.style.pointerEvents = "none";
+
+      updateKecamatan(userKodeKec);
+      kecSel.style.pointerEvents = "none";
+
+      desaSel.style.pointerEvents = "auto";
+      desaSel.disabled = false;
+      dusunSel.style.pointerEvents = "auto";
+      rtSel.style.pointerEvents = "auto";
+
+    } else {
+      // Admin Kabupaten: Semua terbuka bebas
+      provSel.style.pointerEvents = "auto";
+      kabSel.style.pointerEvents = "auto";
+      kecSel.style.pointerEvents = "auto";
+      desaSel.style.pointerEvents = "auto";
+      dusunSel.style.pointerEvents = "auto";
+      rtSel.style.pointerEvents = "auto";
+
+      provSel.disabled = false;
+      provSel.value = "";
+      resetDropdown("kabupaten", "kode_kab");
+      resetDropdown("kecamatan", "kode_kec");
+      resetDropdown("desa", "kode_desa");
+      resetDropdown("dusun", "kode_dusun");
+      resetDropdown("rt", "kode_rt");
+    }
+  }
   function togglePassword() {
     const p = document.getElementById("login_password");
     p.type = p.type === "password" ? "text" : "password";
