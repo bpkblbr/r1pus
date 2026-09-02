@@ -1837,11 +1837,45 @@
       if (!grouped[key]) grouped[key] = emptyRecapItem(key);
 
       grouped[key].total_pus++;
+      
+      // 1. Tentukan apakah bulan berjalan adalah bulan pertama kali pasangan ini tercatat
+      let isFirstTimeRecorded = false;
 
-      // Logika PUS Baru: Hanya dihitung jika bulan Januari statusnya masih kosong, tetapi di bulan berjalan sudah aktif terdata
-      let janStatus = String(r.kb_jan || "").trim();
-      let curRawStatus = String(r[monthKey] || "").trim();
-      if (bulan > 1 && !janStatus && curRawStatus) {
+      if (bulan === 1) {
+        // Jika sedang melihat bulan Januari:
+        // Terhitung PUS Baru jika baru diinput pada tahun berjalan (misal: pengantin baru/pindahan masuk di Jan)
+        // dan bukan data carry-over dari tahun sebelumnya
+        let createdAtYear = r.timestamp ? new Date(r.timestamp).getFullYear() : tahun;
+        if (createdAtYear === tahun && (cur.type === "PESERTA_KB" || cur.type === "BUKAN_PESERTA")) {
+          isFirstTimeRecorded = true;
+        }
+      } else {
+        // Jika bulan Februari s.d. Desember:
+        // Seluruh bulan dari Januari hingga (Bulan - 1) WAJIB KOSONG
+        let hasPreviousRecord = false;
+        for (let i = 0; i < bulan - 1; i++) {
+          let pastVal = String(r[mKeys[i]] || "").trim();
+          if (pastVal && pastVal !== "--KOSONG--" && pastVal !== "-") {
+            hasPreviousRecord = true;
+            break;
+          }
+        }
+
+        // Hanya terhitung PUS Baru jika tidak ada riwayat sama sekali di bulan-bulan sebelumnya
+        if (!hasPreviousRecord) {
+          isFirstTimeRecorded = true;
+        }
+      }
+
+      // 2. Eksekusi penambahan counter PUS Baru
+      let umurIstri = parseInt(r.umur_istri || 0, 10);
+
+      if (
+        isFirstTimeRecorded &&
+        (cur.type === "PESERTA_KB" || cur.type === "BUKAN_PESERTA") &&
+        cur.type !== "BUKAN_PUS" &&
+        umurIstri < 50
+      ) {
         grouped[key].pus_baru++;
       }
 
