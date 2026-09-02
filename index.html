@@ -2309,8 +2309,7 @@
 
   // Jika bulan pelaporan belum mencapai bulan ulang tahunnya, atau di bulan yang sama tapi tanggalnya belum sampai
   if (monthDiff < 0 || (monthDiff === 0 && refDate.getDate() < birthDay)) {
-    age--;
-  }
+    age--;  
 
   umurInput.value = age >= 0 ? age : 0;
   
