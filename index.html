@@ -1198,6 +1198,50 @@
   function isDesaRole() {
     return !isKabRole() && !isKecRole();
   }
+  
+  // Fungsi klasifikasi status yang fleksibel (menangani format panjang maupun singkat)
+  function evaluateKbStatus(rawStatus) {
+    const s = String(rawStatus || "").trim().toUpperCase();
+    if (!s || s === "--KOSONG--" || s === "-") return { type: "EMPTY", method: "" };
+
+    // 1. Peserta KB
+    if (s.includes("PESERTA KB") || ["STK", "PIL", "KDM", "IMP", "IUD", "MOW", "MOP"].some(m => s === m || s.includes(m))) {
+      let method = "";
+      if (s.includes("PIL")) method = "PIL";
+      else if (s.includes("STK")) method = "STK";
+      else if (s.includes("KDM")) method = "KDM";
+      else if (s.includes("IMP")) method = "IMP";
+      else if (s.includes("IUD")) method = "IUD";
+      else if (s.includes("MOW")) method = "MOW";
+      else if (s.includes("MOP")) method = "MOP";
+
+      const isMkjp = ["IMP", "IUD", "MOW", "MOP"].includes(method);
+      return { type: "PESERTA_KB", method: method, isMkjp: isMkjp };
+    }
+
+    // 2. Bukan Peserta KB
+    if (s.includes("BUKAN PESERTA") || ["HAMIL", "IAS", "IAT", "TIAL", "TKI"].some(m => s === m || s.includes(m))) {
+      let reason = "";
+      if (s.includes("HAMIL")) reason = "HAMIL";
+      else if (s.includes("IAS")) reason = "IAS";
+      else if (s.includes("IAT")) reason = "IAT";
+      else if (s.includes("TIAL")) reason = "TIAL";
+      else if (s.includes("TKI")) reason = "TKI";
+      return { type: "BUKAN_PESERTA", reason: reason };
+    }
+
+    // 3. Mutasi / Bukan PUS
+    if (s.includes("BUKAN PUS") || s.includes("CERAI") || s.includes("MENINGGAL") || s.includes("PINDAH") || s.includes("50")) {
+      let cat = "";
+      if (s.includes("CERAI")) cat = "CERAI";
+      else if (s.includes("MENINGGAL")) cat = "MENINGGAL";
+      else if (s.includes("PINDAH")) cat = "PINDAH";
+      else if (s.includes("50")) cat = "50+";
+      return { type: "BUKAN_PUS", cat: cat };
+    }
+
+    return { type: "UNKNOWN", raw: s };
+  }
 
   // --- LOGIC DROPDOWN BERTINGKAT REKAP ---
   function onRecapTingkatChange() {
@@ -1792,67 +1836,65 @@
       if (!key) return;
       if (!grouped[key]) grouped[key] = emptyRecapItem(key);
 
-      let curStatus = (r[monthKey] || "").toUpperCase();
-      let prevStatus = prevMonthKey ? (r[prevMonthKey] || "").toUpperCase() : "";
-
       grouped[key].total_pus++;
 
-      // 1. PUS Baru (Terdaftar pertama kali pada tahun berjalan)
-      if (r.timestamp && new Date(r.timestamp).getFullYear() === tahun) {
+      // Logika PUS Baru: Hanya dihitung jika bulan Januari statusnya masih kosong, tetapi di bulan berjalan sudah aktif terdata
+      let janStatus = String(r.kb_jan || "").trim();
+      let curRawStatus = String(r[monthKey] || "").trim();
+      if (bulan > 1 && !janStatus && curRawStatus) {
         grouped[key].pus_baru++;
       }
 
-      // 2. Peserta KB Aktif
-      if (curStatus.includes("PESERTA KB")) {
+      const cur = evaluateKbStatus(r[monthKey]);
+      const prev = prevMonthKey ? evaluateKbStatus(r[prevMonthKey]) : null;
+
+      // 1. Peserta KB
+      if (cur.type === "PESERTA_KB") {
         grouped[key].ber_kb++;
-        if (curStatus.includes("PIL")) grouped[key].pil++;
-        if (curStatus.includes("STK")) grouped[key].stk++;
-        if (curStatus.includes("KDM")) grouped[key].kdm++;
-        if (curStatus.includes("IMP")) grouped[key].imp++;
-        if (curStatus.includes("IUD")) grouped[key].iud++;
-        if (curStatus.includes("MOW")) grouped[key].mow++;
-        if (curStatus.includes("MOP")) grouped[key].mop++;
+        if (cur.method === "PIL") grouped[key].pil++;
+        else if (cur.method === "STK") grouped[key].stk++;
+        else if (cur.method === "KDM") grouped[key].kdm++;
+        else if (cur.method === "IMP") grouped[key].imp++;
+        else if (cur.method === "IUD") grouped[key].iud++;
+        else if (cur.method === "MOW") grouped[key].mow++;
+        else if (cur.method === "MOP") grouped[key].mop++;
 
-        // MKJP vs Non-MKJP
-        if (curStatus.includes("IMP") || curStatus.includes("IUD") || curStatus.includes("MOW") || curStatus.includes("MOP")) {
-          grouped[key].mkjp++;
-        } else {
-          grouped[key].non_mkjp++;
-        }
+        if (cur.isMkjp) grouped[key].mkjp++;
+        else grouped[key].non_mkjp++;
 
-        // Akseptor KB Baru (Jika bulan sebelumnya bukan peserta KB atau kosong)
-        if (prevStatus && !prevStatus.includes("PESERTA KB")) {
+        // KB Baru
+        if (prev && prev.type !== "PESERTA_KB") {
           grouped[key].kb_baru_total++;
-          if (prevStatus.includes("HAMIL")) grouped[key].kb_baru_kbpp++;
-          else if (prevStatus.includes("BUKAN PESERTA")) grouped[key].kb_baru_pasca_do++;
+          if (prev.reason === "HAMIL") grouped[key].kb_baru_kbpp++;
+          else if (prev.type === "BUKAN_PESERTA") grouped[key].kb_baru_pasca_do++;
           else grouped[key].kb_baru_murni++;
         }
 
-        // Ganti Cara (Bulan lalu KB dengan metode berbeda)
-        if (prevStatus && prevStatus.includes("PESERTA KB") && prevStatus !== curStatus) {
+        // Ganti Cara
+        if (prev && prev.type === "PESERTA_KB" && prev.method !== cur.method) {
           grouped[key].ganti_cara++;
         }
 
-      } else if (curStatus.includes("BUKAN PESERTA KB")) {
+      // 2. Bukan Peserta KB (TDK-KB kini terhitung benar)
+      } else if (cur.type === "BUKAN_PESERTA") {
         grouped[key].tidak_kb++;
-        if (curStatus.includes("HAMIL")) {
+        if (cur.reason === "HAMIL") {
           grouped[key].hamil++;
-          // Hamil Baru (Bulan lalu tidak berstatus hamil)
-          if (prevStatus && !prevStatus.includes("HAMIL")) {
+          if (prev && prev.reason !== "HAMIL") {
             grouped[key].hamil_baru++;
           }
-        }
-        if (curStatus.includes("IAS")) grouped[key].ias++;
-        if (curStatus.includes("IAT")) grouped[key].iat++;
-        if (curStatus.includes("TIAL")) grouped[key].tial++;
-        if (curStatus.includes("TKI")) grouped[key].tki++;
+        } else if (cur.reason === "IAS") grouped[key].ias++;
+        else if (cur.reason === "IAT") grouped[key].iat++;
+        else if (cur.reason === "TIAL") grouped[key].tial++;
+        else if (cur.reason === "TKI") grouped[key].tki++;
 
-      } else if (curStatus.includes("BUKAN PUS") || curStatus.includes("CERAI") || curStatus.includes("MENINGGAL") || curStatus.includes("PINDAH") || curStatus.includes("BERCERAI") || curStatus.includes("50")) {
+      // 3. Bukan PUS / Mutasi
+      } else if (cur.type === "BUKAN_PUS" || parseInt(r.umur_istri || 0, 10) >= 50) {
         grouped[key].bukan_pus++;
-        if (curStatus.includes("CERAI") || curStatus.includes("BERCERAI")) grouped[key].bcr++;
-        if (curStatus.includes("MENINGGAL")) grouped[key].mng++;
-        if (curStatus.includes("PINDAH")) grouped[key].pndh++;
-        if (curStatus.includes("50") || parseInt(r.umur_istri || 0, 10) >= 50) grouped[key].usia_50++;
+        if (cur.cat === "CERAI") grouped[key].bcr++;
+        else if (cur.cat === "MENINGGAL") grouped[key].mng++;
+        else if (cur.cat === "PINDAH") grouped[key].pndh++;
+        if (cur.cat === "50+" || parseInt(r.umur_istri || 0, 10) >= 50) grouped[key].usia_50++;
       }
     });
 
