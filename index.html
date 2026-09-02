@@ -1897,24 +1897,24 @@
           key = rawRt ? "RT " + rawRt.padStart(3, '0') : String(r.rt_nama || "").trim().toUpperCase();
         }
 
-        if (!key) return;
-        if (!grouped[key]) grouped[key] = emptyRecapItem(key);
-
-        // Perbaikan 2: DEKLARASI cur DAN prev DILETAKKAN DI AWAL
+        // 1. Evaluasi status bulan berjalan dan bulan sebelumnya
         const cur = evaluateKbStatus(r[monthKey]);
         const prev = prevMonthKey ? evaluateKbStatus(r[prevMonthKey]) : null;
 
         grouped[key].total_pus++;
         
-        // 2. Tentukan apakah bulan berjalan adalah bulan pertama kali pasangan ini tercatat
+        // 2. Evaluasi PUS BARU:
+        // Hanya dihitung jika pasangan ini benar-benar baru muncul pertama kali di bulan berjalan
         let isFirstTimeRecorded = false;
 
         if (bulan === 1) {
+          // Di Januari, hanya hitung jika baru terdaftar di tahun berjalan (bukan carry-over tahun lalu)
           let createdAtYear = r.timestamp ? new Date(r.timestamp).getFullYear() : tahun;
           if (createdAtYear === tahun && (cur.type === "PESERTA_KB" || cur.type === "BUKAN_PESERTA")) {
             isFirstTimeRecorded = true;
           }
         } else {
+          // Di Februari-Desember, seluruh bulan sebelumnya harus kosong
           let hasPreviousRecord = false;
           for (let i = 0; i < bulan - 1; i++) {
             let pastVal = String(r[mKeys[i]] || "").trim();
@@ -1923,25 +1923,23 @@
               break;
             }
           }
-
           if (!hasPreviousRecord) {
             isFirstTimeRecorded = true;
           }
         }
 
-        // 3. Eksekusi penambahan counter PUS Baru
         let umurIstri = parseInt(r.umur_istri || 0, 10);
+        let isPusBaruValid = isFirstTimeRecorded && 
+                             (cur.type === "PESERTA_KB" || cur.type === "BUKAN_PESERTA") && 
+                             cur.type !== "BUKAN_PUS" && 
+                             umurIstri < 50;
 
-        if (
-          isFirstTimeRecorded &&
-          (cur.type === "PESERTA_KB" || cur.type === "BUKAN_PESERTA") &&
-          cur.type !== "BUKAN_PUS" &&
-          umurIstri < 50
-        ) {
+        if (isPusBaruValid) {
           grouped[key].pus_baru++;
         }
 
-        // 4. Hitung Peserta KB
+        // 3. Evaluasi AKSEPTOR KB BARU:
+        // Syarat: Bulan ini PESERTA_KB, dan status bulan lalu BUKAN peserta KB aktif
         if (cur.type === "PESERTA_KB") {
           grouped[key].ber_kb++;
           if (cur.method === "PIL") grouped[key].pil++;
@@ -1955,18 +1953,27 @@
           if (cur.isMkjp) grouped[key].mkjp++;
           else grouped[key].non_mkjp++;
 
-          // KB Baru
-          if (prev && prev.type !== "PESERTA_KB") {
+          // Logika pembeda Akseptor KB Baru:
+          // A. Jika ada riwayat bulan lalu dan bulan lalu bukan peserta KB
+          if (prev && prev.type === "BUKAN_PESERTA") {
             grouped[key].kb_baru_total++;
-            if (prev.reason === "HAMIL") grouped[key].kb_baru_kbpp++;
-            else if (prev.type === "BUKAN_PESERTA") grouped[key].kb_baru_pasca_do++;
-            else grouped[key].kb_baru_murni++;
+            if (prev.reason === "HAMIL") {
+              grouped[key].kb_baru_kbpp++;     // Pasca Persalinan
+            } else {
+              grouped[key].kb_baru_pasca_do++;  // Pasca DO (sebelumnya IAS/IAT/TIAL)
+            }
+          } 
+          // B. Baru Murni: Hanya jika dia terkonfirmasi sebagai PUS Baru yang langsung memilih ber-KB
+          else if (isPusBaruValid) {
+            grouped[key].kb_baru_total++;
+            grouped[key].kb_baru_murni++;
           }
 
-          // Ganti Cara
+          // Ganti Cara: Bulan lalu ber-KB tetapi dengan metode berbeda
           if (prev && prev.type === "PESERTA_KB" && prev.method !== cur.method) {
             grouped[key].ganti_cara++;
           }
+        }
 
         // 5. Bukan Peserta KB
         } else if (cur.type === "BUKAN_PESERTA") {
