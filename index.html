@@ -3460,49 +3460,85 @@
       inProvNama.style.backgroundColor = "#e9ecef"; inProvKode.style.backgroundColor = "#e9ecef";
 
       inKabNama.value = namaKab || "LOMBOK BARAT";
-      inKabKode.value = userKodeKab || "01";
-      inKabNama.readOnly = true; inKabKode.readOnly = true;
-      inKabNama.style.backgroundColor = "#e9ecef"; inKabKode.style.backgroundColor = "#e9ecef";
+function resetMwForm() {
+  document.getElementById("mw_id").value = "";
+  document.getElementById("mw_dusun_nama").value = "";
+  document.getElementById("mw_jumlah_rt").value = "1";
+  document.getElementById("btnSaveMw").innerText = "💾 SIMPAN WILAYAH";
 
-      inKecNama.value = namaKec;
-      inKecKode.value = userKodeKec;
-      inKecNama.readOnly = true; inKecKode.readOnly = true;
-      inKecNama.style.backgroundColor = "#e9ecef"; inKecKode.style.backgroundColor = "#e9ecef";
+  const inProvNama = document.getElementById("mw_provinsi_nama");
+  const inProvKode = document.getElementById("mw_kode_prov");
+  const inKabNama = document.getElementById("mw_kabupaten_nama");
+  const inKabKode = document.getElementById("mw_kode_kab");
+  const inKecNama = document.getElementById("mw_kecamatan_nama");
+  const inKecKode = document.getElementById("mw_kode_kec");
+  const inDesaNama = document.getElementById("mw_desa_nama");
+  const inDesaKode = document.getElementById("mw_kode_desa");
+  const inDusunKode = document.getElementById("mw_kode_dusun");
 
-      inDesaNama.value = "";
-      inDesaKode.value = "";
-      inDesaNama.readOnly = false;
-      inDesaKode.readOnly = false;
-      inDesaNama.style.backgroundColor = "#ffffff";
-      inDesaKode.style.backgroundColor = "#ffffff";
-
-    } else {
-      // 2. Jika Admin Kabupaten ATAU Admin Kecamatan TAPI data belum masuk di DB -> Biarkan KOSONG dan TERBUKA
-      inProvNama.readOnly = false; inProvKode.readOnly = false;
-      inProvNama.style.backgroundColor = "#ffffff"; inProvKode.style.backgroundColor = "#ffffff";
-
-      inKabNama.readOnly = false; inKabKode.readOnly = false;
-      inKabNama.style.backgroundColor = "#ffffff"; inKabKode.style.backgroundColor = "#ffffff";
-
-      inKecNama.readOnly = false; inKecKode.readOnly = false;
-      inKecNama.style.backgroundColor = "#ffffff"; inKecKode.style.backgroundColor = "#ffffff";
-
-      inDesaNama.readOnly = false; inDesaKode.readOnly = false;
-      inDesaNama.style.backgroundColor = "#ffffff"; inDesaKode.style.backgroundColor = "#ffffff";
-
-      inProvNama.value = "NUSA TENGGARA BARAT";
-      inProvKode.value = "52";
-      inKabNama.value = namaKab || "LOMBOK BARAT";
-      inKabKode.value = userKodeKab || "01";
-      
-      // Kosongkan nama dan kode kecamatan agar operator bisa mengisinya sendiri untuk pertama kali
-      inKecNama.value = "";
-      inKecKode.value = "";
-      inDesaNama.value = "";
-      inDesaKode.value = "";
-    }
+  if (inDusunKode) { 
+    inDusunKode.value = ""; 
+    inDusunKode.readOnly = false; 
+    inDusunKode.style.backgroundColor = "#ffffff"; 
   }
 
+  let namaKab = "";
+  if (userKodeKab && dataKabupaten[userKodeKab]) {
+    let kabObj = dataKabupaten[userKodeKab];
+    namaKab = typeof kabObj === 'object' ? Object.values(kabObj)[0] : kabObj;
+  }
+
+  let namaKec = "";
+  let isKecRegisteredInDB = false;
+  if (userKodeKab && dataKecamatan[userKodeKab] && dataKecamatan[userKodeKab][userKodeKec]) {
+    namaKec = dataKecamatan[userKodeKab][userKodeKec];
+    isKecRegisteredInDB = true;
+  }
+
+  if (isKecRole() && isKecRegisteredInDB) {
+    inProvNama.readOnly = true; inProvKode.readOnly = true;
+    inProvNama.style.backgroundColor = "#e9ecef"; inProvKode.style.backgroundColor = "#e9ecef";
+
+    inKabNama.value = namaKab || "LOMBOK BARAT";
+    inKabKode.value = userKodeKab || "01";
+    inKabNama.readOnly = true; inKabKode.readOnly = true;
+    inKabNama.style.backgroundColor = "#e9ecef"; inKabKode.style.backgroundColor = "#e9ecef";
+
+    inKecNama.value = namaKec;
+    inKecKode.value = userKodeKec;
+    inKecNama.readOnly = true; inKecKode.readOnly = true;
+    inKecNama.style.backgroundColor = "#e9ecef"; inKecKode.style.backgroundColor = "#e9ecef";
+
+    inDesaNama.value = "";
+    inDesaKode.value = "";
+    inDesaNama.readOnly = false;
+    inDesaKode.readOnly = false;
+    inDesaNama.style.backgroundColor = "#ffffff";
+    inDesaKode.style.backgroundColor = "#ffffff";
+  } else {
+    inProvNama.readOnly = false; inProvKode.readOnly = false;
+    inProvNama.style.backgroundColor = "#ffffff"; inProvKode.style.backgroundColor = "#ffffff";
+
+    inKabNama.readOnly = false; inKabKode.readOnly = false;
+    inKabNama.style.backgroundColor = "#ffffff"; inKabKode.style.backgroundColor = "#ffffff";
+
+    inKecNama.readOnly = false; inKecKode.readOnly = false;
+    inKecNama.style.backgroundColor = "#ffffff"; inKecKode.style.backgroundColor = "#ffffff";
+
+    inDesaNama.readOnly = false; inDesaKode.readOnly = false;
+    inDesaNama.style.backgroundColor = "#ffffff"; inDesaKode.style.backgroundColor = "#ffffff";
+
+    inProvNama.value = "NUSA TENGGARA BARAT";
+    inProvKode.value = "52";
+    inKabNama.value = namaKab || "LOMBOK BARAT";
+    inKabKode.value = userKodeKab || "01";
+    
+    inKecNama.value = "";
+    inKecKode.value = "";
+    inDesaNama.value = "";
+    inDesaKode.value = "";
+  }
+}
   async function handleSaveMasterWilayah(event) {
     event.preventDefault();
     const btn = document.getElementById("btnSaveMw");
