@@ -1473,7 +1473,7 @@
 
         Swal.fire({
           title: 'Pilih Wilayah Tujuan',
-          showCloseButton: true, // Menambahkan tombol X (close) di kanan atas modal
+          showCloseButton: true, // Menampilkan tombol X (close) di kanan atas
           html: `
             <div style="text-align:left; font-size:13px; color:#444; margin-bottom:8px;">Kecamatan Tujuan:</div>
             <select id="swalMutasiKec" class="swal2-input" style="width: 100%; font-size: 13px; padding: 8px; margin: 0 0 10px 0;" onchange="onSwalMutasiKecChange()">
@@ -1521,15 +1521,28 @@
             document.getElementById("pindah_desa_nama").value = mutRes.value.desaNama;
 
             Swal.fire('Tercatat', `Tujuan pindah: Desa ${mutRes.value.desaNama}. Tiket mutasi akan dibuat saat disimpan.`, 'success');
+          } else {
+            // JIKA TOMBOL CLOSE (X) ATAU DI-CANCEL PADA PEMILIHAN WILAYAH
+            BATalkanPilihanPindah(monthIndex);
           }
         });
       } else {
-        document.getElementById("is_pindah_dalam_kab").value = "false";
-        document.getElementById("pindah_kec_tujuan").value = "";
-        document.getElementById("pindah_desa_tujuan").value = "";
-        document.getElementById("pindah_desa_nama").value = "";
+        // JIKA DI-CANCEL PADA DIALOG AWAL
+        BATalkanPilihanPindah(monthIndex);
       }
     });
+  }
+
+  function BATalkanPilihanPindah(monthIndex) {
+    const sel = document.getElementById("kb_" + monthIndex);
+    if (sel) sel.value = ""; // Kosongkan dropdown status KB bulan tersebut
+    
+    document.getElementById("is_pindah_dalam_kab").value = "false";
+    document.getElementById("pindah_kec_tujuan").value = "";
+    document.getElementById("pindah_desa_tujuan").value = "";
+    document.getElementById("pindah_desa_nama").value = "";
+    
+    checkKbMonthSequence(monthIndex);
   }
 
   // --- LOGIC DROPDOWN BERTINGKAT REKAP ---
@@ -2280,6 +2293,13 @@
           status: 'PENDING',
           created_at: new Date().toISOString()
         };
+        
+        // Simpan ke tabel mutasi_pus agar muncul di Inbox wilayah tujuan
+        const { error: mutasiError } = await db.from('mutasi_pus').insert([mutasiPayload]);
+        if (mutasiError) {
+          console.error("Gagal mengirim tiket mutasi:", mutasiError.message);
+        }
+      }
         await db.from('mutasi_pus').insert([mutasiPayload]);
       }
 
