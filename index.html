@@ -658,17 +658,70 @@
   </div>
 </div>
 
-<!-- MODAL IMPORT EXCEL -->
+<!-- MODAL IMPORT / UPLOAD TEMPLATE EXCEL -->
 <div id="modalImportExcel" class="modal">
-  <div class="modal-content" style="max-width: 500px;">
+  <div class="modal-content" style="max-width: 580px; width: 95%; border-radius: 10px; padding: 25px; box-sizing: border-box;">
     <span class="close" onclick="closeImportExcelModal()">&times;</span>
-    <h3 style="margin-top:0;">📥 IMPORT DATA EXCEL</h3>
-    <form id="formImportExcel" onsubmit="handleUploadExcelFile(event)">
-      <div style="margin-bottom: 15px;">
-        <label>Pilih File Excel (.xlsx / .xls):</label>
-        <input type="file" id="excelFileInput" accept=".xlsx, .xls" required style="margin-top: 5px;">
+    <h3 style="margin-top:0; color:#1f4e78; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; font-size: 16px;">
+      📥 UPLOAD TEMPLATE EXCEL KE DATABASE
+    </h3>
+
+    <!-- TOMBOL DOWNLOAD TEMPLATE KOSONG -->
+    <div style="background: #f1f5f9; padding: 12px; border-radius: 6px; border: 1px dashed #cbd5e1; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+      <div style="font-size: 12px; color: #475569;">
+        Belum punya format baku? Unduh template Excel di sini:
       </div>
-      <button type="submit" class="btn-submit" style="background-color: #10b981; margin-top: 0;">🚀 UPLOAD KE DATABASE</button>
+      <button type="button" class="btn-nav btn-warning" style="padding: 8px 12px; font-size: 12px; white-space: nowrap;" onclick="downloadEmptyExcelTemplate()">
+        📥 Download Template
+      </button>
+    </div>
+
+    <!-- PETUNJUK FORMAT PENGISIAN EXCEL -->
+    <details id="detailsPanduanImport" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; margin-bottom: 15px; font-size: 12px; color: #334155;">
+      <summary style="font-weight: bold; color: #0284c7; cursor: pointer;">
+        ℹ️ Klik di sini untuk melihat Format Baku Pengisian JKN & Status KB
+      </summary>
+      <div style="margin-top: 8px; line-height: 1.5;">
+        <b>1. Kolom Kepesertaan JKN (Kolom 24):</b><br>
+        • <code>PBI</code> | <code>BUKAN PBI</code> | <code>SWASTA</code> | <code>TIDAK MEMILIKI</code><br><br>
+
+        <b>2. Kolom KB_Januari s.d KB_Desember (Kolom 25–36):</b><br>
+        • <b>Peserta KB:</b> <code>PESERTA KB - STK</code>, <code>PESERTA KB - PIL</code>, <code>PESERTA KB - KDM</code>, <code>PESERTA KB - IMP</code>, <code>PESERTA KB - IUD</code>, <code>PESERTA KB - MOW</code>, <code>PESERTA KB - MOP</code><br>
+        • <b>Bukan Peserta KB:</b> <code>BUKAN PESERTA KB - IAS</code>, <code>BUKAN PESERTA KB - IAT</code>, <code>BUKAN PESERTA KB - TIAL</code>, <code>BUKAN PESERTA KB - HAMIL</code>, <code>BUKAN PESERTA KB - TKI</code><br>
+        • <b>Mutasi:</b> <code>BERCERAI</code>, <code>SUAMI ISTRI MENINGGAL</code>, <code>PINDAH</code><br>        
+        <small style="color: #64748b;">*Catatan: Kolom yang belum ada data bulanan dapat dikosongkan.</small>
+      </div>
+    </details>
+
+    <form id="formImportExcel" onsubmit="handleUploadExcelFile(event)">
+      <!-- Pilih Tahun -->
+      <div style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 5px;">
+        <label style="font-weight: bold; font-size: 13px; color: #444;">Tahun Pelaporan:</label>
+        <select id="import_tahun_select" required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc;">
+          <option value="2025">2025</option>
+          <option value="2026" selected>2026</option>
+          <option value="2027">2027</option>
+          <option value="2028">2028</option>
+          <option value="2029">2029</option>
+          <option value="2030">2030</option>
+        </select>
+      </div>
+
+      <!-- Input File Excel -->
+      <div style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 5px;">
+        <label style="font-weight: bold; font-size: 13px; color: #444;">Pilih File Excel (.xlsx / .xls):</label>
+        <input type="file" id="excelFileInput" accept=".xlsx, .xls" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; background-color: #f8fafc;">
+        <small style="color: #64748b; font-size: 11px;">*Pastikan susunan kolom sesuai template 36 kolom sistem.</small>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button type="submit" id="btnProsesUpload" class="btn-submit" style="margin-top: 0; background-color: #10b981; padding: 12px; font-weight: bold; font-size: 14px; flex: 1;">
+          🚀 UPLOAD KE DATABASE
+        </button>
+        <button type="button" class="btn-nav btn-danger" style="justify-content: center; padding: 10px 15px; font-size: 13px;" onclick="closeImportExcelModal()">
+          Batal
+        </button>
+      </div>
     </form>
   </div>
 </div>
@@ -926,10 +979,10 @@
               <option value="BUKAN PESERTA KB - HAMIL">BUKAN PESERTA KB - HAMIL</option>
               <option value="BUKAN PESERTA KB - TKI">BUKAN PESERTA KB - TKI</option>
             </optgroup>
-            <optgroup label="BUKAN PUS">
-              <option value="BUKAN PUS - BERCERAI">BUKAN PUS - BERCERAI</option>
-              <option value="BUKAN PUS - SUAMI/ISTRI MENINGGAL">BUKAN PUS - SUAMI/ISTRI MENINGGAL</option>
-              <option value="BUKAN PUS - PINDAH">BUKAN PUS - PINDAH</option>
+            <optgroup label="MUTASI">
+              <option value="BERCERAI">BERCERAI</option>
+              <option value="SUAMI ISTRI MENINGGAL">SUAMI/ISTRI MENINGGAL</option>
+              <option value="PINDAH">PINDAH</option>
             </optgroup>
           </select>
         </td>`;
@@ -2175,6 +2228,184 @@
     currentUser = "";
     document.getElementById("appContainer").style.display = "none";
     document.getElementById("loginContainer").style.display = "block";
+  }
+  
+  // FUNGSI DOWNLOAD TEMPLATE EXCEL BAKU BESERTA PETUNJUKNYA
+  function downloadEmptyExcelTemplate() {
+    const headers = [
+      "ID_PUS", "Tahun", "Timestamp", "Provinsi", "Kode Provinsi", "Kabupaten", "Kode Kabupaten",
+      "Kecamatan", "Kode Kecamatan", "Desa", "Kode Desa", "Dusun", "Kode Dusun",
+      "RT", "Kode RT", "Nama Suami", "NIK Suami", "Nama Istri", "NIK Istri",
+      "Tanggal Lahir Istri", "Umur Istri", "Jumlah Anak", "Umur Anak Terkecil",
+      "Peserta JKN", "KB_Januari", "KB_Februari", "KB_Maret", "KB_April", "KB_Mei",
+      "KB_Juni", "KB_Juli", "KB_Agustus", "KB_September", "KB_Oktober", "KB_November", "KB_Desember"
+    ];
+
+    const sampleRow = [
+      "", "2026", "", "NUSA TENGGARA BARAT", "52", "LOMBOK BARAT", "01",
+      "LEMBAR", "05", "MAREJE", "0001", "DUSUN SATU", "0001",
+      "RT 001", "001", "AHMAD SUAMI", "5201050101850001", "SITI ISTRI", "5201054101900001",
+      "1990-05-15", "36", "2", "3",
+      "PBI", "PESERTA KB - IMP", "PESERTA KB - IMP", "PESERTA KB - IMP", "PESERTA KB - IMP", "PESERTA KB - IMP",
+      "PESERTA KB - IMP", "PESERTA KB - IMP", "PESERTA KB - IMP", "PESERTA KB - IMP", "PESERTA KB - IMP", "PESERTA KB - IMP", "PESERTA KB - IMP"
+    ];
+
+    const ws1 = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
+    const range = XLSX.utils.decode_range(ws1['!ref']);
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cell_ref = XLSX.utils.encode_cell({ r: R, c: C });
+        if (ws1[cell_ref]) ws1[cell_ref].t = 's';
+      }
+    }
+    ws1['!cols'] = headers.map(() => ({ wch: 18 }));
+
+    const guideData = [
+      ["PANDUAN FORMAT PENGISIAN REGISTER PUS"],
+      [""],
+      ["KOLOM", "PILIHAN NILAI BAKU YANG DIIZINKAN", "KETERANGAN"],
+      ["Peserta JKN (Kolom 24)", "PBI", "Penerima Bantuan Iuran"],
+      ["", "BUKAN PBI", "Mandiri / Pekerja Penerima Upah"],
+      ["", "SWASTA", "Asuransi Swasta Lainnya"],
+      ["", "TIDAK MEMILIKI", "Belum memiliki jaminan kesehatan"],
+      [""],
+      ["KB_Januari s.d KB_Desember (Kolom 25-36)", "PESERTA KB - STK", "Suntik KB"],
+      ["", "PESERTA KB - PIL", "Pil KB"],
+      ["", "PESERTA KB - KDM", "Kondom"],
+      ["", "PESERTA KB - IMP", "Implan / Susuk"],
+      ["", "PESERTA KB - IUD", "IUD / Spiral"],
+      ["", "PESERTA KB - MOW", "Metode Operasi Wanita (Tubektomi)"],
+      ["", "PESERTA KB - MOP", "Metode Operasi Pria (Vasektomi)"],
+      ["", "BUKAN PESERTA KB - IAS", "Ingin Anak Segera"],
+      ["", "BUKAN PESERTA KB - IAT", "Ingin Anak Ditunda"],
+      ["", "BUKAN PESERTA KB - TIAL", "Tidak Ingin Anak Lagi"],
+      ["", "BUKAN PESERTA KB - HAMIL", "Sedang Hamil"],
+      ["", "BUKAN PESERTA KB - TKI", "Suami / Istri Bekerja di Luar Negeri"],
+      ["", "BERCERAI", "Status Perkawinan Bercerai (MUTASI)"],
+      ["", "SUAMI ISTRI MENINGGAL", "Suami atau Istri Meninggal Dunia (MUTASI)"],
+      ["", "PINDAH", "Pindah Domisili Keluar Wilayah (MUTASI)"]
+    ];
+
+    const ws2 = XLSX.utils.aoa_to_sheet(guideData);
+    ws2['!cols'] = [{ wch: 35 }, { wch: 40 }, { wch: 45 }];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws1, "TEMPLATE_PUS");
+    XLSX.utils.book_append_sheet(wb, ws2, "PETUNJUK_PENGISIAN");
+
+    XLSX.writeFile(wb, "TEMPLATE_REGISTER_PUS_36_KOLOM.xlsx");
+  }
+
+  // LOGIKA PARSING DAN INSERT FILE EXCEL KE TABEL DATA_PUS SUPABASE
+  async function handleUploadExcelFile(event) {
+    event.preventDefault();
+    const fileInput = document.getElementById("excelFileInput");
+    const file = fileInput.files[0];
+    const targetTahun = parseInt(document.getElementById("import_tahun_select").value, 10);
+    const btn = document.getElementById("btnProsesUpload");
+
+    if (!file) {
+      Swal.fire("Perhatian", "Silakan pilih file Excel terlebih dahulu!", "warning");
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = "Membaca File...";
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+
+        if (!rows || rows.length <= 1) {
+          Swal.fire("File Kosong", "File Excel tidak memiliki baris data!", "error");
+          btn.disabled = false;
+          btn.innerText = "🚀 UPLOAD KE DATABASE";
+          return;
+        }
+
+        const dataRows = rows.slice(1);
+        btn.innerText = "Mengunggah Data...";
+
+        const payloadList = [];
+        dataRows.forEach((r, idx) => {
+          if (!r[15] && !r[17]) return; // Lewati jika nama suami & istri kosong
+
+          let kdProv = String(r[4] || "").trim().padStart(2, '0');
+          let kdKab  = String(r[6] || "").trim().padStart(2, '0');
+          let kdKec  = String(r[8] || "").trim().padStart(2, '0');
+          let kdDesa = String(r[10] || "").trim().padStart(4, '0');
+          let kdDsn  = String(r[12] || "").trim().padStart(4, '0');
+          let kdRt   = String(r[14] || "").trim().padStart(3, '0');
+          
+          let idPus = String(r[0] || "").trim();
+          if (!idPus) {
+            idPus = `${kdProv}${kdKab}${kdKec}${kdDesa} ${kdDsn}${kdRt}${String(idx + 1).padStart(3, '0')}`;
+          }
+
+          payloadList.push({
+            id_pus: idPus,
+            tahun: parseInt(r[1] || targetTahun, 10),
+            timestamp: new Date().toISOString(),
+            provinsi_nama: String(r[3] || "").toUpperCase(),
+            kode_prov: kdProv,
+            kabupaten_nama: String(r[5] || "").toUpperCase(),
+            kode_kab: kdKab,
+            kecamatan_nama: String(r[7] || "").toUpperCase(),
+            kode_kec: kdKec,
+            desa_nama: String(r[9] || "").toUpperCase(),
+            kode_desa: kdDesa,
+            dusun_nama: String(r[11] || "").toUpperCase(),
+            kode_dusun: kdDsn,
+            rt_nama: String(r[13] || "").toUpperCase(),
+            kode_rt: kdRt,
+            nama_suami: String(r[15] || "").toUpperCase(),
+            nik_suami: String(r[16] || ""),
+            nama_istri: String(r[17] || "").toUpperCase(),
+            nik_istri: String(r[18] || ""),
+            tgl_lahir_istri: r[19] || null,
+            umur_istri: parseInt(r[20] || 0, 10),
+            jumlah_anak: parseInt(r[21] || 0, 10),
+            umur_anak_terkecil: parseInt(r[22] || 0, 10),
+            peserta_jkn: String(r[23] || "").toUpperCase(),
+            kb_jan: String(r[24] || ""),
+            kb_feb: String(r[25] || ""),
+            kb_mar: String(r[26] || ""),
+            kb_apr: String(r[27] || ""),
+            kb_mei: String(r[28] || ""),
+            kb_jun: String(r[29] || ""),
+            kb_jul: String(r[30] || ""),
+            kb_agu: String(r[31] || ""),
+            kb_sep: String(r[32] || ""),
+            kb_okt: String(r[33] || ""),
+            kb_nov: String(r[34] || ""),
+            kb_des: String(r[35] || "")
+          });
+        });
+
+        // Simpan kolektif ke Supabase
+        const { error } = await db.from('data_pus').upsert(payloadList, { onConflict: 'id_pus,tahun' });
+        if (error) throw error;
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Upload Berhasil!',
+          text: `Sebanyak ${payloadList.length} data PUS berhasil disinkronkan ke Supabase.`
+        });
+        closeImportExcelModal();
+
+      } catch (err) {
+        Swal.fire("Format Error", "Gagal memproses file Excel: " + err.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "🚀 UPLOAD KE DATABASE";
+      }
+    };
+    reader.readAsArrayBuffer(file);
   }
 
   function exitApp() { window.location.href = "https://bpkblbr.github.io/r1puslobar/?status=out"; }
