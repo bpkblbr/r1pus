@@ -1,5 +1,5 @@
 const CACHE_NAME = 'r1pus-shell-v1';
-const ASSETS = [
+const urlsToCache = [
   './',
   './index.html',
   './manifest.json',
