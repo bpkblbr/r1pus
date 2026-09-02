@@ -2727,6 +2727,70 @@
     document.getElementById("mw_kode_dusun").value = "";
     document.getElementById("mw_jumlah_rt").value = "1";
     document.getElementById("btnSaveMw").innerText = "💾 SIMPAN WILAYAH";
+
+    const inKecNama = document.getElementById("mw_kecamatan_nama");
+    const inKecKode = document.getElementById("mw_kode_kec");
+    const inDesaNama = document.getElementById("mw_desa_nama");
+    const inDesaKode = document.getElementById("mw_kode_desa");
+
+    // Ambil nama wilayah dari cache
+    let namaKec = "";
+    if (userKodeKab && dataKecamatan[userKodeKab] && dataKecamatan[userKodeKab][userKodeKec]) {
+      namaKec = dataKecamatan[userKodeKab][userKodeKec];
+    }
+    let namaDesa = "";
+    if (userKodeKec && dataDesa[userKodeKec] && dataDesa[userKodeKec][userKodeDesa]) {
+      namaDesa = dataDesa[userKodeKec][userKodeDesa];
+    }
+
+    if (isDesaRole()) {
+      // User Desa: Kunci Kecamatan dan Desa
+      inKecNama.value = namaKec;
+      inKecKode.value = userKodeKec;
+      inKecNama.readOnly = true;
+      inKecKode.readOnly = true;
+      inKecNama.style.backgroundColor = "#e9ecef";
+      inKecKode.style.backgroundColor = "#e9ecef";
+
+      inDesaNama.value = namaDesa;
+      inDesaKode.value = userKodeDesa;
+      inDesaNama.readOnly = true;
+      inDesaKode.readOnly = true;
+      inDesaNama.style.backgroundColor = "#e9ecef";
+      inDesaKode.style.backgroundColor = "#e9ecef";
+
+    } else if (isKecRole()) {
+      // Admin Kecamatan: Kunci Kecamatan, Desa tetap bisa diisi
+      inKecNama.value = namaKec;
+      inKecKode.value = userKodeKec;
+      inKecNama.readOnly = true;
+      inKecKode.readOnly = true;
+      inKecNama.style.backgroundColor = "#e9ecef";
+      inKecKode.style.backgroundColor = "#e9ecef";
+
+      inDesaNama.value = "";
+      inDesaKode.value = "";
+      inDesaNama.readOnly = false;
+      inDesaKode.readOnly = false;
+      inDesaNama.style.backgroundColor = "#ffffff";
+      inDesaKode.style.backgroundColor = "#ffffff";
+
+    } else {
+      // Admin Kabupaten: Semua bebas diedit
+      inKecNama.value = "";
+      inKecKode.value = "";
+      inKecNama.readOnly = false;
+      inKecKode.readOnly = false;
+      inKecNama.style.backgroundColor = "#ffffff";
+      inKecKode.style.backgroundColor = "#ffffff";
+
+      inDesaNama.value = "";
+      inDesaKode.value = "";
+      inDesaNama.readOnly = false;
+      inDesaKode.readOnly = false;
+      inDesaNama.style.backgroundColor = "#ffffff";
+      inDesaKode.style.backgroundColor = "#ffffff";
+    }
   }
 
   async function handleSaveMasterWilayah(event) {
@@ -2783,9 +2847,19 @@
 
   async function loadRegisteredWilayahList() {
     const tbody = document.getElementById("mwRegisteredTbody");
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:15px;">Memuat data...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:15px;">Memuat data wilayah...</td></tr>`;
 
-    const { data, error } = await db.from('master_wilayah').select('*').order('kecamatan', { ascending: true });
+    let query = db.from('master_wilayah').select('*').order('kecamatan', { ascending: true });
+
+    // PEMBATASAN WILAYAH BERDASARKAN TINGKAT LOGIN
+    if (isDesaRole()) {
+      query = query.eq('kode_kec', userKodeKec).eq('kode_desa', userKodeDesa);
+    } else if (isKecRole()) {
+      query = query.eq('kode_kec', userKodeKec);
+    }
+    // Admin Kabupaten tetap dibiarkan tanpa filter untuk melihat seluruh wilayah
+
+    const { data, error } = await query;
     if (error || !data) {
       tbody.innerHTML = `<tr><td colspan="8" style="color:red; text-align:center; padding:15px;">Gagal memuat: ${error ? error.message : 'Koneksi error'}</td></tr>`;
       return;
@@ -2883,11 +2957,28 @@
     resetUserForm();
     populateUserKecDropdown();
 
-    // Sembunyikan role Admin Kab jika yang login bukan role Kabupaten
-    const isKab = (userRole.indexOf("KAB") !== -1 || userRole === "ADMIN");
     const optKab = document.getElementById("optRoleKab");
-    if (optKab) optKab.style.display = isKab ? "block" : "none";
+    const roleSelect = document.getElementById("user_role_select");
 
+    // Sembunyikan opsi Admin Kab jika bukan level Kabupaten
+    if (optKab) {
+      optKab.style.display = isKabRole() ? "block" : "none";
+    }
+
+    // Jika yang login adalah User Desa, hanya boleh mengelola akun User Desa
+    if (isDesaRole()) {
+      roleSelect.innerHTML = `
+        <option value="User Desa" selected>User Desa</option>
+      `;
+    } else if (isKecRole()) {
+      roleSelect.innerHTML = `
+        <option value="">-- PILIH ROLE PENGGUNA --</option>
+        <option value="User Desa">User Desa</option>
+        <option value="Admin Kec">Admin Kec</option>
+      `;
+    }
+
+    onUserRoleChange();
     document.getElementById("modalManageUsers").style.display = "block";
   }
 
@@ -2953,6 +3044,8 @@
     const roleVal = document.getElementById("user_role_select").value;
     const kecRow = document.getElementById("userKecRow");
     const desaRow = document.getElementById("userDesaRow");
+    const selKec = document.getElementById("user_kec_select");
+    const selDesa = document.getElementById("user_desa_select");
 
     if (roleVal === "Admin Kab" || roleVal === "") {
       kecRow.style.display = "none";
@@ -2960,9 +3053,27 @@
     } else if (roleVal === "Admin Kec") {
       kecRow.style.display = "flex";
       desaRow.style.display = "none";
+
+      if (isKecRole()) {
+        selKec.value = userKodeKec;
+        selKec.disabled = true;
+      }
     } else { // "User Desa"
       kecRow.style.display = "flex";
       desaRow.style.display = "flex";
+
+      if (isKecRole()) {
+        selKec.value = userKodeKec;
+        selKec.disabled = true;
+        onUserKecChange();
+        selDesa.disabled = false;
+      } else if (isDesaRole()) {
+        selKec.value = userKodeKec;
+        selKec.disabled = true;
+        onUserKecChange();
+        selDesa.value = userKodeDesa;
+        selDesa.disabled = true;
+      }
     }
   }
 
@@ -2982,27 +3093,36 @@
 
     const roleVal = document.getElementById("user_role_select").value;
     const userId = document.getElementById("user_id").value;
-    const isKab = (userRole.indexOf("KAB") !== -1 || userRole === "ADMIN");
 
-    const kecVal = (roleVal === "Admin Kab") ? "" : (isKab ? document.getElementById("user_kec_select").value : userKodeKec);
-    const desaVal = (roleVal === "User Desa") ? document.getElementById("user_desa_select").value : "";
+    // Pastikan kode wilayah dipaksa sesuai login jika bukan Admin Kab
+    let targetKec = "";
+    let targetDesa = "";
+
+    if (roleVal === "Admin Kab") {
+      targetKec = "";
+      targetDesa = "";
+    } else if (roleVal === "Admin Kec") {
+      targetKec = isKabRole() ? document.getElementById("user_kec_select").value : userKodeKec;
+      targetDesa = "";
+    } else {
+      targetKec = isKabRole() ? document.getElementById("user_kec_select").value : userKodeKec;
+      targetDesa = isDesaRole() ? userKodeDesa : document.getElementById("user_desa_select").value;
+    }
 
     const payload = {
       username: document.getElementById("user_name_input").value.trim(),
       password_hash: document.getElementById("user_pass_input").value.trim(),
       role: roleVal,
       kode_kab: userKodeKab || "01",
-      kode_kec: kecVal,
-      kode_desa: desaVal
+      kode_kec: targetKec,
+      kode_desa: targetDesa
     };
 
     try {
       let res;
       if (userId) {
-        // Mode Update
         res = await db.from('users').update(payload).eq('id', userId);
       } else {
-        // Mode Tambah Baru
         res = await db.from('users').insert([payload]);
       }
 
@@ -3017,6 +3137,7 @@
       });
 
       resetUserForm();
+      loadUsersList();
 
     } catch (err) {
       Swal.fire('Gagal Menyimpan', err.message, 'error');
@@ -3032,11 +3153,13 @@
 
     let query = db.from('users').select('*').order('username', { ascending: true });
 
-    // Jika bukan Admin Kab, hanya tampilkan akun di bawah kecamatannya
-    const isKab = (userRole.indexOf("KAB") !== -1 || userRole === "ADMIN");
-    if (!isKab && userKodeKec) {
+    // Pembatasan hak lihat daftar pengguna
+    if (isDesaRole()) {
+      query = query.eq('kode_kec', userKodeKec).eq('kode_desa', userKodeDesa);
+    } else if (isKecRole()) {
       query = query.eq('kode_kec', userKodeKec);
     }
+    // Admin Kabupaten tetap dapat melihat semua akun
 
     const { data, error } = await query;
     if (error || !data) {
