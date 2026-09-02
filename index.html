@@ -1569,8 +1569,8 @@
   // --- REKAPITULASI DENGAN FILTER TINGKAT ---
   async function fetchRecap() {
     const tingkat = document.getElementById("recapTingkat").value;
-    const tahun = document.getElementById("recapTahun").value;
-    const bulan = document.getElementById("recapBulan").value;
+    const tahun = parseInt(document.getElementById("recapTahun").value, 10);
+    const bulan = parseInt(document.getElementById("recapBulan").value, 10);
     const monthKey = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"][bulan - 1];
 
     if (!tingkat) {
@@ -1579,97 +1579,176 @@
     }
 
     const tbody = document.getElementById("recapTableBody");
-    tbody.innerHTML = "<tr><td colspan='22' style='text-align:center;'>Memuat data rekapitulasi...</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='22' style='text-align:center;'>Memuat seluruh data rekapitulasi...</td></tr>";
 
-    let query = db.from('data_pus').select('*').eq('tahun', tahun);
+    // 1. TENTUKAN FILTER WILAYAH
+    let filterKec = "";
+    let filterDesa = "";
+    let filterDusun = "";
 
-    // KUNCI QUERY BERDASARKAN ROLE
     if (isDesaRole()) {
-      query = query.eq('kode_kec', userKodeKec).eq('kode_desa', userKodeDesa);
+      filterKec = userKodeKec;
+      filterDesa = userKodeDesa;
       if (tingkat === "Dusun") {
-        let dsn = document.getElementById("recapDusun").value;
-        if (dsn) query = query.eq('kode_dusun', dsn);
+        filterDusun = document.getElementById("recapDusun").value;
       }
     } else if (isKecRole()) {
-      query = query.eq('kode_kec', userKodeKec);
+      filterKec = userKodeKec;
       if (tingkat === "Desa" || tingkat === "Dusun") {
-        let des = document.getElementById("recapDesa").value;
-        if (des) query = query.eq('kode_desa', des);
+        filterDesa = document.getElementById("recapDesa").value;
       }
       if (tingkat === "Dusun") {
-        let dsn = document.getElementById("recapDusun").value;
-        if (dsn) query = query.eq('kode_dusun', dsn);
+        filterDusun = document.getElementById("recapDusun").value;
       }
     } else {
       if (tingkat === "Kecamatan" || tingkat === "Desa" || tingkat === "Dusun") {
-        let kec = document.getElementById("recapKecamatan").value;
-        if (kec) query = query.eq('kode_kec', kec);
+        filterKec = document.getElementById("recapKecamatan").value;
       }
       if (tingkat === "Desa" || tingkat === "Dusun") {
-        let desa = document.getElementById("recapDesa").value;
-        if (desa) query = query.eq('kode_desa', desa);
+        filterDesa = document.getElementById("recapDesa").value;
       }
       if (tingkat === "Dusun") {
-        let dusun = document.getElementById("recapDusun").value;
-        if (dusun) query = query.eq('kode_dusun', dusun);
+        filterDusun = document.getElementById("recapDusun").value;
       }
     }
 
-    const { data, error } = await query;
-    if (error || !data) {
-      tbody.innerHTML = "<tr><td colspan='22' style='text-align:center; color:red;'>Gagal memuat rekap.</td></tr>";
-      return;
-    }
-    if (data.length === 0) {
-      tbody.innerHTML = "<tr><td colspan='22' style='text-align:center; color:red;'>Data tidak ditemukan.</td></tr>";
+    // Validasi input khusus level Kecamatan
+    if ((tingkat === "Kecamatan" || tingkat === "Desa" || tingkat === "Dusun") && !filterKec) {
+      Swal.fire("Perhatian", "Silakan pilih Kecamatan terlebih dahulu!", "warning");
+      tbody.innerHTML = "<tr><td colspan='22' style='text-align:center; color:red;'>Kecamatan belum dipilih.</td></tr>";
       return;
     }
 
+    // 2. AMBIL SELURUH DATA DENGAN AUTO-PAGING (MELEWATI LIMIT 1.000 BARIS SUPABASE)
+    let allData = [];
+    let from = 0;
+    const step = 1000;
+    let hasMore = true;
+
+    try {
+      while (hasMore) {
+        // Hanya tarik kolom yang diperlukan untuk efisiensi bandwidth & memori
+        let query = db.from('data_pus')
+          .select(`id_pus, tahun, kode_prov, kode_kab, kode_kec, kode_desa, kode_dusun, kode_rt, kecamatan_nama, desa_nama, dusun_nama, rt_nama, ${monthKey}`)
+          .eq('tahun', tahun);
+
+        if (filterKec) query = query.eq('kode_kec', filterKec);
+        if (filterDesa) query = query.eq('kode_desa', filterDesa);
+        if (filterDusun) query = query.eq('kode_dusun', filterDusun);
+
+        const { data, error } = await query.range(from, from + step - 1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allData = allData.concat(data);
+          from += step;
+          if (data.length < step) hasMore = false; // Data sudah habis terambil
+        } else {
+          hasMore = false;
+        }
+      }
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan='22' style='text-align:center; color:red;'>Gagal memuat data: ${err.message}</td></tr>`;
+      return;
+    }
+
+    // 3. SUSUN TEMPLATE HIERARKI MASTER WILAYAH (Agar desa/dusun tidak hilang jika data 0)
     let grouped = {};
-    data.forEach(r => {
-      let groupName = "-";
-      if (tingkat === "Kabupaten") groupName = r.kecamatan_nama || ("KECAMATAN " + r.kode_kec);
-      else if (tingkat === "Kecamatan") groupName = r.desa_nama || ("DESA " + r.kode_desa);
-      else if (tingkat === "Desa") groupName = r.dusun_nama || ("DUSUN " + r.kode_dusun);
-      else if (tingkat === "Dusun") groupName = r.rt_nama || ("RT " + r.kode_rt);
 
-      if (!grouped[groupName]) {
-        grouped[groupName] = { 
-          name: groupName, total: 0, ber_kb: 0, pil: 0, stk: 0, kdm: 0, imp: 0, iud: 0, mow: 0, mop: 0, 
-          non_kb: 0, hamil: 0, ias: 0, iat: 0, tial: 0, tki: 0, non_pus: 0, cerai: 0, mngl: 0, pindah: 0 
-        };
+    if (tingkat === "Kabupaten") {
+      for (let kdKab in dataKecamatan) {
+        for (let kd in dataKecamatan[kdKab]) {
+          let nm = dataKecamatan[kdKab][kd].toUpperCase();
+          grouped[nm] = createEmptyRecapItem(nm);
+        }
+      }
+    } else if (tingkat === "Kecamatan") {
+      let cleanKec = String(filterKec).padStart(2, '0');
+      if (dataDesa[cleanKec]) {
+        for (let kd in dataDesa[cleanKec]) {
+          let nm = dataDesa[cleanKec][kd].toUpperCase();
+          grouped[nm] = createEmptyRecapItem(nm);
+        }
+      }
+    } else if (tingkat === "Desa") {
+      let cleanKec = String(filterKec).padStart(2, '0');
+      let cleanDesa = String(filterDesa).padStart(4, '0');
+      let dusunObj = getDusunList(cleanKec, cleanDesa);
+      if (dusunObj) {
+        for (let kd in dusunObj) {
+          let nm = dusunObj[kd].nama.toUpperCase();
+          grouped[nm] = createEmptyRecapItem(nm);
+        }
+      }
+    } else if (tingkat === "Dusun") {
+      let cleanKec = String(filterKec).padStart(2, '0');
+      let cleanDesa = String(filterDesa).padStart(4, '0');
+      let cleanDsn  = String(filterDusun).padStart(4, '0');
+      let dusunObj = getDusunList(cleanKec, cleanDesa);
+      if (dusunObj && dusunObj[cleanDsn]) {
+        for (let i = 1; i <= dusunObj[cleanDsn].jumlah_rt; i++) {
+          let nm = "RT " + String(i).padStart(3, '0');
+          grouped[nm] = createEmptyRecapItem(nm);
+        }
+      }
+    }
+
+    function createEmptyRecapItem(name) {
+      return { 
+        name: name, total: 0, ber_kb: 0, pil: 0, stk: 0, kdm: 0, imp: 0, iud: 0, mow: 0, mop: 0, 
+        non_kb: 0, hamil: 0, ias: 0, iat: 0, tial: 0, tki: 0, non_pus: 0, cerai: 0, mngl: 0, pindah: 0 
+      };
+    }
+
+    // 4. HITUNG DAN PETAKAN SELURUH DATA KE DALAM HIERARKI
+    allData.forEach(r => {
+      let groupKey = "";
+      if (tingkat === "Kabupaten") groupKey = String(r.kecamatan_nama || "").trim().toUpperCase();
+      else if (tingkat === "Kecamatan") groupKey = String(r.desa_nama || "").trim().toUpperCase();
+      else if (tingkat === "Desa") groupKey = String(r.dusun_nama || "").trim().toUpperCase();
+      else if (tingkat === "Dusun") {
+        let rawRt = String(r.kode_rt || "").replace(/[^0-9]/g, "");
+        groupKey = rawRt ? "RT " + rawRt.padStart(3, '0') : String(r.rt_nama || "").trim().toUpperCase();
+      }
+
+      if (!groupKey) return;
+
+      if (!grouped[groupKey]) {
+        grouped[groupKey] = createEmptyRecapItem(groupKey);
       }
       
       let st = (r[monthKey] || "").toUpperCase();
-      grouped[groupName].total++;
+      grouped[groupKey].total++;
 
       if (st.includes("PESERTA KB")) {
-        grouped[groupName].ber_kb++;
-        if (st.includes("PIL")) grouped[groupName].pil++;
-        if (st.includes("STK")) grouped[groupName].stk++;
-        if (st.includes("KDM")) grouped[groupName].kdm++;
-        if (st.includes("IMP")) grouped[groupName].imp++;
-        if (st.includes("IUD")) grouped[groupName].iud++;
-        if (st.includes("MOW")) grouped[groupName].mow++;
-        if (st.includes("MOP")) grouped[groupName].mop++;
+        grouped[groupKey].ber_kb++;
+        if (st.includes("PIL")) grouped[groupKey].pil++;
+        if (st.includes("STK")) grouped[groupKey].stk++;
+        if (st.includes("KDM")) grouped[groupKey].kdm++;
+        if (st.includes("IMP")) grouped[groupKey].imp++;
+        if (st.includes("IUD")) grouped[groupKey].iud++;
+        if (st.includes("MOW")) grouped[groupKey].mow++;
+        if (st.includes("MOP")) grouped[groupKey].mop++;
       } else if (st.includes("BUKAN PESERTA KB")) {
-        grouped[groupName].non_kb++;
-        if (st.includes("HAMIL")) grouped[groupName].hamil++;
-        if (st.includes("IAS")) grouped[groupName].ias++;
-        if (st.includes("IAT")) grouped[groupName].iat++;
-        if (st.includes("TIAL")) grouped[groupName].tial++;
-        if (st.includes("TKI")) grouped[groupName].tki++;
+        grouped[groupKey].non_kb++;
+        if (st.includes("HAMIL")) grouped[groupKey].hamil++;
+        if (st.includes("IAS")) grouped[groupKey].ias++;
+        if (st.includes("IAT")) grouped[groupKey].iat++;
+        if (st.includes("TIAL")) grouped[groupKey].tial++;
+        if (st.includes("TKI")) grouped[groupKey].tki++;
       } else if (st.includes("BUKAN PUS") || st.includes("CERAI") || st.includes("MENINGGAL") || st.includes("PINDAH") || st.includes("BERCERAI")) {
-        grouped[groupName].non_pus++;
-        if (st.includes("CERAI") || st.includes("BERCERAI")) grouped[groupName].cerai++;
-        if (st.includes("MENINGGAL")) grouped[groupName].mngl++;
-        if (st.includes("PINDAH")) grouped[groupName].pindah++;
+        grouped[groupKey].non_pus++;
+        if (st.includes("CERAI") || st.includes("BERCERAI")) grouped[groupKey].cerai++;
+        if (st.includes("MENINGGAL")) grouped[groupKey].mngl++;
+        if (st.includes("PINDAH")) grouped[groupKey].pindah++;
       }
     });
 
+    // 5. RENDER TABEL HASIL REKAP
     tbody.innerHTML = "";
     let idx = 1;
-    let totalAll = { total: 0, ber_kb: 0, pil: 0, stk: 0, kdm: 0, imp: 0, iud: 0, mow: 0, mop: 0, non_kb: 0, hamil: 0, ias: 0, iat: 0, tial: 0, tki: 0, non_pus: 0, cerai: 0, mngl: 0, pindah: 0 };
+    let totalAll = createEmptyRecapItem("JUMLAH / TOTAL");
 
     for (let k in grouped) {
       let g = grouped[k];
@@ -1685,9 +1764,12 @@
         <td>${g.cerai}</td><td>${g.mngl}</td><td>${g.pindah}</td>
       </tr>`;
 
-      for (let prop in totalAll) totalAll[prop] += g[prop];
+      for (let prop in totalAll) {
+        if (prop !== "name") totalAll[prop] += g[prop];
+      }
     }
 
+    // Baris Jumlah / Total
     tbody.innerHTML += `<tr style="background:#e9ecef; font-weight:bold;">
       <td colspan="2" style="text-align:center; color:#1f4e78;">JUMLAH / TOTAL</td>
       <td>${totalAll.total}</td>
