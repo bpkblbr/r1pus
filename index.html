@@ -3422,25 +3422,26 @@
     const inKabKode = document.getElementById("mw_kode_kab");
     const inKecNama = document.getElementById("mw_kecamatan_nama");
     const inKecKode = document.getElementById("mw_kode_kec");
-    
     const inDesaNama = document.getElementById("mw_desa_nama");
     const inDesaKode = document.getElementById("mw_kode_desa");
 
-    // Ambil nama wilayah dari cache
+    // Ambil nama kabupaten dari cache jika ada
     let namaKab = "";
     if (userKodeKab && dataKabupaten[userKodeKab]) {
       let kabObj = dataKabupaten[userKodeKab];
       namaKab = typeof kabObj === 'object' ? Object.values(kabObj)[0] : kabObj;
     }
 
+    // Cek apakah data kecamatan untuk kode login ini sudah ada di database/cache
     let namaKec = "";
+    let isKecRegisteredInDB = false;
     if (userKodeKab && dataKecamatan[userKodeKab] && dataKecamatan[userKodeKab][userKodeKec]) {
       namaKec = dataKecamatan[userKodeKab][userKodeKec];
+      isKecRegisteredInDB = true;
     }
 
-    // Cek Level Role (Admin Kecamatan vs Admin Kabupaten)
-    if (isKecRole()) {
-      // 1. Admin Kecamatan: LOCK Provinsi sampai Kecamatan sesuai login, Desa bebas
+    if (isKecRole() && isKecRegisteredInDB) {
+      // 1. Jika Admin Kecamatan DAN data kecamatannya SUDAH MASUK di DB -> Lock Provinsi s.d Kecamatan
       inProvNama.readOnly = true; inProvKode.readOnly = true;
       inProvNama.style.backgroundColor = "#e9ecef"; inProvKode.style.backgroundColor = "#e9ecef";
 
@@ -3454,7 +3455,6 @@
       inKecNama.readOnly = true; inKecKode.readOnly = true;
       inKecNama.style.backgroundColor = "#e9ecef"; inKecKode.style.backgroundColor = "#e9ecef";
 
-      // Desa tetap bisa diinput oleh Admin Kecamatan
       inDesaNama.value = "";
       inDesaKode.value = "";
       inDesaNama.readOnly = false;
@@ -3463,7 +3463,7 @@
       inDesaKode.style.backgroundColor = "#ffffff";
 
     } else {
-      // 2. Admin Kabupaten: BEBAS (Semua kolom dari Provinsi sampai Desa dapat diisi manual)
+      // 2. Jika Admin Kabupaten ATAU Admin Kecamatan TAPI data belum masuk di DB -> Bebas / Tidak dilock
       inProvNama.readOnly = false; inProvKode.readOnly = false;
       inProvNama.style.backgroundColor = "#ffffff"; inProvKode.style.backgroundColor = "#ffffff";
 
@@ -3478,10 +3478,17 @@
 
       inProvNama.value = "NUSA TENGGARA BARAT";
       inProvKode.value = "52";
-      inKabNama.value = "LOMBOK BARAT";
-      inKabKode.value = "01";
-      inKecNama.value = "";
-      inKecKode.value = "";
+      inKabNama.value = namaKab || "LOMBOK BARAT";
+      inKabKode.value = userKodeKab || "01";
+
+      // Jika user adalah Admin Kecamatan yang datanya masih kosong, bantu set kodenya
+      if (isKecRole()) {
+        inKecKode.value = userKodeKec;
+      } else {
+        inKecNama.value = "";
+        inKecKode.value = "";
+      }
+
       inDesaNama.value = "";
       inDesaKode.value = "";
     }
