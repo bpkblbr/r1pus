@@ -1312,10 +1312,32 @@
   }
   
   function applyMutationAndAgeLocks() {
-  const umurIstri = parseInt(document.getElementById("umur_istri").value || 0, 10);
+  const tglLahir = document.getElementById("tgl_lahir_istri").value;
+  const tahunInput = parseInt(document.getElementById("tahun_input").value || new Date().getFullYear(), 10);
+  
   let mutationTriggeredIndex = -1;
+  let age50StartIndex = 13; // Default 13 (artinya belum 50 tahun di tahun ini)
 
-  // 1. Deteksi apakah ada bulan yang berstatus Mutasi (CERAI, SUAMI/ISTRI MENINGGAL, PINDAH)
+  // 1. Hitung persis bulan berapa istri berusia 50 tahun pada tahun pelaporan ini
+  if (tglLahir) {
+    const dob = new Date(tglLahir);
+    const birthYear = dob.getFullYear();
+    const birthMonth = dob.getMonth() + 1; // Bulan 1-12
+    const birthDay = dob.getDate();
+
+    // Tahun ke-50 jatuh pada:
+    const yearTurning50 = birthYear + 50;
+
+    if (tahunInput > yearTurning50) {
+      // Jika tahun pelaporan sudah melewati tahun ke-50, maka dari Januari (bulan 1) sudah terkunci
+      age50StartIndex = 1;
+    } else if (tahunInput === yearTurning50) {
+      // Jika tahun pelaporan adalah tahun saat dia berusia 50, kunci mulai bulan kelahirannya
+      age50StartIndex = birthMonth;
+    }
+  }
+
+  // 2. Deteksi apakah ada bulan yang berstatus Mutasi (CERAI, SUAMI/ISTRI MENINGGAL, PINDAH)
   for (let i = 1; i <= 12; i++) {
     const sel = document.getElementById("kb_" + i);
     if (!sel) continue;
@@ -1323,36 +1345,48 @@
     
     if (val === "BERCERAI" || val === "SUAMI/ISTRI MENINGGAL" || val === "PINDAH") {
       mutationTriggeredIndex = i;
-      break; // Mutasi pertama yang ditemukan menjadi titik awal penguncian
+      break; // Ambil mutasi pertama yang ditemukan
     }
   }
 
-  // 2. Evaluasi penguncian untuk setiap bulan (1 s.d. 12)
+  // Tentukan titik awal penguncian yang paling awal antara Mutasi atau Usia 50+
+  let lockStartingIndex = 13;
+  let lockReason = "";
+
+  if (mutationTriggeredIndex !== -1 && age50StartIndex !== -1) {
+    // Jika ada keduanya, ambil mana yang terjadi lebih dulu (indeks terkecil)
+    if (mutationTriggeredIndex + 1 <= age50StartIndex) {
+      lockStartingIndex = mutationTriggeredIndex + 1; // Mutasi dikunci mulai bulan SETELAHNYA
+      lockReason = "TERKUNCI (SETELAH MUTASI)";
+    } else {
+      lockStartingIndex = age50StartIndex; // Umur 50+ dikunci tepat di bulan ulang tahunnya
+      lockReason = "TERKUNCI (USIA 50+)";
+    }
+  } else if (mutationTriggeredIndex !== -1) {
+    lockStartingIndex = mutationTriggeredIndex + 1;
+    lockReason = "TERKUNCI (SETELAH MUTASI)";
+  } else if (age50StartIndex !== -1) {
+    lockStartingIndex = age50StartIndex;
+    lockReason = "TERKUNCI (USIA 50+)";
+  }
+
+  // 3. Evaluasi penguncian untuk setiap bulan (1 s.d. 12)
   for (let i = 1; i <= 12; i++) {
     const sel = document.getElementById("kb_" + i);
     if (!sel) continue;
 
     let shouldLock = false;
-    let lockReasonText = "";
 
-    // Aturan A: Jika ada mutasi di bulan ke-N, maka bulan ke-N dan seterusnya dikunci
-    if (mutationTriggeredIndex !== -1 && i >= mutationTriggeredIndex) {
+    // Bulan saat mutasi (mutationTriggeredIndex) TETAP BISA DIUBAH.
+    // Penguncian mulai aktif jika bulan (i) >= lockStartingIndex.
+    if (lockStartingIndex !== -1 && i >= lockStartingIndex) {
       shouldLock = true;
-      lockReasonText = "TERKUNCI (MUTASI)";
-    } 
-    // Aturan B: Jika umur istri sudah mencapai 50 tahun atau lebih (Asumsi batasan tahun pelaporan/usia)
-    else if (umurIstri >= 50) {
-      // Jika umur sudah 50, kunci seluruh bulan atau sesuaikan (disini kita kunci semua jika >= 50)
-      shouldLock = true;
-      lockReasonText = "TERKUNCI (USIA 50+)";
     }
 
     if (shouldLock) {
-      // Jika bulan ini belum memiliki status mutasi/50+, tapi terimbas lock karena bulan sebelumnya mutasi, 
-      // berikan nilai otomatis atau biarkan kosong terkunci.
       sel.disabled = true;
       sel.style.backgroundColor = "#e9ecef";
-      sel.title = lockReasonText;
+      sel.title = lockReason;
     } else {
       sel.disabled = false;
       sel.style.backgroundColor = "#ffffff";
