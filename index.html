@@ -1173,25 +1173,25 @@
     return "Selamat malam";
   }
 
-  function setUserGreeting(role, namaWilayah, username) {
+  function setUserGreeting(role, wilayahNama, username) {
     const timeGreeting = getTimeGreeting();
     let identity = "";
-
     const roleUpper = String(role || "").toUpperCase();
+
     if (roleUpper.indexOf("KAB") !== -1) {
-      identity = "Admin Kabupaten " + (namaWilayah || "");
+      identity = "Admin Kabupaten " + (wilayahNama || "Lombok Barat"); // Fallback aman jika data kosong
     } else if (roleUpper.indexOf("KEC") !== -1) {
-      identity = "Admin Kecamatan " + (namaWilayah || "");
+      identity = "Admin Kecamatan " + (wilayahNama || "");
     } else {
-      identity = "User Desa " + (namaWilayah || "");
+      identity = "User Desa " + (wilayahNama || "");
     }
 
     identity = identity.trim();
-    if (!namaWilayah) {
+    if (!wilayahNama) {
       identity = role + " (" + username + ")";
     }
 
-    const fullGreeting = `${timeGreeting}, <b>${identity}</b>`;
+    const fullGreeting = `${timeGreeting}, ${identity}`;
     const greetingEl = document.getElementById("userGreetingText");
     if (greetingEl) {
       greetingEl.innerHTML = fullGreeting;
@@ -1875,19 +1875,31 @@
       userKodeKec = String(data.kode_kec || "").trim().padStart(2, '0');
       userKodeDesa = String(data.kode_desa || "").trim().padStart(4, '0');
 
-      // Tentukan label wilayah sapaan berdasarkan kode wilayah aktif
-      let namaWilayahLabel = "";
-      if (userKodeDesa && dataDesa[userKodeKec] && dataDesa[userKodeKec][userKodeDesa]) {
-        namaWilayahLabel = "Desa " + dataDesa[userKodeKec][userKodeDesa];
-      } else if (userKodeKec && dataKecamatan[userKodeKab] && dataKecamatan[userKodeKab][userKodeKec]) {
-        namaWilayahLabel = "Kec. " + dataKecamatan[userKodeKab][userKodeKec];
+      // Ambil nama wilayah secara dinamis dari data master database yang sudah dimuat
+      let namaWilayahDinamis = "";
+      
+      if (userRole.includes("KAB")) {
+        // Ambil nama Kabupaten berdasarkan userKodeKab
+        if (dataKabupaten[userKodeKab]) {
+          // Jika dataKabupaten[userKodeKab] berupa objek, ambil nilai pertamanya atau cari kodenya
+          let kabObj = dataKabupaten[userKodeKab];
+          namaWilayahDinamis = typeof kabObj === 'object' ? Object.values(kabObj)[0] : kabObj;
+        }
+      } else if (userRole.includes("KEC") || userRole === "ADMIN") {
+        // Ambil nama Kecamatan berdasarkan userKodeKab & userKodeKec
+        if (dataKecamatan[userKodeKab] && dataKecamatan[userKodeKab][userKodeKec]) {
+          namaWilayahDinamis = dataKecamatan[userKodeKab][userKodeKec];
+        }
       } else {
-        namaWilayahLabel = data.role;
+        // Ambil nama Desa berdasarkan userKodeKec & userKodeDesa
+        if (dataDesa[userKodeKec] && dataDesa[userKodeKec][userKodeDesa]) {
+          namaWilayahDinamis = dataDesa[userKodeKec][userKodeDesa];
+        }
       }
 
-      // Terapkan format sapaan waktu dinamis
-      setUserGreeting(data.role, namaWilayahLabel, data.username);
-	  
+      // Terapkan format sapaan waktu dinamis dengan nama wilayah dari database
+      setUserGreeting(data.role, namaWilayahDinamis, data.username);
+
       document.getElementById("loginContainer").style.display = "none";
       document.getElementById("appContainer").style.display = "block";
       
