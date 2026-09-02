@@ -2299,9 +2299,7 @@
         if (mutasiError) {
           console.error("Gagal mengirim tiket mutasi:", mutasiError.message);
         }
-      }
-        await db.from('mutasi_pus').insert([mutasiPayload]);
-      }
+      }      
 
       // Selesaikan tiket mutasi masuk jika berasal dari inbox
       const tiketId = document.getElementById("id_mutasi_tiket").value;
