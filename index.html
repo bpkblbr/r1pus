@@ -318,6 +318,13 @@
           <div class="card-title">Grafik & Statistik</div>
           <div class="card-desc">Visualisasi capaian KB, Mix Kontrasepsi, & Unmet Need.</div>
         </div>
+
+        <div class="dashboard-card" onclick="openInboxMutasiModal()" style="position: relative;">
+          <span id="badgeInboxMutasi" style="display: none; position: absolute; top: 12px; right: 12px; background: #ef4444; color: white; border-radius: 50%; padding: 4px 8px; font-size: 11px; font-weight: bold;">0</span>
+          <div class="card-icon" style="background-color: #fef3c7; color: #d97706;">📩</div>
+          <div class="card-title">Mutasi Masuk (Inbox)</div>
+          <div class="card-desc">Cek dan input otomatis data PUS pindahan dari wilayah lain.</div>
+        </div>
       </div>
     </div>
 
@@ -336,24 +343,39 @@
 
       <form id="pusForm" onsubmit="handleFormSubmit(event)">
         <input type="hidden" id="id_pus" name="id_pus">
+        <input type="hidden" id="id_mutasi_tiket" name="id_mutasi_tiket">
+        <input type="hidden" id="is_pindah_dalam_kab" value="false">
+        <input type="hidden" id="pindah_kec_tujuan" value="">
+        <input type="hidden" id="pindah_desa_tujuan" value="">
+        <input type="hidden" id="pindah_desa_nama" value="">
+
+        <!-- CONTAINER NAVIGASI RT -->
+        <div id="navRTContainer" style="display: none; background: #e0f2fe; padding: 12px; border-radius: 6px; border: 1px solid #bae6fd; margin-bottom: 15px; flex-direction: row; justify-content: space-between; align-items: center;">
+          <button type="button" id="btnPrevRT" class="btn-nav btn-secondary" onclick="navigateFormRT(-1)">⬅️ Back</button>
+          <div style="text-align: center;">
+            <div id="navRTInfo" style="font-weight: bold; font-size: 13px; color: #0369a1;">Data 1 dari 10</div>
+            <div id="navRTWilayah" style="font-size: 11px; color: #0284c7;">RT 001, Dusun GUNUNGSARI</div>
+          </div>
+          <button type="button" id="btnNextRT" class="btn-nav btn-secondary" onclick="navigateFormRT(1)">Next ➡️</button>
+        </div>
 
         <div class="section-title">TAHUN PELAPORAN</div>
         <div class="form-group">
           <label for="tahun_input">Tahun:</label>
           <select id="tahun_input" name="tahun_input" required>
-			<option value="2025">2025</option>
-			<option value="2026">2026</option>
-			<option value="2027">2027</option>
-			<option value="2028">2028</option>
-			<option value="2029">2029</option>
-			<option value="2030">2030</option>
-			<option value="2031">2031</option>
-			<option value="2032">2032</option>
-			<option value="2033">2033</option>
-			<option value="2034">2034</option>
-			<option value="2035">2035</option>5
-		  </select>
-		</div>
+			      <option value="2025">2025</option>
+			      <option value="2026">2026</option>
+			      <option value="2027">2027</option>
+			      <option value="2028">2028</option>
+			      <option value="2029">2029</option>
+			      <option value="2030">2030</option>
+			      <option value="2031">2031</option>
+			      <option value="2032">2032</option>
+			      <option value="2033">2033</option>
+			      <option value="2034">2034</option>
+			      <option value="2035">2035</option>5
+		      </select>
+		    </div>
 
         <div class="section-title">I. DATA WILAYAH</div>
         <div class="form-group">
@@ -1082,6 +1104,35 @@
   </div>
 </div>
 
+<!-- MODAL INBOX MUTASI PUS MASUK -->
+<div id="modalInboxMutasi" class="modal">
+  <div class="modal-content" style="max-width: 750px; width: 95%;">
+    <span class="close" onclick="closeInboxMutasiModal()">&times;</span>
+    <h3 style="margin-top:0; color:#1f4e78; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px;">
+      📩 INBOX DATA PUS MUTASI MASUK
+    </h3>
+    <div style="font-size: 13px; color: #555; margin-bottom: 15px;">
+      Daftar PUS yang pindah domisili menuju wilayah Anda. Klik tombol <b>Terima / Input</b> untuk memproses ke wilayah baru Anda.
+    </div>
+    <div style="max-height: 380px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
+      <table class="kb-table" style="font-size: 12px; width: 100%; margin-top: 0;">
+        <thead>
+          <tr>
+            <th style="background:#1f4e78; color:white; width: 30px;">NO</th>
+            <th style="background:#1f4e78; color:white;">ASAL WILAYAH</th>
+            <th style="background:#1f4e78; color:white;">IDENTITAS PUS</th>
+            <th style="background:#1f4e78; color:white;">BLN PINDAH</th>
+            <th style="background:#1f4e78; color:white; width: 130px;">AKSI</th>
+          </tr>
+        </thead>
+        <tbody id="inboxMutasiTbody">
+          <tr><td colspan="5" style="text-align: center; padding: 20px;">Memeriksa data mutasi...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- JAVASCRIPT LOGIC DENGAN SUPABASE INTEGRATION -->
 <script>
   const SUPABASE_URL = 'https://fxtffszvtyrtllugxlxe.supabase.co';
@@ -1350,6 +1401,98 @@
       eyeOpen.style.display = "block";
       eyeClosed.style.display = "none";
     }
+  }
+
+  function onKbMonthChange(monthIndex) {
+    const sel = document.getElementById("kb_" + monthIndex);
+    const val = sel ? sel.value : "";
+
+    if (val === "PINDAH") {
+      promptPindahDomisili(monthIndex);
+    }
+  }
+
+  function promptPindahDomisili(monthIndex) {
+    const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    const currentMonthName = monthNames[monthIndex - 1];
+
+    Swal.fire({
+      title: 'Tujuan Pindah Domisili',
+      text: `Akseptor berstatus PINDAH pada bulan ${currentMonthName}. Ke mana tujuan pindah domisili?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#0284c7',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: '🏙️ Di Dalam Kabupaten',
+      cancelButtonText: '✈️ Ke Luar Kabupaten',
+      allowOutsideClick: false
+    }).then((result) => {
+      if (result.isConfirmed) {
+        let kecOptions = `<option value="">-- PILIH KECAMATAN TUJUAN --</option>`;
+        for (let kdKab in dataKecamatan) {
+          for (let kdKec in dataKecamatan[kdKab]) {
+            let cleanKd = String(kdKec).padStart(2, '0');
+            kecOptions += `<option value="${cleanKd}">${dataKecamatan[kdKab][kdKec].toUpperCase()}</option>`;
+          }
+        }
+
+        Swal.fire({
+          title: 'Pilih Wilayah Tujuan',
+          html: `
+            <div style="text-align:left; font-size:13px; color:#444; margin-bottom:4px;">Kecamatan Tujuan:</div>
+            <select id="swalMutasiKec" class="swal2-input" style="width: 100%; font-size: 13px; padding: 8px; margin: 0 0 10px 0;" onchange="onSwalMutasiKecChange()">
+              ${kecOptions}
+            </select>
+            <div style="text-align:left; font-size:13px; color:#444; margin-bottom:4px;">Desa Tujuan:</div>
+            <select id="swalMutasiDesa" class="swal2-input" style="width: 100%; font-size: 13px; padding: 8px; margin: 0;">
+              <option value="">-- PILIH DESA TUJUAN --</option>
+            </select>
+          `,
+          icon: 'info',
+          confirmButtonColor: '#059669',
+          confirmButtonText: '✅ Tetapkan Tujuan',
+          allowOutsideClick: false,
+          didOpen: () => {
+            window.onSwalMutasiKecChange = function() {
+              const selKec = document.getElementById('swalMutasiKec').value;
+              const selDesa = document.getElementById('swalMutasiDesa');
+              selDesa.innerHTML = '<option value="">-- PILIH DESA TUJUAN --</option>';
+              if (selKec && dataDesa[selKec]) {
+                for (let kd in dataDesa[selKec]) {
+                  selDesa.add(new Option(dataDesa[selKec][kd].toUpperCase(), String(kd).padStart(4, '0')));
+                }
+              }
+            };
+          },
+          preConfirm: () => {
+            const kecTujuan = document.getElementById('swalMutasiKec').value;
+            const desaSelect = document.getElementById('swalMutasiDesa');
+            const desaTujuan = desaSelect.value;
+            const desaNama = desaSelect.selectedIndex >= 0 ? desaSelect.options[desaSelect.selectedIndex].text : "";
+
+            if (!kecTujuan || !desaTujuan) {
+              Swal.showValidationMessage('Kecamatan dan Desa tujuan wajib dipilih!');
+              return false;
+            }
+            return { kec: kecTujuan, desa: desaTujuan, desaNama: desaNama };
+          }
+        }).then((mutRes) => {
+          if (mutRes.isConfirmed) {
+            document.getElementById("is_pindah_dalam_kab").value = "true";
+            document.getElementById("pindah_kec_tujuan").value = mutRes.value.kec;
+            document.getElementById("pindah_desa_tujuan").value = mutRes.value.desa;
+            document.getElementById("pindah_desa_nama").value = mutRes.value.desaNama;
+
+            Swal.fire('Tercatat', `Tujuan pindah: Desa ${mutRes.value.desaNama}. Tiket mutasi akan dibuat saat disimpan.`, 'success');
+          }
+        });
+      } else {
+        document.getElementById("is_pindah_dalam_kab").value = "false";
+        document.getElementById("pindah_kec_tujuan").value = "";
+        document.getElementById("pindah_desa_tujuan").value = "";
+        document.getElementById("pindah_desa_nama").value = "";
+      }
+    });
   }
 
   // --- LOGIC DROPDOWN BERTINGKAT REKAP ---
@@ -1726,7 +1869,116 @@
     if (btnTambahTahun) {
       btnTambahTahun.style.display = isKabRole() ? "inline-block" : "none";
     }
+
+  let cachedPendingMutasiList = [];
+
+  async function checkPendingMutasiNotifications() {
+    if (!currentUser) return;
+    let query = db.from('mutasi_pus').select('*').eq('status', 'PENDING');
+
+    if (isDesaRole()) {
+      query = query.eq('kode_kec_tujuan', userKodeKec).eq('kode_desa_tujuan', userKodeDesa);
+    } else if (isKecRole()) {
+      query = query.eq('kode_kec_tujuan', userKodeKec);
+    }
+
+    const { data, error } = await query;
+    cachedPendingMutasiList = data || [];
+
+    const badge = document.getElementById("badgeInboxMutasi");
+    if (badge) {
+      if (cachedPendingMutasiList.length > 0) {
+        badge.innerText = cachedPendingMutasiList.length;
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+    }
   }
+
+  function openInboxMutasiModal() {
+    document.getElementById("modalInboxMutasi").style.display = "block";
+    loadInboxMutasiTable();
+  }
+
+  function closeInboxMutasiModal() {
+    document.getElementById("modalInboxMutasi").style.display = "none";
+  }
+
+  async function loadInboxMutasiTable() {
+    const tbody = document.getElementById("inboxMutasiTbody");
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:15px;">Memeriksa data mutasi...</td></tr>`;
+
+    await checkPendingMutasiNotifications();
+    renderInboxMutasiTable();
+  }
+
+  function renderInboxMutasiTable() {
+    const tbody = document.getElementById("inboxMutasiTbody");
+    tbody.innerHTML = "";
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    if (cachedPendingMutasiList.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">Tidak ada data PUS mutasi masuk yang tertunda.</td></tr>`;
+      return;
+    }
+
+    cachedPendingMutasiList.forEach((item, idx) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="text-align:center; font-weight:bold;">${idx + 1}</td>
+        <td><b>Desa ${item.desa_asal}</b><br><small style="color:#64748b;">Kec: ${item.kode_kec_asal}</small></td>
+        <td>Istri: <b>${item.nama_istri}</b> (${item.nik_istri})<br>Suami: ${item.nama_suami}</td>
+        <td style="text-align:center; font-weight:bold; color:#0284c7;">${monthNames[(item.bulan_pindah || 1) - 1]} (${item.tahun})</td>
+        <td style="text-align:center;">
+          <button type="button" class="btn-nav btn-action" style="padding: 4px 8px; font-size: 11px;" onclick="acceptAndAutoFillMutasi(${idx})">📥 Terima / Input</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function acceptAndAutoFillMutasi(index) {
+    const item = cachedPendingMutasiList[index];
+    if (!item || !item.payload) return;
+
+    const payloadData = JSON.parse(item.payload);
+
+    closeInboxMutasiModal();
+    showFormView();
+    resetInputForm();
+
+    document.getElementById("id_mutasi_tiket").value = item.id;
+    document.getElementById("id_pus").value = ""; // Dikosongkan agar dibuatkan ID PUS baru di wilayah tujuan
+
+    if (document.getElementById("tahun_input")) {
+      document.getElementById("tahun_input").value = payloadData.tahun || item.tahun;
+    }
+
+    document.getElementById("nama_suami").value = payloadData.nama_suami || "";
+    document.getElementById("nik_suami").value = payloadData.nik_suami || "";
+    document.getElementById("nama_istri").value = payloadData.nama_istri || "";
+    document.getElementById("nik_istri").value = payloadData.nik_istri || "";
+    document.getElementById("tgl_lahir_istri").value = payloadData.tgl_lahir_istri || "";
+    hitungUmurIstri();
+
+    document.getElementById("jumlah_anak").value = payloadData.jumlah_anak || 0;
+    checkJumlahAnak();
+    document.getElementById("umur_anak_terkecil").value = payloadData.umur_anak_terkecil || 0;
+
+    setSelectValueCaseInsensitive("peserta_jkn", payloadData.peserta_jkn);
+
+    for (let m = 1; m <= 12; m++) {
+      let mKey = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"][m - 1];
+      if (payloadData[mKey]) setSelectValueCaseInsensitive("kb_" + m, payloadData[mKey]);
+    }
+
+    Swal.fire({
+      icon: 'info',
+      title: 'Data Mutasi Dimuat!',
+      text: `Data PUS [${item.nama_istri}] berhasil disalin. Silakan lengkapi pilihan DUSUN dan RT di wilayah Anda, lalu klik SIMPAN DATA.`
+    });
+  }  
 
   // --- FORM INPUT DROPDOWN & SUBMIT ---
   function updateKabupaten(selectedVal = "") {
@@ -1892,6 +2144,34 @@
     } else {
       Swal.fire('Berhasil', `Data PUS ${idPus} tersimpan!`, 'success');    
       resetInputForm();
+    }
+    
+    if (document.getElementById("is_pindah_dalam_kab").value === "true") {
+      const mutasiPayload = {
+        tahun: thn,
+        bulan_pindah: parseInt(document.getElementById("tahun_input").value || 1, 10),
+        id_pus_asal: idPus,
+        kode_kec_asal: kdKec,
+        kode_desa_asal: kdDesa,
+        desa_asal: document.getElementById("desa").options[document.getElementById("desa").selectedIndex].text,
+        kode_kec_tujuan: document.getElementById("pindah_kec_tujuan").value,
+        kode_desa_tujuan: document.getElementById("pindah_desa_tujuan").value,
+        desa_tujuan: document.getElementById("pindah_desa_nama").value,
+        nama_suami: document.getElementById("nama_suami").value.trim().toUpperCase(),
+        nik_suami: document.getElementById("nik_suami").value.trim(),
+        nama_istri: document.getElementById("nama_istri").value.trim().toUpperCase(),
+        nik_istri: document.getElementById("nik_istri").value.trim(),
+        payload: JSON.stringify(payload),
+        status: 'PENDING',
+        created_at: new Date().toISOString()
+      };
+      await db.from('mutasi_pus').insert([mutasiPayload]);
+    }
+
+    // Jika sedang memproses data dari tiket inbox, ubah status tiket menjadi PROCESSED:
+    const tiketId = document.getElementById("id_mutasi_tiket").value;
+    if (tiketId) {
+      await db.from('mutasi_pus').update({ status: 'PROCESSED' }).eq('id', tiketId);
     }
   }
 
@@ -2603,6 +2883,8 @@
       let mKey = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"][i-1];
       setSelectValueCaseInsensitive("kb_" + i, d[mKey]);
     }
+    
+    initNavigationRT(d.kode_kec, d.kode_desa, d.kode_dusun, d.kode_rt, d.tahun, d.id_pus, d.dusun_nama);
   }
 
   // --- EKSPOR PDF & EXCEL ---
@@ -3644,6 +3926,58 @@
       }
     };
     reader.readAsArrayBuffer(file);
+  }
+let navRtDataList = [];
+  let navRtCurrentIndex = -1;
+
+  async function initNavigationRT(kodeKec, kodeDesa, kodeDusun, kodeRt, tahun, currentId, namaDusun) {
+    const { data, error } = await db.from('data_pus')
+      .select('id_pus, nama_istri')
+      .eq('tahun', tahun)
+      .eq('kode_kec', kodeKec)
+      .eq('kode_desa', kodeDesa)
+      .eq('kode_dusun', kodeDusun)
+      .eq('kode_rt', kodeRt)
+      .order('id_pus', { ascending: true });
+
+    navRtDataList = data || [];
+    navRtCurrentIndex = navRtDataList.findIndex(item => item.id_pus === currentId);
+
+    const container = document.getElementById("navRTContainer");
+    const btnPrev = document.getElementById("btnPrevRT");
+    const btnNext = document.getElementById("btnNextRT");
+
+    if (navRtDataList.length > 1 && navRtCurrentIndex !== -1) {
+      container.style.display = "flex";
+      document.getElementById("navRTInfo").innerText = "Data " + (navRtCurrentIndex + 1) + " dari " + navRtDataList.length;
+      document.getElementById("navRTWilayah").innerText = "RT " + kodeRt + ", Dusun " + (namaDusun || "");
+
+      btnPrev.disabled = (navRtCurrentIndex === 0);
+      btnPrev.style.opacity = (navRtCurrentIndex === 0) ? "0.5" : "1";
+
+      btnNext.disabled = (navRtCurrentIndex === navRtDataList.length - 1);
+      btnNext.style.opacity = (navRtCurrentIndex === navRtDataList.length - 1) ? "0.5" : "1";
+    } else {
+      container.style.display = "none";
+    }
+  }
+
+  async function navigateFormRT(step) {
+    const newIndex = navRtCurrentIndex + step;
+    if (newIndex >= 0 && newIndex < navRtDataList.length) {
+      const targetIdPus = navRtDataList[newIndex].id_pus;
+      const currentTahun = document.getElementById("tahun_input").value;
+
+      document.getElementById("navRTInfo").innerText = "Memuat...";
+      
+      const { data, error } = await db.from('data_pus')
+        .select('*')
+        .eq('id_pus', targetIdPus)
+        .eq('tahun', currentTahun)
+        .maybeSingle();
+
+      if (data) selectDataForEdit(data);
+    }
   }
 
   function exitApp() { window.location.href = "https://bpkblbr.github.io/r1puslobar/?status=out"; }
