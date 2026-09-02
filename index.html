@@ -4202,6 +4202,23 @@
 
     XLSX.writeFile(wb, "TEMPLATE_REGISTER_PUS_36_KOLOM.xlsx");
   }
+  
+  function parseExcelDate(val) {
+    if (!val) return null;
+    if (typeof val === 'string' && val.includes('-')) {
+      let parts = val.split('-');
+      if (parts.length === 3) {
+        if (parts[0].length === 2 && parts[2].length === 4) {
+          return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+      }
+    }
+    let parsed = new Date(val);
+    if (!isNaN(parsed.getTime())) {
+      return parsed.toISOString().split('T')[0];
+    }
+    return null;
+  }
 
   // LOGIKA PARSING DAN INSERT FILE EXCEL KE TABEL DATA_PUS SUPABASE
   async function handleUploadExcelFile(event) {
@@ -4344,7 +4361,7 @@
             nik_suami: nikSuami,
             nama_istri: String(r[17] || "").toUpperCase(),
             nik_istri: nikIstri,
-            tgl_lahir_istri: r[19] || null,
+            tgl_lahir_istri: parseExcelDate(r[19]),
             umur_istri: parseInt(r[20] || 0, 10),
             jumlah_anak: parseInt(r[21] || 0, 10),
             umur_anak_terkecil: parseInt(r[22] || 0, 10),
