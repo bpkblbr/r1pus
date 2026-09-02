@@ -851,9 +851,9 @@
         • <code>PBI</code> | <code>BUKAN PBI</code> | <code>SWASTA</code> | <code>TIDAK MEMILIKI</code><br><br>
 
         <b>2. Kolom KB_Januari s.d KB_Desember (Kolom 25–36):</b><br>
-        • <b>Peserta KB:</b> <code>PESERTA KB - STK</code>, <code>PESERTA KB - PIL</code>, <code>PESERTA KB - KDM</code>, <code>PESERTA KB - IMP</code>, <code>PESERTA KB - IUD</code>, <code>PESERTA KB - MOW</code>, <code>PESERTA KB - MOP</code><br>
-        • <b>Bukan Peserta KB:</b> <code>BUKAN PESERTA KB - IAS</code>, <code>BUKAN PESERTA KB - IAT</code>, <code>BUKAN PESERTA KB - TIAL</code>, <code>BUKAN PESERTA KB - HAMIL</code>, <code>BUKAN PESERTA KB - TKI</code><br>
-        • <b>Mutasi:</b> <code>BERCERAI</code>, <code>SUAMI ISTRI MENINGGAL</code>, <code>PINDAH</code><br>        
+        • <b>Peserta KB:</b> <code>STK</code>, <code>PIL</code>, <code>KDM</code>, <code>IMP</code>, <code>IUD</code>, <code>MOW</code>, <code>MOP</code><br>
+        • <b>Bukan Peserta KB:</b> <code>IAS</code>, <code>IAT</code>, <code>TIAL</code>, <code>HAMIL</code>, <code>TKI</code><br>
+        • <b>Mutasi:</b> <code>BERCERAI</code>, <code>SUAMI/ISTRI MENINGGAL</code>, <code>PINDAH</code><br>        
         <small style="color: #64748b;">*Catatan: Kolom yang belum ada data bulanan dapat dikosongkan.</small>
       </div>
     </details>
@@ -3357,7 +3357,7 @@
     ];
 
     const sampleRow = [
-		  "", "2026", "", "NUSA TENGGARA BARAT", "52", "LOMBOK BARAT", "01",
+      "", "2026", "", "NUSA TENGGARA BARAT", "52", "LOMBOK BARAT", "01",
       "LEMBAR", "05", "MAREJE", "0001", "DUSUN SATU", "0001",
       "RT 001", "001", "AHMAD SUAMI", "5201050101850001", "SITI ISTRI", "5201054101900001",
       "1990-05-15", "36", "2", "3",
@@ -3384,20 +3384,20 @@
       ["", "SWASTA", "Asuransi Swasta Lainnya"],
       ["", "TIDAK MEMILIKI", "Belum memiliki jaminan kesehatan"],
       [""],
-      ["KB_Januari s.d KB_Desember (Kolom 25-36)", "PESERTA KB - STK", "Suntik KB"],
-      ["", "PESERTA KB - PIL", "Pil KB"],
-      ["", "PESERTA KB - KDM", "Kondom"],
-      ["", "PESERTA KB - IMP", "Implan / Susuk"],
-      ["", "PESERTA KB - IUD", "IUD / Spiral"],
-      ["", "PESERTA KB - MOW", "Metode Operasi Wanita (Tubektomi)"],
-      ["", "PESERTA KB - MOP", "Metode Operasi Pria (Vasektomi)"],
-      ["", "BUKAN PESERTA KB - IAS", "Ingin Anak Segera"],
-      ["", "BUKAN PESERTA KB - IAT", "Ingin Anak Ditunda"],
-      ["", "BUKAN PESERTA KB - TIAL", "Tidak Ingin Anak Lagi"],
-      ["", "BUKAN PESERTA KB - HAMIL", "Sedang Hamil"],
-      ["", "BUKAN PESERTA KB - TKI", "Suami / Istri Bekerja di Luar Negeri"],
+      ["KB_Januari s.d KB_Desember (Kolom 25-36)", "STK", "Suntik KB"],
+      ["", "PIL", "Pil KB"],
+      ["", "KDM", "Kondom"],
+      ["", "IMP", "Implan / Susuk"],
+      ["", "IUD", "IUD / Spiral"],
+      ["", "MOW", "Metode Operasi Wanita (Tubektomi)"],
+      ["", "MOP", "Metode Operasi Pria (Vasektomi)"],
+      ["", "IAS", "Ingin Anak Segera"],
+      ["", "IAT", "Ingin Anak Ditunda"],
+      ["", "TIAL", "Tidak Ingin Anak Lagi"],
+      ["", "HAMIL", "Sedang Hamil"],
+      ["", "TKI", "Suami / Istri Bekerja di Luar Negeri"],
       ["", "BERCERAI", "Status Perkawinan Bercerai (MUTASI)"],
-      ["", "SUAMI ISTRI MENINGGAL", "Suami atau Istri Meninggal Dunia (MUTASI)"],
+      ["", "SUAMI/ISTRI MENINGGAL", "Suami atau Istri Meninggal Dunia (MUTASI)"],
       ["", "PINDAH", "Pindah Domisili Keluar Wilayah (MUTASI)"]
     ];
 
