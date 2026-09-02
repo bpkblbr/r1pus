@@ -1262,6 +1262,18 @@
     resetLoginForm();
     loadMasterWilayahFromDB();
     setDefaultYearAndMonth();
+
+	if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((reg) => {
+            console.log('Service Worker terdaftar dengan sukses:', reg.scope);
+          })
+          .catch((err) => {
+            console.log('Pendaftaran Service Worker gagal:', err);
+          });
+      });
+    }
     
     const tbody = document.getElementById("kbTableBody");
     tbody.innerHTML = ""; 
