@@ -1316,7 +1316,7 @@
       cDsn.style.display = (t === "Dusun") ? "block" : "none";
     }
 
-    document.getElementById("recapTableBody").innerHTML = "<tr><td colspan='22' style='text-align:center; padding: 20px;'>Silakan atur filter dan klik Tampilkan Rekap</td></tr>";
+    document.getElementById("recapTableBody").innerHTML = "<tr><td colspan='31' style='text-align:center; padding: 20px;'>Silakan atur filter dan klik Tampilkan Rekap</td></tr>";
   }
   
   function resetRecapFilters() {
@@ -1852,7 +1852,6 @@
       return;
     }
 
-    // Template Baris Wilayah
     let grouped = {};
     function emptyRecapItem(name) {
       return {
@@ -1897,24 +1896,23 @@
           key = rawRt ? "RT " + rawRt.padStart(3, '0') : String(r.rt_nama || "").trim().toUpperCase();
         }
 
-        // 1. Evaluasi status bulan berjalan dan bulan sebelumnya
+        // PENCEGAHAN TYPEERROR: Validasi key
+        if (!key) return;
+        if (!grouped[key]) grouped[key] = emptyRecapItem(key);
+
         const cur = evaluateKbStatus(r[monthKey]);
         const prev = prevMonthKey ? evaluateKbStatus(r[prevMonthKey]) : null;
 
         grouped[key].total_pus++;
         
-        // 2. Evaluasi PUS BARU:
-        // Hanya dihitung jika pasangan ini benar-benar baru muncul pertama kali di bulan berjalan
+        // Evaluasi PUS Baru
         let isFirstTimeRecorded = false;
-
         if (bulan === 1) {
-          // Di Januari, hanya hitung jika baru terdaftar di tahun berjalan (bukan carry-over tahun lalu)
           let createdAtYear = r.timestamp ? new Date(r.timestamp).getFullYear() : tahun;
           if (createdAtYear === tahun && (cur.type === "PESERTA_KB" || cur.type === "BUKAN_PESERTA")) {
             isFirstTimeRecorded = true;
           }
         } else {
-          // Di Februari-Desember, seluruh bulan sebelumnya harus kosong
           let hasPreviousRecord = false;
           for (let i = 0; i < bulan - 1; i++) {
             let pastVal = String(r[mKeys[i]] || "").trim();
@@ -1938,8 +1936,7 @@
           grouped[key].pus_baru++;
         }
 
-        // 3. Evaluasi AKSEPTOR KB BARU:
-        // Syarat: Bulan ini PESERTA_KB, dan status bulan lalu BUKAN peserta KB aktif
+        // Peserta KB
         if (cur.type === "PESERTA_KB") {
           grouped[key].ber_kb++;
           if (cur.method === "PIL") grouped[key].pil++;
@@ -1953,29 +1950,23 @@
           if (cur.isMkjp) grouped[key].mkjp++;
           else grouped[key].non_mkjp++;
 
-          // Logika pembeda Akseptor KB Baru:
-          // A. Jika ada riwayat bulan lalu dan bulan lalu bukan peserta KB
           if (prev && prev.type === "BUKAN_PESERTA") {
             grouped[key].kb_baru_total++;
             if (prev.reason === "HAMIL") {
-              grouped[key].kb_baru_kbpp++;     // Pasca Persalinan
+              grouped[key].kb_baru_kbpp++;
             } else {
-              grouped[key].kb_baru_pasca_do++;  // Pasca DO (sebelumnya IAS/IAT/TIAL)
+              grouped[key].kb_baru_pasca_do++;
             }
-          } 
-          // B. Baru Murni: Hanya jika dia terkonfirmasi sebagai PUS Baru yang langsung memilih ber-KB
-          else if (isPusBaruValid) {
+          } else if (isPusBaruValid) {
             grouped[key].kb_baru_total++;
             grouped[key].kb_baru_murni++;
           }
 
-          // Ganti Cara: Bulan lalu ber-KB tetapi dengan metode berbeda
           if (prev && prev.type === "PESERTA_KB" && prev.method !== cur.method) {
             grouped[key].ganti_cara++;
           }
-        }
 
-        // 5. Bukan Peserta KB
+        // Bukan Peserta KB (Struktur IF-ELSE yang sudah diperbaiki tanda kurungnya)
         } else if (cur.type === "BUKAN_PESERTA") {
           grouped[key].tidak_kb++;
           if (cur.reason === "HAMIL") {
@@ -1988,7 +1979,7 @@
           else if (cur.reason === "TIAL") grouped[key].tial++;
           else if (cur.reason === "TKI") grouped[key].tki++;
 
-        // 6. Bukan PUS / Mutasi
+        // Bukan PUS / Mutasi
         } else if (cur.type === "BUKAN_PUS" || umurIstri >= 50) {
           grouped[key].bukan_pus++;
           if (cur.cat === "CERAI") grouped[key].bcr++;
@@ -2175,49 +2166,81 @@
     data.forEach(r => {
       t.total_pus++;
 
-      let curSt = (r[monthKey] || "").toUpperCase();
-      let prevSt = prevMonthKey ? (r[prevMonthKey] || "").toUpperCase() : "";
+      // MENGGUNAKAN evaluateKbStatus AGAR KONSISTEN DENGAN REKAP
+      const cur = evaluateKbStatus(r[monthKey]);
+      const prev = prevMonthKey ? evaluateKbStatus(r[prevMonthKey]) : null;
 
-      // Kesertaan KB Bulan Terpilih
-      if (curSt.includes("PESERTA KB")) {
+      let umurIstri = parseInt(r.umur_istri || 0, 10);
+
+      // Evaluasi PUS Baru
+      let isFirstTimeRecorded = false;
+      if (bulan === 1) {
+        let createdAtYear = r.timestamp ? new Date(r.timestamp).getFullYear() : tahun;
+        if (createdAtYear === tahun && (cur.type === "PESERTA_KB" || cur.type === "BUKAN_PESERTA")) {
+          isFirstTimeRecorded = true;
+        }
+      } else {
+        let hasPreviousRecord = false;
+        for (let i = 0; i < bulan - 1; i++) {
+          let pastVal = String(r[mKeys[i]] || "").trim();
+          if (pastVal && pastVal !== "--KOSONG--" && pastVal !== "-") {
+            hasPreviousRecord = true;
+            break;
+          }
+        }
+        if (!hasPreviousRecord) isFirstTimeRecorded = true;
+      }
+
+      let isPusBaruValid = isFirstTimeRecorded && 
+                           (cur.type === "PESERTA_KB" || cur.type === "BUKAN_PESERTA") && 
+                           cur.type !== "BUKAN_PUS" && 
+                           umurIstri < 50;
+
+      // 1. Peserta KB
+      if (cur.type === "PESERTA_KB") {
         t.ber_kb++;
-        if (curSt.includes("PIL")) t.pil++;
-        if (curSt.includes("STK")) t.stk++;
-        if (curSt.includes("KDM")) t.kdm++;
-        if (curSt.includes("IMP")) t.imp++;
-        if (curSt.includes("IUD")) t.iud++;
-        if (curSt.includes("MOW")) t.mow++;
-        if (curSt.includes("MOP")) t.mop++;
+        if (cur.method === "PIL") t.pil++;
+        else if (cur.method === "STK") t.stk++;
+        else if (cur.method === "KDM") t.kdm++;
+        else if (cur.method === "IMP") t.imp++;
+        else if (cur.method === "IUD") t.iud++;
+        else if (cur.method === "MOW") t.mow++;
+        else if (cur.method === "MOP") t.mop++;
 
-        if (curSt.includes("IMP") || curSt.includes("IUD") || curSt.includes("MOW") || curSt.includes("MOP")) t.mkjp++;
+        if (cur.isMkjp) t.mkjp++;
         else t.non_mkjp++;
 
-        if (prevSt && !prevSt.includes("PESERTA KB")) {
+        if (prev && prev.type === "BUKAN_PESERTA") {
           t.kb_baru_total++;
-          if (prevSt.includes("HAMIL")) t.kb_baru_kbpp++;
-          else if (prevSt.includes("BUKAN PESERTA")) t.kb_baru_pasca_do++;
-          else t.kb_baru_murni++;
+          if (prev.reason === "HAMIL") t.kb_baru_kbpp++;
+          else t.kb_baru_pasca_do++;
+        } else if (isPusBaruValid) {
+          t.kb_baru_total++;
+          t.kb_baru_murni++;
         }
 
-        if (prevSt && prevSt.includes("PESERTA KB") && prevSt !== curSt) {
+        if (prev && prev.type === "PESERTA_KB" && prev.method !== cur.method) {
           t.ganti_cara++;
         }
-      } else if (curSt.includes("BUKAN PESERTA KB")) {
+
+      // 2. Bukan Peserta KB
+      } else if (cur.type === "BUKAN_PESERTA") {
         t.tidak_kb++;
-        if (curSt.includes("HAMIL")) {
+        if (cur.reason === "HAMIL") {
           t.hamil++;
-          if (prevSt && !prevSt.includes("HAMIL")) t.hamil_baru++;
-        }
-        if (curSt.includes("IAS")) t.ias++;
-        if (curSt.includes("IAT")) t.iat++;
-        if (curSt.includes("TIAL")) t.tial++;
-        if (curSt.includes("TKI")) t.tki++;
-      } else if (curSt.includes("BUKAN PUS") || curSt.includes("CERAI") || curSt.includes("MENINGGAL") || curSt.includes("PINDAH") || curSt.includes("BERCERAI") || curSt.includes("50")) {
+          if (prev && prev.reason !== "HAMIL") t.hamil_baru++;
+        } else if (cur.reason === "IAS") t.ias++;
+        else if (cur.reason === "IAT") t.iat++;
+        else if (cur.reason === "TIAL") t.tial++;
+        else if (cur.reason === "TKI") t.tki++;
+
+      // 3. Bukan PUS / Mutasi
+      } else if (cur.type === "BUKAN_PUS" || umurIstri >= 50) {
         t.bukan_pus++;
-        if (curSt.includes("CERAI") || curSt.includes("BERCERAI")) t.bcr++;
-        if (curSt.includes("MENINGGAL")) t.mng++;
-        if (curSt.includes("PINDAH")) t.pndh++;
-        if (curSt.includes("50") || parseInt(r.umur_istri || 0, 10) >= 50) t.usia_50++;
+        if (cur.cat === "CERAI") t.bcr++;
+        else if (cur.cat === "MENINGGAL") t.mng++;
+        else if (cur.cat === "PINDAH") t.pndh++;
+        if (cur.cat === "50+" || umurIstri >= 50) t.usia_50++;
       }
 
       // JKN
@@ -2228,16 +2251,15 @@
       else t.jkn_none++;
 
       // Kelompok Umur
-      let u = parseInt(r.umur_istri || 0, 10);
-      if (u < 20) t.umur_u20++;
-      else if (u >= 20 && u <= 34) t.umur_20_34++;
-      else if (u >= 35 && u <= 49) t.umur_35_49++;
+      if (umurIstri < 20) t.umur_u20++;
+      else if (umurIstri >= 20 && umurIstri <= 34) t.umur_20_34++;
+      else if (umurIstri >= 35 && umurIstri <= 49) t.umur_35_49++;
 
       // Tren 12 Bulan
       mKeys.forEach((k, idx) => {
-        let stBln = (r[k] || "").toUpperCase();
-        if (stBln.includes("PESERTA KB")) t.trend_ber_kb[idx]++;
-        else if (stBln.includes("BUKAN PESERTA KB")) t.trend_tidak_kb[idx]++;
+        let evalBln = evaluateKbStatus(r[k]);
+        if (evalBln.type === "PESERTA_KB") t.trend_ber_kb[idx]++;
+        else if (evalBln.type === "BUKAN_PESERTA") t.trend_tidak_kb[idx]++;
       });
 
       // Peta Per Wilayah
@@ -2253,9 +2275,9 @@
       if (wilKey) {
         if (!perWilayahMap[wilKey]) perWilayahMap[wilKey] = { mkjp: 0, ber_kb: 0, total_pus: 0 };
         perWilayahMap[wilKey].total_pus++;
-        if (curSt.includes("PESERTA KB")) {
+        if (cur.type === "PESERTA_KB") {
           perWilayahMap[wilKey].ber_kb++;
-          if (curSt.includes("IMP") || curSt.includes("IUD") || curSt.includes("MOW") || curSt.includes("MOP")) perWilayahMap[wilKey].mkjp++;
+          if (cur.isMkjp) perWilayahMap[wilKey].mkjp++;
         }
       }
     });
@@ -2282,7 +2304,6 @@
     document.getElementById("kpiTotalNonPus").innerText = t.bukan_pus.toLocaleString();
     document.getElementById("kpiTotalNonPusSub").innerText = `Cerai: ${t.bcr} | Mngl: ${t.mng} | Pndh: ${t.pndh} | 50+: ${t.usia_50}`;
 
-    // Update Judul Grafik Perbandingan
     const chartWilTitle = document.getElementById("chartWilayahTitle");
     if (chartWilTitle) {
       if (tingkat === "Kabupaten") chartWilTitle.innerText = "🗺️ PERBANDINGAN ANTAR KECAMATAN";
