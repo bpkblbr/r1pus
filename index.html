@@ -1440,19 +1440,21 @@
 
         Swal.fire({
           title: 'Pilih Wilayah Tujuan',
+          showCloseButton: true, // Menambahkan tombol X (close) di kanan atas modal
           html: `
-            <div style="text-align:left; font-size:13px; color:#444; margin-bottom:4px;">Kecamatan Tujuan:</div>
+            <div style="text-align:left; font-size:13px; color:#444; margin-bottom:8px;">Kecamatan Tujuan:</div>
             <select id="swalMutasiKec" class="swal2-input" style="width: 100%; font-size: 13px; padding: 8px; margin: 0 0 10px 0;" onchange="onSwalMutasiKecChange()">
               ${kecOptions}
             </select>
-            <div style="text-align:left; font-size:13px; color:#444; margin-bottom:4px;">Desa Tujuan:</div>
+            <div style="text-align:left; font-size:13px; color:#444; margin-bottom:8px;">Desa Tujuan:</div>
             <select id="swalMutasiDesa" class="swal2-input" style="width: 100%; font-size: 13px; padding: 8px; margin: 0;">
               <option value="">-- PILIH DESA TUJUAN --</option>
             </select>
           `,
           icon: 'info',
+          showCancelButton: false,
           confirmButtonColor: '#059669',
-          confirmButtonText: '✅ Tetapkan Tujuan',
+          confirmButtonText: '✅ Tetapkan Wilayah Tujuan',
           allowOutsideClick: false,
           didOpen: () => {
             window.onSwalMutasiKecChange = function() {
@@ -1855,6 +1857,12 @@
   }
 
   function showDashboardView() {
+    // Reset otomatis filter modul-modul laporan saat ditutup / kembali ke dashboard
+    if (typeof resetRecapFilters === "function") resetRecapFilters();
+    if (typeof resetBnbaFilters === "function") resetBnbaFilters();
+    if (typeof resetChartFilters === "function") resetChartFilters();
+    resetInputForm();
+
     document.getElementById("dashboardSection").style.display = "block";
     document.getElementById("formSection").style.display = "none";
     document.getElementById("recapSection").style.display = "none";
@@ -2347,11 +2355,6 @@
 
         const cur = evaluateKbStatus(r[monthKey]);
         const prev = prevMonthKey ? evaluateKbStatus(r[prevMonthKey]) : null;
-        let umurIstri = parseInt(r.umur_istri || 0, 10);
-        
-        if (cur.type !== "BUKAN_PUS" && umurIstri < 50) {
-          grouped[key].total_pus++;
-        }
 
         grouped[key].total_pus++;
         
@@ -3848,8 +3851,21 @@
     }
   }
   function togglePassword() {
-    const p = document.getElementById("login_password");
-    p.type = p.type === "password" ? "text" : "password";
+    const passInput = document.getElementById("login_password");
+    const eyeOpen = document.getElementById("eyeOpenSvg");
+    const eyeClosed = document.getElementById("eyeClosedSvg");
+
+    if (!passInput || !eyeOpen || !eyeClosed) return;
+
+    if (passInput.type === "password") {
+      passInput.type = "text";
+      eyeOpen.style.display = "none";
+      eyeClosed.style.display = "block";
+    } else {
+      passInput.type = "password";
+      eyeOpen.style.display = "block";
+      eyeClosed.style.display = "none";
+    }
   }
 
   function handleLogout() {
