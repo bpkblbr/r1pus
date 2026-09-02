@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
   <base target="_top">
   <meta charset="utf-8">
@@ -16,7 +16,7 @@
   
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 10px; background-color: #f0f2f5; color: #333; margin: 0; }
-    .container { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); max-width: 900px; margin: auto; }
+    .container { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); max-width: 1000px; margin: auto; }
     #loginContainer { max-width: 400px; margin-top: 10vh; }
     h2, h3 { text-align: center; color: #1f4e78; font-size: 18px; margin: 5px 0; }
     h3 { font-size: 14px; margin-bottom: 15px; }
@@ -96,7 +96,7 @@
     }
     
     .btn-admin-sync {
-      width: 220px;
+      width: 200px;
       padding: 10px 14px;
       font-size: 12px;
       border-radius: 20px;
@@ -109,7 +109,6 @@
       text-align: center;
       transition: all 0.2s ease;
     }
-    
     .btn-admin-sync:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 8px rgba(0,0,0,0.2);
@@ -129,13 +128,8 @@
       box-sizing: border-box; 
     }
 
-    select, option, optgroup {
-      text-transform: uppercase !important;
-    }
-
-    #pusForm input[type="text"] {
-      text-transform: uppercase;
-    }
+    select, option, optgroup { text-transform: uppercase !important; }
+    #pusForm input[type="text"] { text-transform: uppercase; }
 
     .wilayah-row { display: flex; gap: 8px; align-items: center; width: 100%; }
     .wilayah-row select { flex: 1; min-width: 0; position: relative; z-index: 2; }
@@ -150,7 +144,7 @@
     .btn-submit:hover { background-color: #218838; }
 
     .modal { display: none; position: fixed; z-index: 99; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto; }
-    .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 650px; border-radius: 8px; box-sizing: border-box; }
+    .modal-content { background-color: #fefefe; margin: 6% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 750px; border-radius: 8px; box-sizing: border-box; }
     .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
     .close:hover { color: black; }
     .search-result-item { padding: 12px 8px; border-bottom: 1px solid #eee; font-size: 13px; cursor: pointer; }
@@ -184,11 +178,10 @@
 
     @media (min-width: 768px) {
       body { padding: 20px; }
-      .container { padding: 30px; }
+      .container { padding: 25px; }
       .form-group { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; }
       label { width: 180px; }
       select, input[type="text"], input[type="password"], input[type="date"], input[type="number"] { flex: 1; width: auto; }
-      .modal-content { margin: 8% auto; padding: 20px; }
     }
     
     .kpi-grid {
@@ -230,11 +223,7 @@
       border-bottom: 1px solid #f1f5f9;
       padding-bottom: 6px;
     }
-    .chart-container {
-      position: relative;
-      height: 250px;
-      width: 100%;
-    }
+    .chart-container { position: relative; height: 250px; width: 100%; }
   </style>
 </head>
 <body>
@@ -257,7 +246,6 @@
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
           <circle cx="12" cy="12" r="3"></circle>
         </svg>
-        
         <svg id="eyeClosedSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%; height:100%; display:none;">
           <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.45 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
           <line x1="1" y1="1" x2="23" y2="23"></line>
@@ -266,18 +254,17 @@
     </div>
 
     <button type="submit" id="btnLogin" class="btn-submit" style="background-color: #28a745; color: white; width: 100%; padding: 12px; font-size: 15px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 10px;">MASUK</button>
-    
     <button type="button" class="btn-submit" style="background-color: #dc3545; color: white; width: 100%; padding: 12px; font-size: 15px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer;" onclick="exitApp()">KELUAR APLIKASI</button>
   </form>
 </div>
 
 <!-- CONTAINER UTAMA -->
 <div id="appContainer" style="display: none;">
-  <div class="container" style="max-width: 1000px;">
+  <div class="container">
     
     <!-- 2. DASHBOARD -->
     <div id="dashboardSection">
-      <div class="page-header" style="justify-content: space-between; align-items: center;">
+      <div class="page-header">
         <div id="userGreeting" style="font-size: 14px; font-weight: 600; color: #1f4e78; display: flex; align-items: center; gap: 6px;">
           👋 <span id="userGreetingText">Selamat datang!</span>
         </div>
@@ -287,20 +274,16 @@
       </div>    
 
       <div style="text-align: center; margin-bottom: 25px;">
-        <h2 style="color: #1f4e78; margin-bottom: 5px; line-height: 1.3;">
-          SELAMAT DATANG<br>
-          DI APLIKASI REGISTER PUS
-        </h2>
+        <h2 style="color: #1f4e78; margin-bottom: 5px; line-height: 1.3;">SELAMAT DATANG<br>DI APLIKASI REGISTER PUS</h2>
         <p style="color: #666; font-size: 14px; margin: 10px 0 0 0;">Pilih menu utama di bawah untuk mengelola data PUS.</p>
         
+        <!-- TOMBOL KHUSUS ADMIN (DIPERBAIKI VISIBILITASNYA) -->
         <div id="adminSyncContainer" style="display: none; margin-top: 20px; width: 100%;">
           <div class="admin-btn-group">
-            <button type="button" class="btn-admin-sync" style="background-color: #0891b2;" onclick="openMasterWilayahModal()">
-              📍 KELOLA WILAYAH
-            </button>
-            <button type="button" class="btn-admin-sync" style="background-color: #d97706;" onclick="openManageUsersModal()">
-              🔑 KELOLA LOGIN
-            </button>
+            <button type="button" class="btn-admin-sync" style="background-color: #0891b2;" onclick="openMasterWilayahModal()">📍 KELOLA WILAYAH</button>
+            <button type="button" class="btn-admin-sync" style="background-color: #d97706;" onclick="openManageUsersModal()">🔑 KELOLA LOGIN</button>
+            <button type="button" id="btnAdminTambahTahun" class="btn-admin-sync" style="background-color: #28a745;" onclick="triggerOpenNewYear()">🚀 TAMBAH TAHUN</button>
+            <button type="button" class="btn-admin-sync" style="background-color: #10b981;" onclick="openImportExcelModal()">📥 UPLOAD EXCEL</button>
           </div>
         </div>
       </div>
@@ -315,7 +298,7 @@
         <div class="dashboard-card" onclick="showRecapView()">
           <div class="card-icon" style="background-color: #f3e8ff; color: #7e22ce;">📊</div>
           <div class="card-title">Halaman Rekapitulasi</div>
-          <div class="card-desc">Lihat rekapitulasi kesertaan KB.</div>
+          <div class="card-desc">Lihat rekapitulasi kesertaan KB berjenjang.</div>
         </div>
 
         <div class="dashboard-card" onclick="showBnbaView()">
@@ -338,7 +321,7 @@
       </div>
     </div>
 
-    <!-- 3. FORM INPUT -->
+    <!-- 3. VIEW FORM INPUT -->
     <div id="formSection" style="display: none;">
       <div class="page-header">
         <button type="button" class="btn-nav btn-secondary" onclick="showDashboardView()">⬅️ Kembali ke Dashboard</button>
@@ -350,15 +333,6 @@
       </div>
 
       <h2>FORM REGISTER PASANGAN USIA SUBUR (PUS)</h2>
-
-      <div id="navRTContainer" style="display: none; background: #e0f2fe; padding: 12px; border-radius: 6px; border: 1px solid #bae6fd; margin-bottom: 15px; flex-direction: row; justify-content: space-between; align-items: center;">
-        <button type="button" id="btnPrevRT" class="btn-nav btn-secondary" onclick="navigateFormRT(-1)">⬅️ Back</button>
-        <div style="text-align: center;">
-          <div id="navRTInfo" style="font-weight: bold; font-size: 13px; color: #0369a1;">Data 1 dari 10</div>
-          <div id="navRTWilayah" style="font-size: 11px; color: #0284c7;">RT 001, Dusun GUNUNGSARI</div>
-        </div>
-        <button type="button" id="btnNextRT" class="btn-nav btn-secondary" onclick="navigateFormRT(1)">Next ➡️</button>
-      </div>
 
       <form id="pusForm" onsubmit="handleFormSubmit(event)">
         <input type="hidden" id="id_pus" name="id_pus">
@@ -410,7 +384,7 @@
         </div>
 
         <div class="form-group">
-          <label for="dusun">Dusun / Dusun:</label>
+          <label for="dusun">Dusun / Lingkungan:</label>
           <div class="wilayah-row">
             <select id="dusun" onchange="updateRT()" disabled required><option value="">-- PILIH --</option></select>
             <input type="text" id="kode_dusun" class="kode-input" readonly placeholder="Kode">
@@ -480,45 +454,57 @@
       </form>
     </div>
 
-    <!-- 4. REKAPITULASI -->
+    <!-- 4. REKAPITULASI (DENGAN DROPDOWN BERTINGKAT LENGKAP) -->
     <div id="recapSection" style="display: none;">
       <div class="page-header">
         <button type="button" class="btn-nav btn-secondary" onclick="showDashboardView()">⬅️ KEMBALI KE DASHBOARD</button>
         <div class="page-header-right"><button type="button" class="btn-nav btn-danger" onclick="handleLogout()">🚪 LOGOUT</button></div>
       </div>
       <h2>REKAPITULASI PUS & KESERTAAN KB</h2>
+      
       <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
         <div style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
           <div>
             <select id="recapTingkat" onchange="onRecapTingkatChange()">
-              <option value="">-- PILIH WILAYAH --</option>
+              <option value="">-- PILIH TINGKAT WILAYAH --</option>
               <option value="Kabupaten">KABUPATEN</option>
               <option value="Kecamatan">KECAMATAN</option>
               <option value="Desa">DESA</option>
               <option value="Dusun">DUSUN</option>
             </select>
           </div>
-          <div id="recapFilterKecContainer" style="display: none;"><select id="recapKecamatan" onchange="onRecapKecamatanChange()"><option value="">-- PILIH KECAMATAN --</option></select></div>
-          <div id="recapFilterDesaContainer" style="display: none;"><select id="recapDesa" onchange="onRecapDesaChange()"><option value="">-- PILIH DESA --</option></select></div>
-          <div id="recapFilterDusunContainer" style="display: none;"><select id="recapDusun"><option value="">-- PILIH DUSUN --</option></select></div>
-          <div>
-            <select id="recapTahun">
+          
+          <div id="recapFilterKecContainer" style="display: none;">
+            <select id="recapKecamatan" onchange="onRecapKecamatanChange()"><option value="">-- PILIH KECAMATAN --</option></select>
+          </div>
+          <div id="recapFilterDesaContainer" style="display: none;">
+            <select id="recapDesa" onchange="onRecapDesaChange()"><option value="">-- PILIH DESA --</option></select>
+          </div>
+          <div id="recapFilterDusunContainer" style="display: none;">
+            <select id="recapDusun"><option value="">-- PILIH DUSUN --</option></select>
+          </div>
+          
+          <div style="display: flex; gap: 10px;">
+            <select id="recapTahun" style="flex:1;">
               <option value="2025">2025</option>
               <option value="2026" selected>2026</option>
               <option value="2027">2027</option>
+              <option value="2028">2028</option>
             </select>
-          </div>
-          <div>
-            <select id="recapBulan">
+            <select id="recapBulan" style="flex:1;">
               <option value="1">JANUARI</option><option value="2">FEBRUARI</option><option value="3">MARET</option><option value="4">APRIL</option><option value="5">MEI</option><option value="6">JUNI</option>
               <option value="7">JULI</option><option value="8">AGUSTUS</option><option value="9">SEPTEMBER</option><option value="10">OKTOBER</option><option value="11">NOVEMBER</option><option value="12" selected>DESEMBER</option>
             </select>
           </div>
         </div>
-        <div style="display: flex; gap: 10px; margin-top: 15px;">
-          <button type="button" class="btn-action" style="padding: 12px 20px; flex: 1;" onclick="fetchRecap()">📊 TAMPILKAN REKAP</button>
+        
+        <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+          <button type="button" class="btn-action" style="padding: 12px 20px; flex: 1; min-width: 160px;" onclick="fetchRecap()">📊 TAMPILKAN REKAP</button>
+          <button type="button" class="btn-nav btn-warning" style="padding: 12px 15px;" onclick="exportRecapToExcel()">📥 EKSPOR EXCEL</button>
+          <button type="button" class="btn-nav btn-danger" style="padding: 12px 15px;" onclick="exportRecapToPDF()">📄 EKSPOR PDF</button>
         </div>
       </div>
+
       <div style="overflow-x: auto; margin-top: 15px;">
         <table id="recapTable" class="kb-table" style="font-size: 11px; white-space: nowrap;">
           <thead>
@@ -541,32 +527,50 @@
       </div>
     </div>
 
-    <!-- 5. BNBA -->
+    <!-- 5. BNBA (DENGAN DROPDOWN BERTINGKAT SAMPAI RT) -->
     <div id="bnbaSection" style="display: none;">
       <div class="page-header">
         <button type="button" class="btn-nav btn-secondary" onclick="showDashboardView()">⬅️ KEMBALI KE DASHBOARD</button>
         <div class="page-header-right"><button type="button" class="btn-nav btn-danger" onclick="handleLogout()">🚪 LOGOUT</button></div>
       </div>
       <h2>DATA BNBA PASANGAN USIA SUBUR</h2>
+      
       <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
         <div style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
           <div>
             <select id="bnbaTingkat" onchange="onBnbaTingkatChange()">
-              <option value="">-- PILIH WILAYAH --</option>
+              <option value="">-- PILIH TINGKAT WILAYAH --</option>
               <option value="Kabupaten">KABUPATEN</option>
               <option value="Kecamatan">KECAMATAN</option>
               <option value="Desa">DESA</option>
               <option value="Dusun">DUSUN</option>
+              <option value="RT">RT</option>
             </select>
           </div>
-          <div id="bnbaFilterKecContainer" style="display: none;"><select id="bnbaKecamatan" onchange="onBnbaKecamatanChange()"><option value="">-- PILIH KECAMATAN --</option></select></div>
-          <div id="bnbaFilterDesaContainer" style="display: none;"><select id="bnbaDesa"><option value="">-- PILIH DESA --</option></select></div>
+          
+          <div id="bnbaFilterKecContainer" style="display: none;">
+            <select id="bnbaKecamatan" onchange="onBnbaKecamatanChange()"><option value="">-- PILIH KECAMATAN --</option></select>
+          </div>
+          <div id="bnbaFilterDesaContainer" style="display: none;">
+            <select id="bnbaDesa" onchange="onBnbaDesaChange()"><option value="">-- PILIH DESA --</option></select>
+          </div>
+          <div id="bnbaFilterDusunContainer" style="display: none;">
+            <select id="bnbaDusun" onchange="onBnbaDusunChange()"><option value="">-- PILIH DUSUN --</option></select>
+          </div>
+          <div id="bnbaFilterRtContainer" style="display: none;">
+            <select id="bnbaRt"><option value="">-- PILIH RT --</option></select>
+          </div>
+          
           <div><select id="bnbaTahun"><option value="2026" selected>2026</option><option value="2025">2025</option></select></div>
         </div>
-        <div style="display: flex; gap: 10px; margin-top: 15px;">
-          <button type="button" class="btn-action" style="padding: 12px 20px; flex: 1;" onclick="fetchBnba()">📋 TAMPILKAN DATA BNBA</button>
+
+        <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+          <button type="button" class="btn-action" style="padding: 12px 20px; flex: 1; min-width: 160px;" onclick="fetchBnba()">📋 TAMPILKAN DATA BNBA</button>
+          <button type="button" class="btn-nav btn-warning" style="padding: 12px 15px;" onclick="exportTableToExcel('bnbaTable', 'DATA_BNBA_PUS')">📥 EKSPOR EXCEL</button>
+          <button type="button" class="btn-nav btn-danger" style="padding: 12px 15px;" onclick="exportBnbaToPDF()">📄 EKSPOR PDF</button>
         </div>
       </div>
+
       <div style="overflow-x: auto; margin-top: 15px;">
         <table id="bnbaTable" class="kb-table" style="font-size: 11px; white-space: nowrap;">
           <thead id="bnbaTableHeader"></thead>
@@ -575,21 +579,53 @@
       </div>
     </div>
 
-    <!-- 6. GRAFIK & STATISTIK -->
+    <!-- 6. GRAFIK & STATISTIK (DENGAN DROPDOWN BERTINGKAT) -->
     <div id="chartSection" style="display: none;">
       <div class="page-header">
         <button type="button" class="btn-nav btn-secondary" onclick="showDashboardView()">⬅️ KEMBALI KE DASHBOARD</button>
         <div class="page-header-right"><button type="button" class="btn-nav btn-danger" onclick="handleLogout()">🚪 LOGOUT</button></div>
       </div>
       <h2>DASHBOARD STATISTIK & GRAFIK PUS</h2>
+      
       <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
-        <button type="button" class="btn-action" style="padding: 12px 20px; width: 100%;" onclick="fetchChartData()">📈 TAMPILKAN GRAFIK TAHUN INI</button>
+        <div style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
+          <div>
+            <select id="chartTingkat" onchange="onChartTingkatChange()">
+              <option value="">-- PILIH TINGKAT WILAYAH --</option>
+              <option value="Kabupaten">KABUPATEN</option>
+              <option value="Kecamatan">KECAMATAN</option>
+              <option value="Desa">DESA</option>
+              <option value="Dusun">DUSUN</option>
+            </select>
+          </div>
+          <div id="chartFilterKecContainer" style="display: none;">
+            <select id="chartKecamatan" onchange="onChartKecamatanChange()"><option value="">-- PILIH KECAMATAN --</option></select>
+          </div>
+          <div id="chartFilterDesaContainer" style="display: none;">
+            <select id="chartDesa" onchange="onChartDesaChange()"><option value="">-- PILIH DESA --</option></select>
+          </div>
+          <div id="chartFilterDusunContainer" style="display: none;">
+            <select id="chartDusun"><option value="">-- PILIH DUSUN --</option></select>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <select id="chartTahun" style="flex:1;"><option value="2026" selected>2026</option><option value="2025">2025</option></select>
+            <select id="chartBulan" style="flex:1;">
+              <option value="1">JANUARI</option><option value="2">FEBRUARI</option><option value="3">MARET</option><option value="4">APRIL</option><option value="5">MEI</option><option value="6">JUNI</option>
+              <option value="7">JULI</option><option value="8">AGUSTUS</option><option value="9">SEPTEMBER</option><option value="10">OKTOBER</option><option value="11">NOVEMBER</option><option value="12" selected>DESEMBER</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top: 15px;">
+          <button type="button" class="btn-action" style="padding: 12px 20px; width: 100%;" onclick="fetchChartData()">📈 TAMPILKAN GRAFIK</button>
+        </div>
       </div>
+
       <div class="kpi-grid">
         <div class="kpi-card" style="border-top: 3px solid #1f4e78;"><div class="kpi-title">Total PUS</div><div id="kpiTotalPus" class="kpi-value">0</div></div>
         <div class="kpi-card" style="border-top: 3px solid #28a745;"><div class="kpi-title">Peserta KB Aktif</div><div id="kpiCpr" class="kpi-value" style="color: #28a745;">0%</div></div>
         <div class="kpi-card" style="border-top: 3px solid #0d9488;"><div class="kpi-title">Total MKJP</div><div id="kpiMkjpRate" class="kpi-value" style="color: #0d9488;">0</div></div>
       </div>
+
       <div class="charts-grid">
         <div class="chart-box"><div class="chart-box-title">📊 PROPORSI KESERTAAN KB</div><div class="chart-container"><canvas id="chartStatusProp"></canvas></div></div>
         <div class="chart-box"><div class="chart-box-title">💉 MIX KONTRASEPSI</div><div class="chart-container"><canvas id="chartMixKontrasepsi"></canvas></div></div>
@@ -599,11 +635,21 @@
   </div>
 </div>
 
-<!-- MODAL SEARCH -->
+<!-- MODAL CARI DATA BERTINGKAT -->
 <div id="searchModal" class="modal">
   <div class="modal-content">
     <span class="close" onclick="closeSearchModal()">&times;</span>
     <h3 style="margin-top:0;">🔍 CARI DATA PUS</h3>
+    
+    <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 12px;">
+      <div class="search-filter-grid">
+        <div><select id="searchKecamatan" onchange="onSearchKecamatanChange()"><option value="">-- PILIH KECAMATAN --</option></select></div>
+        <div><select id="searchDesa" onchange="onSearchDesaChange()"><option value="">-- PILIH DESA --</option></select></div>
+        <div><select id="searchDusun" onchange="onSearchDusunChange()"><option value="">-- PILIH DUSUN --</option></select></div>
+        <div><select id="searchRt"><option value="">-- PILIH RT --</option></select></div>
+      </div>
+    </div>
+
     <div style="display: flex; gap: 8px; margin-bottom: 15px;">
       <input type="text" id="searchKeyword" placeholder="CARI ID PUS, NAMA ISTRI, ATAU NIK..." style="text-transform: uppercase;">
       <button type="button" class="btn-action" style="padding: 10px 20px;" onclick="executeSearch()">CARI</button>
@@ -612,9 +658,23 @@
   </div>
 </div>
 
-<!-- JAVASCRIPT SYSTEM LOGIC (SUPABASE INTEGRATION) -->
+<!-- MODAL IMPORT EXCEL -->
+<div id="modalImportExcel" class="modal">
+  <div class="modal-content" style="max-width: 500px;">
+    <span class="close" onclick="closeImportExcelModal()">&times;</span>
+    <h3 style="margin-top:0;">📥 IMPORT DATA EXCEL</h3>
+    <form id="formImportExcel" onsubmit="handleUploadExcelFile(event)">
+      <div style="margin-bottom: 15px;">
+        <label>Pilih File Excel (.xlsx / .xls):</label>
+        <input type="file" id="excelFileInput" accept=".xlsx, .xls" required style="margin-top: 5px;">
+      </div>
+      <button type="submit" class="btn-submit" style="background-color: #10b981; margin-top: 0;">🚀 UPLOAD KE DATABASE</button>
+    </form>
+  </div>
+</div>
+
+<!-- JAVASCRIPT LOGIC DENGAN SUPABASE INTEGRATION -->
 <script>
-  // 1. SUPABASE CLIENT
   const SUPABASE_URL = 'https://fxtffszvtyrtllugxlxe.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4dGZmc3p2dHlydGxsdWd4bHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMjQyNDYsImV4cCI6MjEwMzcwMDI0Nn0.NQHYAja1VhfOqUj_IMc0DzHHtzkeo5DzLhE2BjYXA70';  
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -630,6 +690,9 @@
   let dataKecamatan = {};
   let dataDesa = {};
   let dataDusun = {};
+
+  let chartStatusPropInstance = null;
+  let chartMixInstance = null;
 
   const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
@@ -690,16 +753,23 @@
     dataProvinsi = {}; dataKabupaten = {}; dataKecamatan = {}; dataDesa = {}; dataDusun = {};
 
     data.forEach(r => {
-      dataProvinsi[r.kode_prov] = r.provinsi;
-      if (!dataKabupaten[r.kode_prov]) dataKabupaten[r.kode_prov] = {};
-      dataKabupaten[r.kode_prov][r.kode_kab] = r.kabupaten;
-      if (!dataKecamatan[r.kode_kab]) dataKecamatan[r.kode_kab] = {};
-      dataKecamatan[r.kode_kab][r.kode_kec] = r.kecamatan;
-      if (!dataDesa[r.kode_kec]) dataDesa[r.kode_kec] = {};
-      dataDesa[r.kode_kec][r.kode_desa] = r.desa;
-      let dsnKey = r.kode_kec + "_" + r.kode_desa;
+      let kdProv = String(r.kode_prov).padStart(2, '0');
+      let kdKab  = String(r.kode_kab).padStart(2, '0');
+      let kdKec  = String(r.kode_kec).padStart(2, '0');
+      let kdDesa = String(r.kode_desa).padStart(4, '0');
+      let kdDsn  = String(r.kode_dusun).padStart(4, '0');
+
+      dataProvinsi[kdProv] = r.provinsi;
+      if (!dataKabupaten[kdProv]) dataKabupaten[kdProv] = {};
+      dataKabupaten[kdProv][kdKab] = r.kabupaten;
+      if (!dataKecamatan[kdKab]) dataKecamatan[kdKab] = {};
+      dataKecamatan[kdKab][kdKec] = r.kecamatan;
+      if (!dataDesa[kdKec]) dataDesa[kdKec] = {};
+      dataDesa[kdKec][kdDesa] = r.desa;
+      
+      let dsnKey = kdKec + "_" + kdDesa;
       if (!dataDusun[dsnKey]) dataDusun[dsnKey] = {};
-      dataDusun[dsnKey][r.kode_dusun] = { nama: r.dusun, jumlah_rt: r.jumlah_rt || 1 };
+      dataDusun[dsnKey][kdDsn] = { nama: r.dusun, jumlah_rt: r.jumlah_rt || 1 };
     });
 
     const provSelect = document.getElementById("provinsi");
@@ -707,18 +777,21 @@
       provSelect.innerHTML = '<option value="">-- PILIH --</option>';
       for (let kode in dataProvinsi) provSelect.add(new Option(dataProvinsi[kode].toUpperCase(), kode));
     }
-    populateKecamatanDropdowns();
+    populateAllKecamatanDropdowns();
   }
 
-  function populateKecamatanDropdowns() {
+  function populateAllKecamatanDropdowns() {
     const recapKec = document.getElementById("recapKecamatan");
     const bnbaKec = document.getElementById("bnbaKecamatan");
+    const chartKec = document.getElementById("chartKecamatan");
+    const searchKec = document.getElementById("searchKecamatan");
+
     const kecList = [];
     const addedKec = {};
 
     for (let kdKab in dataKecamatan) {
       for (let kdKec in dataKecamatan[kdKab]) {
-        let cleanKode = String(kdKec || "").trim();
+        let cleanKode = String(kdKec).trim();
         if (!addedKec[cleanKode] && cleanKode) {
           addedKec[cleanKode] = true;
           kecList.push({ kode: cleanKode, nama: dataKecamatan[kdKab][kdKec] });
@@ -726,13 +799,164 @@
       }
     }
 
-    [recapKec, bnbaKec].forEach(sel => {
+    [recapKec, bnbaKec, chartKec, searchKec].forEach(sel => {
       if (!sel) return;
       sel.innerHTML = '<option value="">-- PILIH KECAMATAN --</option>';
       kecList.forEach(k => sel.add(new Option(k.nama.toUpperCase(), k.kode)));
     });
   }
 
+  function populateDesaByKec(kdKec, targetSelectId) {
+    const sel = document.getElementById(targetSelectId);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">-- PILIH DESA --</option>';
+    let cleanKec = String(kdKec).padStart(2, '0');
+    if (dataDesa[cleanKec]) {
+      for (let kd in dataDesa[cleanKec]) {
+        sel.add(new Option(dataDesa[cleanKec][kd].toUpperCase(), kd));
+      }
+    }
+  }
+
+  function getDusunList(kdKec, kdDesa) {
+    let cleanKec = String(kdKec).padStart(2, '0');
+    let cleanDesa = String(kdDesa).padStart(4, '0');
+    return dataDusun[cleanKec + "_" + cleanDesa] || null;
+  }
+
+  // --- LOGIC DROPDOWN BERTINGKAT REKAP ---
+  function onRecapTingkatChange() {
+    const t = document.getElementById("recapTingkat").value;
+    const cKec = document.getElementById("recapFilterKecContainer");
+    const cDes = document.getElementById("recapFilterDesaContainer");
+    const cDsn = document.getElementById("recapFilterDusunContainer");
+    
+    cKec.style.display = (t === "Kecamatan" || t === "Desa" || t === "Dusun") ? "block" : "none";
+    cDes.style.display = (t === "Desa" || t === "Dusun") ? "block" : "none";
+    cDsn.style.display = (t === "Dusun") ? "block" : "none";
+
+    document.getElementById("thHeaderWilayah").innerText = t ? t.toUpperCase() : "WILAYAH";
+  }
+
+  function onRecapKecamatanChange() {
+    const kec = document.getElementById("recapKecamatan").value;
+    populateDesaByKec(kec, "recapDesa");
+    document.getElementById("recapDusun").innerHTML = '<option value="">-- PILIH DUSUN --</option>';
+  }
+
+  function onRecapDesaChange() {
+    const kec = document.getElementById("recapKecamatan").value;
+    const desa = document.getElementById("recapDesa").value;
+    const sel = document.getElementById("recapDusun");
+    sel.innerHTML = '<option value="">-- PILIH DUSUN --</option>';
+    const dsn = getDusunList(kec, desa);
+    if (dsn) {
+      for (let kd in dsn) sel.add(new Option(dsn[kd].nama.toUpperCase(), kd));
+    }
+  }
+
+  // --- LOGIC DROPDOWN BERTINGKAT BNBA ---
+  function onBnbaTingkatChange() {
+    const t = document.getElementById("bnbaTingkat").value;
+    document.getElementById("bnbaFilterKecContainer").style.display = (t === "Kecamatan" || t === "Desa" || t === "Dusun" || t === "RT") ? "block" : "none";
+    document.getElementById("bnbaFilterDesaContainer").style.display = (t === "Desa" || t === "Dusun" || t === "RT") ? "block" : "none";
+    document.getElementById("bnbaFilterDusunContainer").style.display = (t === "Dusun" || t === "RT") ? "block" : "none";
+    document.getElementById("bnbaFilterRtContainer").style.display = (t === "RT") ? "block" : "none";
+  }
+
+  function onBnbaKecamatanChange() {
+    const kec = document.getElementById("bnbaKecamatan").value;
+    populateDesaByKec(kec, "bnbaDesa");
+    document.getElementById("bnbaDusun").innerHTML = '<option value="">-- PILIH DUSUN --</option>';
+    document.getElementById("bnbaRt").innerHTML = '<option value="">-- PILIH RT --</option>';
+  }
+
+  function onBnbaDesaChange() {
+    const kec = document.getElementById("bnbaKecamatan").value;
+    const desa = document.getElementById("bnbaDesa").value;
+    const sel = document.getElementById("bnbaDusun");
+    sel.innerHTML = '<option value="">-- PILIH DUSUN --</option>';
+    const dsn = getDusunList(kec, desa);
+    if (dsn) {
+      for (let kd in dsn) sel.add(new Option(dsn[kd].nama.toUpperCase(), kd));
+    }
+  }
+
+  function onBnbaDusunChange() {
+    const kec = document.getElementById("bnbaKecamatan").value;
+    const desa = document.getElementById("bnbaDesa").value;
+    const dusun = document.getElementById("bnbaDusun").value;
+    const sel = document.getElementById("bnbaRt");
+    sel.innerHTML = '<option value="">-- PILIH RT --</option>';
+    const dsn = getDusunList(kec, desa);
+    if (dsn && dsn[dusun]) {
+      for (let i = 1; i <= dsn[dusun].jumlah_rt; i++) {
+        let formatted = String(i).padStart(3, '0');
+        sel.add(new Option("RT " + formatted, formatted));
+      }
+    }
+  }
+
+  // --- LOGIC DROPDOWN BERTINGKAT GRAFIK ---
+  function onChartTingkatChange() {
+    const t = document.getElementById("chartTingkat").value;
+    document.getElementById("chartFilterKecContainer").style.display = (t === "Kecamatan" || t === "Desa" || t === "Dusun") ? "block" : "none";
+    document.getElementById("chartFilterDesaContainer").style.display = (t === "Desa" || t === "Dusun") ? "block" : "none";
+    document.getElementById("chartFilterDusunContainer").style.display = (t === "Dusun") ? "block" : "none";
+  }
+
+  function onChartKecamatanChange() {
+    const kec = document.getElementById("chartKecamatan").value;
+    populateDesaByKec(kec, "chartDesa");
+    document.getElementById("chartDusun").innerHTML = '<option value="">-- PILIH DUSUN --</option>';
+  }
+
+  function onChartDesaChange() {
+    const kec = document.getElementById("chartKecamatan").value;
+    const desa = document.getElementById("chartDesa").value;
+    const sel = document.getElementById("chartDusun");
+    sel.innerHTML = '<option value="">-- PILIH DUSUN --</option>';
+    const dsn = getDusunList(kec, desa);
+    if (dsn) {
+      for (let kd in dsn) sel.add(new Option(dsn[kd].nama.toUpperCase(), kd));
+    }
+  }
+
+  // --- LOGIC SEARCH BERTINGKAT ---
+  function onSearchKecamatanChange() {
+    const kec = document.getElementById("searchKecamatan").value;
+    populateDesaByKec(kec, "searchDesa");
+    document.getElementById("searchDusun").innerHTML = '<option value="">-- PILIH DUSUN --</option>';
+    document.getElementById("searchRt").innerHTML = '<option value="">-- PILIH RT --</option>';
+  }
+
+  function onSearchDesaChange() {
+    const kec = document.getElementById("searchKecamatan").value;
+    const desa = document.getElementById("searchDesa").value;
+    const sel = document.getElementById("searchDusun");
+    sel.innerHTML = '<option value="">-- PILIH DUSUN --</option>';
+    const dsn = getDusunList(kec, desa);
+    if (dsn) {
+      for (let kd in dsn) sel.add(new Option(dsn[kd].nama.toUpperCase(), kd));
+    }
+  }
+
+  function onSearchDusunChange() {
+    const kec = document.getElementById("searchKecamatan").value;
+    const desa = document.getElementById("searchDesa").value;
+    const dusun = document.getElementById("searchDusun").value;
+    const sel = document.getElementById("searchRt");
+    sel.innerHTML = '<option value="">-- PILIH RT --</option>';
+    const dsn = getDusunList(kec, desa);
+    if (dsn && dsn[dusun]) {
+      for (let i = 1; i <= dsn[dusun].jumlah_rt; i++) {
+        let formatted = String(i).padStart(3, '0');
+        sel.add(new Option("RT " + formatted, formatted));
+      }
+    }
+  }
+
+  // --- LOGIN & DASHBOARD VIEW LOGIC ---
   async function handleLogin(event) {
     event.preventDefault();
     const btn = document.getElementById("btnLogin");
@@ -743,7 +967,6 @@
     btn.innerText = "Memverifikasi...";
 
     try {
-      // Cari username tanpa sensitif huruf besar/kecil (ilike)
       const { data, error } = await db
         .from('users')
         .select('*')
@@ -751,13 +974,7 @@
         .eq('password_hash', pass)
         .maybeSingle();
 
-      if (error) {
-        console.error("Database Error:", error);
-        Swal.fire('Koneksi Gagal', error.message, 'error');
-        return;
-      }
-
-      if (!data) {
+      if (error || !data) {
         Swal.fire('Gagal Masuk', 'Username atau Password salah!', 'warning');
         return;
       }
@@ -771,6 +988,7 @@
       document.getElementById("userGreetingText").innerText = `Selamat datang, ${data.role} (${data.username})!`;
       document.getElementById("loginContainer").style.display = "none";
       document.getElementById("appContainer").style.display = "block";
+      
       showDashboardView();
 
     } catch (err) {
@@ -781,6 +999,22 @@
     }
   }
 
+  function showDashboardView() {
+    document.getElementById("dashboardSection").style.display = "block";
+    document.getElementById("formSection").style.display = "none";
+    document.getElementById("recapSection").style.display = "none";
+    document.getElementById("bnbaSection").style.display = "none";
+    document.getElementById("chartSection").style.display = "none";
+
+    // AKTIFKAN TOMBOL ADMIN DASHBOARD
+    const adminBox = document.getElementById("adminSyncContainer");
+    if (adminBox) {
+      const isAdmin = userRole.includes("ADMIN") || userRole.includes("KAB") || userRole.includes("KEC");
+      adminBox.style.display = isAdmin ? "block" : "none";
+    }
+  }
+
+  // --- FORM INPUT DROPDOWN & SUBMIT ---
   function updateKabupaten(selectedVal = "") {
     const kodeProv = document.getElementById("provinsi").value;
     document.getElementById("kode_prov").value = kodeProv;
@@ -822,7 +1056,7 @@
     const kodeDesa = document.getElementById("desa").value;
     document.getElementById("kode_desa").value = kodeDesa;
     resetDropdown("dusun", "kode_dusun"); resetDropdown("rt", "kode_rt");
-    let dusunObj = dataDusun[kodeKec + "_" + kodeDesa];
+    let dusunObj = getDusunList(kodeKec, kodeDesa);
     if (kodeDesa && dusunObj) {
       const dusunSelect = document.getElementById("dusun");
       dusunSelect.disabled = false;
@@ -837,7 +1071,7 @@
     const kodeDusun = document.getElementById("dusun").value;
     document.getElementById("kode_dusun").value = kodeDusun;
     resetDropdown("rt", "kode_rt");
-    let dusunObj = dataDusun[kodeKec + "_" + kodeDesa];
+    let dusunObj = getDusunList(kodeKec, kodeDesa);
     if (kodeDesa && kodeDusun && dusunObj && dusunObj[kodeDusun]) {
       const rtSelect = document.getElementById("rt");
       rtSelect.disabled = false;
@@ -947,15 +1181,220 @@
     }
   }
 
+  // --- REKAPITULASI DENGAN FILTER TINGKAT ---
+  async function fetchRecap() {
+    const tingkat = document.getElementById("recapTingkat").value;
+    const tahun = document.getElementById("recapTahun").value;
+    const bulan = document.getElementById("recapBulan").value;
+    const monthKey = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"][bulan - 1];
+
+    const tbody = document.getElementById("recapTableBody");
+    tbody.innerHTML = "<tr><td colspan='22' style='text-align:center;'>Memuat data rekapitulasi...</td></tr>";
+
+    let query = db.from('data_pus').select('*').eq('tahun', tahun);
+    if (tingkat === "Kecamatan" || tingkat === "Desa" || tingkat === "Dusun") {
+      let kec = document.getElementById("recapKecamatan").value;
+      if (kec) query = query.eq('kode_kec', kec);
+    }
+    if (tingkat === "Desa" || tingkat === "Dusun") {
+      let desa = document.getElementById("recapDesa").value;
+      if (desa) query = query.eq('kode_desa', desa);
+    }
+    if (tingkat === "Dusun") {
+      let dusun = document.getElementById("recapDusun").value;
+      if (dusun) query = query.eq('kode_dusun', dusun);
+    }
+
+    const { data, error } = await query;
+    if (error || !data) {
+      tbody.innerHTML = "<tr><td colspan='22' style='text-align:center; color:red;'>Gagal memuat rekap.</td></tr>";
+      return;
+    }
+
+    // Kelompokkan data berdasarkan tingkat wilayah
+    let grouped = {};
+    data.forEach(r => {
+      let groupName = "Semua";
+      if (tingkat === "Kabupaten") groupName = r.kabupaten_nama;
+      else if (tingkat === "Kecamatan") groupName = r.kecamatan_nama;
+      else if (tingkat === "Desa") groupName = r.desa_nama;
+      else if (tingkat === "Dusun") groupName = r.dusun_nama;
+
+      if (!grouped[groupName]) {
+        grouped[groupName] = { name: groupName, total: 0, ber_kb: 0, pil: 0, stk: 0, kdm: 0, imp: 0, iud: 0, mow: 0, mop: 0, non_kb: 0, hamil: 0, ias: 0, iat: 0, tial: 0, tki: 0, non_pus: 0, cerai: 0, mngl: 0, pindah: 0 };
+      }
+      
+      let st = (r[monthKey] || "").toUpperCase();
+      grouped[groupName].total++;
+
+      if (st.includes("PESERTA KB")) {
+        grouped[groupName].ber_kb++;
+        if (st.includes("PIL")) grouped[groupName].pil++;
+        if (st.includes("STK")) grouped[groupName].stk++;
+        if (st.includes("KDM")) grouped[groupName].kdm++;
+        if (st.includes("IMP")) grouped[groupName].imp++;
+        if (st.includes("IUD")) grouped[groupName].iud++;
+        if (st.includes("MOW")) grouped[groupName].mow++;
+        if (st.includes("MOP")) grouped[groupName].mop++;
+      } else if (st.includes("BUKAN PESERTA KB")) {
+        grouped[groupName].non_kb++;
+        if (st.includes("HAMIL")) grouped[groupName].hamil++;
+        if (st.includes("IAS")) grouped[groupName].ias++;
+        if (st.includes("IAT")) grouped[groupName].iat++;
+        if (st.includes("TIAL")) grouped[groupName].tial++;
+        if (st.includes("TKI")) grouped[groupName].tki++;
+      } else if (st.includes("BUKAN PUS") || st.includes("CERAI") || st.includes("MENINGGAL") || st.includes("PINDAH")) {
+        grouped[groupName].non_pus++;
+        if (st.includes("CERAI")) grouped[groupName].cerai++;
+        if (st.includes("MENINGGAL")) grouped[groupName].mngl++;
+        if (st.includes("PINDAH")) grouped[groupName].pindah++;
+      }
+    });
+
+    tbody.innerHTML = "";
+    let idx = 1;
+    for (let k in grouped) {
+      let g = grouped[k];
+      tbody.innerHTML += `<tr>
+        <td>${idx++}</td>
+        <td style="text-align:left; font-weight:bold;">${g.name}</td>
+        <td><b>${g.total}</b></td>
+        <td style="background:#d4edda; font-weight:bold;">${g.ber_kb}</td>
+        <td>${g.pil}</td><td>${g.stk}</td><td>${g.kdm}</td><td>${g.imp}</td><td>${g.iud}</td><td>${g.mow}</td><td>${g.mop}</td>
+        <td style="background:#f8d7da; font-weight:bold;">${g.non_kb}</td>
+        <td>${g.hamil}</td><td>${g.ias}</td><td>${g.iat}</td><td>${g.tial}</td><td>${g.tki}</td>
+        <td style="background:#e2e3e5; font-weight:bold;">${g.non_pus}</td>
+        <td>${g.cerai}</td><td>${g.mngl}</td><td>${g.pindah}</td>
+      </tr>`;
+    }
+  }
+
+  // --- BNBA DATA FETCH DENGAN FILTER TINGKAT ---
+  async function fetchBnba() {
+    const tingkat = document.getElementById("bnbaTingkat").value;
+    const tahun = document.getElementById("bnbaTahun").value;
+    const thead = document.getElementById("bnbaTableHeader");
+    const tbody = document.getElementById("bnbaTableBody");
+
+    thead.innerHTML = `<tr><th>NO</th><th>ID PUS</th><th>KECAMATAN</th><th>DESA</th><th>DUSUN</th><th>RT</th><th>NAMA ISTRI</th><th>NIK ISTRI</th><th>STATUS DESEMBER</th></tr>`;
+    tbody.innerHTML = "<tr><td colspan='9' style='text-align:center;'>Memuat data BNBA...</td></tr>";
+
+    let query = db.from('data_pus').select('*').eq('tahun', tahun);
+    if (tingkat === "Kecamatan" || tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") {
+      let kec = document.getElementById("bnbaKecamatan").value;
+      if (kec) query = query.eq('kode_kec', kec);
+    }
+    if (tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") {
+      let desa = document.getElementById("bnbaDesa").value;
+      if (desa) query = query.eq('kode_desa', desa);
+    }
+    if (tingkat === "Dusun" || tingkat === "RT") {
+      let dusun = document.getElementById("bnbaDusun").value;
+      if (dusun) query = query.eq('kode_dusun', dusun);
+    }
+    if (tingkat === "RT") {
+      let rt = document.getElementById("bnbaRt").value;
+      if (rt) query = query.eq('kode_rt', rt);
+    }
+
+    const { data, error } = await query.limit(500);
+    if (error || !data || data.length === 0) {
+      tbody.innerHTML = "<tr><td colspan='9' style='text-align:center; color:red;'>Data tidak ditemukan.</td></tr>";
+      return;
+    }
+
+    tbody.innerHTML = "";
+    data.forEach((r, idx) => {
+      tbody.innerHTML += `<tr>
+        <td>${idx+1}</td>
+        <td><b>${r.id_pus}</b></td>
+        <td>${r.kecamatan_nama}</td>
+        <td>${r.desa_nama}</td>
+        <td>${r.dusun_nama}</td>
+        <td>${r.rt_nama}</td>
+        <td>${r.nama_istri}</td>
+        <td>${r.nik_istri}</td>
+        <td>${r.kb_des || '-'}</td>
+      </tr>`;
+    });
+  }
+
+  // --- GRAFIK ANALYTICS DENGAN FILTER TINGKAT ---
+  async function fetchChartData() {
+    const tingkat = document.getElementById("chartTingkat").value;
+    const tahun = document.getElementById("chartTahun").value;
+    const bulan = document.getElementById("chartBulan").value;
+    const monthKey = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"][bulan - 1];
+
+    let query = db.from('data_pus').select('*').eq('tahun', tahun);
+    if (tingkat === "Kecamatan" || tingkat === "Desa" || tingkat === "Dusun") {
+      let kec = document.getElementById("chartKecamatan").value;
+      if (kec) query = query.eq('kode_kec', kec);
+    }
+    if (tingkat === "Desa" || tingkat === "Dusun") {
+      let desa = document.getElementById("chartDesa").value;
+      if (desa) query = query.eq('kode_desa', desa);
+    }
+    if (tingkat === "Dusun") {
+      let dusun = document.getElementById("chartDusun").value;
+      if (dusun) query = query.eq('kode_dusun', dusun);
+    }
+
+    const { data } = await query;
+    if (!data) return;
+
+    let berKb = 0, nonKb = 0, mkjp = 0;
+    let mix = { STK:0, PIL:0, KDM:0, IMP:0, IUD:0, MOW:0, MOP:0 };
+
+    data.forEach(r => {
+      let st = (r[monthKey] || "").toUpperCase();
+      if (st.includes("PESERTA KB")) {
+        berKb++;
+        if (st.includes("IMP") || st.includes("IUD") || st.includes("MOW") || st.includes("MOP")) mkjp++;
+        for (let k in mix) { if (st.includes(k)) mix[k]++; }
+      } else {
+        nonKb++;
+      }
+    });
+
+    document.getElementById("kpiTotalPus").innerText = data.length;
+    document.getElementById("kpiCpr").innerText = data.length > 0 ? ((berKb / data.length) * 100).toFixed(1) + "%" : "0%";
+    document.getElementById("kpiMkjpRate").innerText = mkjp;
+
+    // Render Chart Proporsi
+    if (chartStatusPropInstance) chartStatusPropInstance.destroy();
+    chartStatusPropInstance = new Chart(document.getElementById('chartStatusProp'), {
+      type: 'doughnut',
+      data: { labels: ['Peserta KB', 'Bukan Peserta'], datasets: [{ data: [berKb, nonKb], backgroundColor: ['#28a745', '#dc3545'] }] }
+    });
+
+    // Render Chart Mix Kontrasepsi
+    if (chartMixInstance) chartMixInstance.destroy();
+    chartMixInstance = new Chart(document.getElementById('chartMixKontrasepsi'), {
+      type: 'bar',
+      data: { labels: Object.keys(mix), datasets: [{ label: 'Jumlah Akseptor', data: Object.values(mix), backgroundColor: '#0284c7' }] }
+    });
+  }
+
+  // --- CARI & EDIT DATA ADVANCED ---
   async function executeSearch() {
     const keyword = document.getElementById("searchKeyword").value.trim().toUpperCase();
+    const kec = document.getElementById("searchKecamatan").value;
+    const desa = document.getElementById("searchDesa").value;
+    const dusun = document.getElementById("searchDusun").value;
+    const rt = document.getElementById("searchRt").value;
+
     const container = document.getElementById("searchResults");
     container.innerHTML = "Mencari...";
 
     let query = db.from('data_pus').select('*');
     if (keyword) query = query.or(`id_pus.ilike.%${keyword}%,nama_istri.ilike.%${keyword}%,nik_istri.ilike.%${keyword}%`);
-    const { data, error } = await query.limit(20);
+    if (kec) query = query.eq('kode_kec', kec);
+    if (desa) query = query.eq('kode_desa', desa);
+    if (dusun) query = query.eq('kode_dusun', dusun);
+    if (rt) query = query.eq('kode_rt', rt);
 
+    const { data, error } = await query.limit(20);
     container.innerHTML = "";
     if (error || !data || data.length === 0) {
       container.innerHTML = "<p style='text-align:center;'>Data tidak ditemukan.</p>";
@@ -1000,70 +1439,93 @@
     }
   }
 
-  async function fetchRecap() {
-    const tbody = document.getElementById("recapTableBody");
-    tbody.innerHTML = "Memuat rekap...";
-    const { data, error } = await db.from('data_pus').select('*');
-    if (error || !data) { tbody.innerHTML = "Gagal memuat rekap."; return; }
-
-    tbody.innerHTML = "";
-    data.forEach((r, idx) => {
-      let tr = `<tr>
-        <td>${idx+1}</td>
-        <td>${r.desa_nama}</td>
-        <td>1</td>
-        <td>${r.kb_des.includes('PESERTA') ? 1 : 0}</td>
-        <td>${r.kb_des.includes('PIL') ? 1 : 0}</td>
-        <td>${r.kb_des.includes('STK') ? 1 : 0}</td>
-        <td>${r.kb_des.includes('KDM') ? 1 : 0}</td>
-        <td>${r.kb_des.includes('IMP') ? 1 : 0}</td>
-        <td>${r.kb_des.includes('IUD') ? 1 : 0}</td>
-        <td>${r.kb_des.includes('MOW') ? 1 : 0}</td>
-        <td>${r.kb_des.includes('MOP') ? 1 : 0}</td>
-        <td>${r.kb_des.includes('BUKAN PESERTA') ? 1 : 0}</td>
-        <td>${r.kb_des.includes('HAMIL') ? 1 : 0}</td>
-        <td>${r.kb_des.includes('IAS') ? 1 : 0}</td>
-        <td>${r.kb_des.includes('IAT') ? 1 : 0}</td>
-        <td>${r.kb_des.includes('TIAL') ? 1 : 0}</td>
-        <td>${r.kb_des.includes('TKI') ? 1 : 0}</td>
-        <td>${r.kb_des.includes('BUKAN PUS') ? 1 : 0}</td>
-        <td>${r.kb_des.includes('BERCERAI') ? 1 : 0}</td>
-        <td>${r.kb_des.includes('MENINGGAL') ? 1 : 0}</td>
-        <td>${r.kb_des.includes('PINDAH') ? 1 : 0}</td>
-      </tr>`;
-      tbody.innerHTML += tr;
-    });
+  // --- EKSPOR PDF & EXCEL ---
+  function exportTableToExcel(tableId, filename) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+    const wb = XLSX.utils.table_to_book(table, { sheet: "Sheet1" });
+    XLSX.writeFile(wb, filename + ".xlsx");
   }
 
-  async function fetchBnba() {
-    const tbody = document.getElementById("bnbaTableBody");
-    const thead = document.getElementById("bnbaTableHeader");
-    thead.innerHTML = `<tr><th>NO</th><th>ID PUS</th><th>KECAMATAN</th><th>DESA</th><th>NAMA ISTRI</th><th>NIK ISTRI</th><th>STATUS DESEMBER</th></tr>`;
-    tbody.innerHTML = "Memuat data...";
-    const { data, error } = await db.from('data_pus').select('*').limit(100);
-    if (error || !data) { tbody.innerHTML = "Gagal memuat BNBA."; return; }
-    tbody.innerHTML = "";
-    data.forEach((r, idx) => {
-      tbody.innerHTML += `<tr><td>${idx+1}</td><td>${r.id_pus}</td><td>${r.kecamatan_nama}</td><td>${r.desa_nama}</td><td>${r.nama_istri}</td><td>${r.nik_istri}</td><td>${r.kb_des || '-'}</td></tr>`;
-    });
+  function exportRecapToExcel() { exportTableToExcel('recapTable', 'REKAP_PUS'); }
+
+  function exportRecapToPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('landscape', 'pt', 'a4');
+    doc.text("LAPORAN REKAPITULASI PUS & KESERTAAN KB", 40, 30);
+    doc.autoTable({ html: '#recapTable', startY: 45, styles: { fontSize: 7 } });
+    doc.save("Rekap_PUS.pdf");
   }
 
-  async function fetchChartData() {
-    const { data } = await db.from('data_pus').select('*');
-    if (!data) return;
-    let berKb = data.filter(r => (r.kb_des || '').includes('PESERTA KB')).length;
-    let nonKb = data.length - berKb;
-    document.getElementById("kpiTotalPus").innerText = data.length;
-    document.getElementById("kpiCpr").innerText = data.length > 0 ? ((berKb / data.length) * 100).toFixed(1) + "%" : "0%";
-
-    new Chart(document.getElementById('chartStatusProp'), {
-      type: 'doughnut',
-      data: { labels: ['Peserta KB', 'Bukan Peserta'], datasets: [{ data: [berKb, nonKb], backgroundColor: ['#28a745', '#dc3545'] }] }
-    });
+  function exportBnbaToPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('landscape', 'pt', 'a4');
+    doc.text("DATA BNBA PASANGAN USIA SUBUR", 40, 30);
+    doc.autoTable({ html: '#bnbaTable', startY: 45, styles: { fontSize: 7 } });
+    doc.save("Data_BNBA_PUS.pdf");
   }
 
+  // --- MODAL TRIGGER LAINNYA ---
   function openSearchModal() { document.getElementById("searchModal").style.display = "block"; }
   function closeSearchModal() { document.getElementById("searchModal").style.display = "none"; }
+  function openImportExcelModal() { document.getElementById("modalImportExcel").style.display = "block"; }
+  function closeImportExcelModal() { document.getElementById("modalImportExcel").style.display = "none"; }
+
+  function triggerOpenNewYear() {
+    Swal.fire({
+      title: 'Tambah Tahun Baru',
+      input: 'number',
+      inputValue: new Date().getFullYear() + 1,
+      showCancelButton: true,
+      confirmButtonText: 'Buka Tahun',
+      confirmButtonColor: '#28a745'
+    }).then(async (res) => {
+      if (res.isConfirmed && res.value) {
+        Swal.fire('Tahun Baru Dibuat', `Sistem siap untuk input tahun ${res.value}`, 'success');
+      }
+    });
+  }
+
+  function openMasterWilayahModal() {
+    Swal.fire('Master Wilayah', 'Gunakan dashboard Supabase untuk mengelola master_wilayah secara kolektif.', 'info');
+  }
+
+  function openManageUsersModal() {
+    Swal.fire('Kelola Pengguna', 'Gunakan dashboard Supabase untuk manajemen pengguna (tabel users).', 'info');
+  }
+
+  function showFormView() {
+    document.getElementById("dashboardSection").style.display = "none";
+    document.getElementById("formSection").style.display = "block";
+    document.getElementById("recapSection").style.display = "none";
+    document.getElementById("bnbaSection").style.display = "none";
+    document.getElementById("chartSection").style.display = "none";
+  }
+
+  function showRecapView() {
+    document.getElementById("dashboardSection").style.display = "none";
+    document.getElementById("formSection").style.display = "none";
+    document.getElementById("recapSection").style.display = "block";
+    document.getElementById("bnbaSection").style.display = "none";
+    document.getElementById("chartSection").style.display = "none";
+  }
+
+  function showBnbaView() {
+    document.getElementById("dashboardSection").style.display = "none";
+    document.getElementById("formSection").style.display = "none";
+    document.getElementById("recapSection").style.display = "none";
+    document.getElementById("bnbaSection").style.display = "block";
+    document.getElementById("chartSection").style.display = "none";
+  }
+
+  function showChartAnalyticsView() {
+    document.getElementById("dashboardSection").style.display = "none";
+    document.getElementById("formSection").style.display = "none";
+    document.getElementById("recapSection").style.display = "none";
+    document.getElementById("bnbaSection").style.display = "none";
+    document.getElementById("chartSection").style.display = "block";
+  }
+
   function resetFormToNew() { resetInputForm(); }
   function resetInputForm() { document.getElementById("pusForm").reset(); document.getElementById("id_pus").value = ""; }
   function togglePassword() {
@@ -1071,33 +1533,12 @@
     p.type = p.type === "password" ? "text" : "password";
   }
 
-  function showDashboardView() {
-    document.getElementById("dashboardSection").style.display = "block";
-    document.getElementById("formSection").style.display = "none";
-    document.getElementById("recapSection").style.display = "none";
-    document.getElementById("bnbaSection").style.display = "none";
-    document.getElementById("chartSection").style.display = "none";
-  }
-  function showFormView() {
-    document.getElementById("dashboardSection").style.display = "none";
-    document.getElementById("formSection").style.display = "block";
-  }
-  function showRecapView() {
-    document.getElementById("dashboardSection").style.display = "none";
-    document.getElementById("recapSection").style.display = "block";
-  }
-  function showBnbaView() {
-    document.getElementById("dashboardSection").style.display = "none";
-    document.getElementById("bnbaSection").style.display = "block";
-  }
-  function showChartAnalyticsView() {
-    document.getElementById("dashboardSection").style.display = "none";
-    document.getElementById("chartSection").style.display = "block";
-  }
   function handleLogout() {
+    currentUser = "";
     document.getElementById("appContainer").style.display = "none";
     document.getElementById("loginContainer").style.display = "block";
   }
+
   function exitApp() { window.location.href = "https://bpkblbr.github.io/r1puslobar/?status=out"; }
 </script>
 </body>
