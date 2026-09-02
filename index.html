@@ -2293,6 +2293,8 @@
 
         if (existingRows && existingRows.length > 0) {
           let isAllowedDuplicate = false;
+          let mutasiTypeFound = "";
+
           for (let oldData of existingRows) {
             let lastStatus = "";
             const mKeys = ["kb_des", "kb_nov", "kb_okt", "kb_sep", "kb_agu", "kb_jul", "kb_jun", "kb_mei", "kb_apr", "kb_mar", "kb_feb", "kb_jan"];
@@ -2303,8 +2305,17 @@
               }
             }
 
-            if (lastStatus.includes("CERAI") || lastStatus.includes("MENINGGAL") || lastStatus.includes("PINDAH")) {
+            // Bedakan penanganan antara CERAI/MENINGGAL dengan PINDAH
+            if (lastStatus.includes("CERAI") || lastStatus.includes("MENINGGAL")) {
+              // Untuk Cerai/Meninggal, diizinkan buat ID PUS baru (karena potensi menikah dengan suami baru)
               isAllowedDuplicate = true;
+              mutasiTypeFound = "CERAI/MENINGGAL";
+              break;
+            } else if (lastStatus.includes("PINDAH")) {
+              // Untuk PINDAH, seharusnya TIDAK membuat ID PUS baru secara liar jika dalam satu kabupaten, 
+              // melainkan menggunakan fitur Inbox Mutasi. Tapi jika diizinkan, kita berikan penanda khusus.
+              isAllowedDuplicate = true; 
+              mutasiTypeFound = "PINDAH";
               break;
             }
           }
