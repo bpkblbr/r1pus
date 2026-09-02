@@ -1164,6 +1164,39 @@
   let chartTrendBulananInstance = null;
 
   const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+  
+  function getTimeGreeting() {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 11) return "Selamat pagi";
+    if (hour >= 11 && hour < 15) return "Selamat siang";
+    if (hour >= 15 && hour < 18.5) return "Selamat sore";
+    return "Selamat malam";
+  }
+
+  function setUserGreeting(role, namaWilayah, username) {
+    const timeGreeting = getTimeGreeting();
+    let identity = "";
+
+    const roleUpper = String(role || "").toUpperCase();
+    if (roleUpper.indexOf("KAB") !== -1) {
+      identity = "Admin Kabupaten " + (namaWilayah || "");
+    } else if (roleUpper.indexOf("KEC") !== -1) {
+      identity = "Admin Kecamatan " + (namaWilayah || "");
+    } else {
+      identity = "User Desa " + (namaWilayah || "");
+    }
+
+    identity = identity.trim();
+    if (!namaWilayah) {
+      identity = role + " (" + username + ")";
+    }
+
+    const fullGreeting = `${timeGreeting}, <b>${identity}</b>`;
+    const greetingEl = document.getElementById("userGreetingText");
+    if (greetingEl) {
+      greetingEl.innerHTML = fullGreeting;
+    }
+  }
 
   
   function setSelectValueCaseInsensitive(selectId, targetValue) {
@@ -1842,7 +1875,19 @@
       userKodeKec = String(data.kode_kec || "").trim().padStart(2, '0');
       userKodeDesa = String(data.kode_desa || "").trim().padStart(4, '0');
 
-      document.getElementById("userGreetingText").innerText = `Selamat datang, ${data.role} (${data.username})!`;
+      // Tentukan label wilayah sapaan berdasarkan kode wilayah aktif
+      let namaWilayahLabel = "";
+      if (userKodeDesa && dataDesa[userKodeKec] && dataDesa[userKodeKec][userKodeDesa]) {
+        namaWilayahLabel = "Desa " + dataDesa[userKodeKec][userKodeDesa];
+      } else if (userKodeKec && dataKecamatan[userKodeKab] && dataKecamatan[userKodeKab][userKodeKec]) {
+        namaWilayahLabel = "Kec. " + dataKecamatan[userKodeKab][userKodeKec];
+      } else {
+        namaWilayahLabel = data.role;
+      }
+
+      // Terapkan format sapaan waktu dinamis
+      setUserGreeting(data.role, namaWilayahLabel, data.username);
+	  
       document.getElementById("loginContainer").style.display = "none";
       document.getElementById("appContainer").style.display = "block";
       
