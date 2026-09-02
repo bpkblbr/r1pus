@@ -1785,6 +1785,7 @@
     try {
       allData = await fetchAllPusDataChunked(tahun, filterKec, filterDesa, filterDusun);
     } catch (err) {
+      console.error("Fetch Error:", err);
       tbody.innerHTML = `<tr><td colspan='31' style='text-align:center; color:red;'>Gagal memuat: ${err.message}</td></tr>`;
       return;
     }
@@ -1823,165 +1824,165 @@
       }
     }
 
-    allData.forEach(r => {
-      let key = "";
-      if (tingkat === "Kabupaten") key = String(r.kecamatan_nama || "").trim().toUpperCase();
-      else if (tingkat === "Kecamatan") key = String(r.desa_nama || "").trim().toUpperCase();
-      else if (tingkat === "Desa") key = String(r.dusun_nama || "").trim().toUpperCase();
-      else if (tingkat === "Dusun") {
-        let rawRt = String(r.kode_rt || "").replace(/[^0-9]/g, "");
-        key = rawRt ? "RT " + rawRt.padStart(3, '0') : String(r.rt_nama || "").trim().toUpperCase();
-      }
-
-      if (!key) return;
-      if (!grouped[key]) grouped[key] = emptyRecapItem(key);
-
-      grouped[key].total_pus++;
-      
-      // 1. Tentukan apakah bulan berjalan adalah bulan pertama kali pasangan ini tercatat
-      let isFirstTimeRecorded = false;
-
-      if (bulan === 1) {
-        // Jika sedang melihat bulan Januari:
-        // Terhitung PUS Baru jika baru diinput pada tahun berjalan (misal: pengantin baru/pindahan masuk di Jan)
-        // dan bukan data carry-over dari tahun sebelumnya
-        let createdAtYear = r.timestamp ? new Date(r.timestamp).getFullYear() : tahun;
-        if (createdAtYear === tahun && (cur.type === "PESERTA_KB" || cur.type === "BUKAN_PESERTA")) {
-          isFirstTimeRecorded = true;
+    try {
+      allData.forEach(r => {
+        let key = "";
+        if (tingkat === "Kabupaten") key = String(r.kecamatan_nama || "").trim().toUpperCase();
+        else if (tingkat === "Kecamatan") key = String(r.desa_nama || "").trim().toUpperCase();
+        else if (tingkat === "Desa") key = String(r.dusun_nama || "").trim().toUpperCase();
+        else if (tingkat === "Dusun") {
+          let rawRt = String(r.kode_rt || "").replace(/[^0-9]/g, "");
+          key = rawRt ? "RT " + rawRt.padStart(3, '0') : String(r.rt_nama || "").trim().toUpperCase();
         }
-      } else {
-        // Jika bulan Februari s.d. Desember:
-        // Seluruh bulan dari Januari hingga (Bulan - 1) WAJIB KOSONG
-        let hasPreviousRecord = false;
-        for (let i = 0; i < bulan - 1; i++) {
-          let pastVal = String(r[mKeys[i]] || "").trim();
-          if (pastVal && pastVal !== "--KOSONG--" && pastVal !== "-") {
-            hasPreviousRecord = true;
-            break;
+
+        if (!key) return;
+        if (!grouped[key]) grouped[key] = emptyRecapItem(key);
+
+        // 1. EVALUASI STATUS DULU SEBELUM DIPAKAI LOGIKA LAIN (PERBAIKAN UTAMA)
+        const cur = evaluateKbStatus(r[monthKey]);
+        const prev = prevMonthKey ? evaluateKbStatus(r[prevMonthKey]) : null;
+
+        grouped[key].total_pus++;
+        
+        // 2. Tentukan apakah bulan berjalan adalah bulan pertama kali pasangan ini tercatat
+        let isFirstTimeRecorded = false;
+
+        if (bulan === 1) {
+          let createdAtYear = r.timestamp ? new Date(r.timestamp).getFullYear() : tahun;
+          if (createdAtYear === tahun && (cur.type === "PESERTA_KB" || cur.type === "BUKAN_PESERTA")) {
+            isFirstTimeRecorded = true;
+          }
+        } else {
+          let hasPreviousRecord = false;
+          for (let i = 0; i < bulan - 1; i++) {
+            let pastVal = String(r[mKeys[i]] || "").trim();
+            if (pastVal && pastVal !== "--KOSONG--" && pastVal !== "-") {
+              hasPreviousRecord = true;
+              break;
+            }
+          }
+
+          if (!hasPreviousRecord) {
+            isFirstTimeRecorded = true;
           }
         }
 
-        // Hanya terhitung PUS Baru jika tidak ada riwayat sama sekali di bulan-bulan sebelumnya
-        if (!hasPreviousRecord) {
-          isFirstTimeRecorded = true;
-        }
-      }
+        // 3. Eksekusi penambahan counter PUS Baru
+        let umurIstri = parseInt(r.umur_istri || 0, 10);
 
-      // 2. Eksekusi penambahan counter PUS Baru
-      let umurIstri = parseInt(r.umur_istri || 0, 10);
-
-      if (
-        isFirstTimeRecorded &&
-        (cur.type === "PESERTA_KB" || cur.type === "BUKAN_PESERTA") &&
-        cur.type !== "BUKAN_PUS" &&
-        umurIstri < 50
-      ) {
-        grouped[key].pus_baru++;
-      }
-
-      const cur = evaluateKbStatus(r[monthKey]);
-      const prev = prevMonthKey ? evaluateKbStatus(r[prevMonthKey]) : null;
-
-      // 1. Peserta KB
-      if (cur.type === "PESERTA_KB") {
-        grouped[key].ber_kb++;
-        if (cur.method === "PIL") grouped[key].pil++;
-        else if (cur.method === "STK") grouped[key].stk++;
-        else if (cur.method === "KDM") grouped[key].kdm++;
-        else if (cur.method === "IMP") grouped[key].imp++;
-        else if (cur.method === "IUD") grouped[key].iud++;
-        else if (cur.method === "MOW") grouped[key].mow++;
-        else if (cur.method === "MOP") grouped[key].mop++;
-
-        if (cur.isMkjp) grouped[key].mkjp++;
-        else grouped[key].non_mkjp++;
-
-        // KB Baru
-        if (prev && prev.type !== "PESERTA_KB") {
-          grouped[key].kb_baru_total++;
-          if (prev.reason === "HAMIL") grouped[key].kb_baru_kbpp++;
-          else if (prev.type === "BUKAN_PESERTA") grouped[key].kb_baru_pasca_do++;
-          else grouped[key].kb_baru_murni++;
+        if (
+          isFirstTimeRecorded &&
+          (cur.type === "PESERTA_KB" || cur.type === "BUKAN_PESERTA") &&
+          cur.type !== "BUKAN_PUS" &&
+          umurIstri < 50
+        ) {
+          grouped[key].pus_baru++;
         }
 
-        // Ganti Cara
-        if (prev && prev.type === "PESERTA_KB" && prev.method !== cur.method) {
-          grouped[key].ganti_cara++;
-        }
+        // 4. Hitung Peserta KB
+        if (cur.type === "PESERTA_KB") {
+          grouped[key].ber_kb++;
+          if (cur.method === "PIL") grouped[key].pil++;
+          else if (cur.method === "STK") grouped[key].stk++;
+          else if (cur.method === "KDM") grouped[key].kdm++;
+          else if (cur.method === "IMP") grouped[key].imp++;
+          else if (cur.method === "IUD") grouped[key].iud++;
+          else if (cur.method === "MOW") grouped[key].mow++;
+          else if (cur.method === "MOP") grouped[key].mop++;
 
-      // 2. Bukan Peserta KB (TDK-KB kini terhitung benar)
-      } else if (cur.type === "BUKAN_PESERTA") {
-        grouped[key].tidak_kb++;
-        if (cur.reason === "HAMIL") {
-          grouped[key].hamil++;
-          if (prev && prev.reason !== "HAMIL") {
-            grouped[key].hamil_baru++;
+          if (cur.isMkjp) grouped[key].mkjp++;
+          else grouped[key].non_mkjp++;
+
+          // KB Baru
+          if (prev && prev.type !== "PESERTA_KB") {
+            grouped[key].kb_baru_total++;
+            if (prev.reason === "HAMIL") grouped[key].kb_baru_kbpp++;
+            else if (prev.type === "BUKAN_PESERTA") grouped[key].kb_baru_pasca_do++;
+            else grouped[key].kb_baru_murni++;
           }
-        } else if (cur.reason === "IAS") grouped[key].ias++;
-        else if (cur.reason === "IAT") grouped[key].iat++;
-        else if (cur.reason === "TIAL") grouped[key].tial++;
-        else if (cur.reason === "TKI") grouped[key].tki++;
 
-      // 3. Bukan PUS / Mutasi
-      } else if (cur.type === "BUKAN_PUS" || parseInt(r.umur_istri || 0, 10) >= 50) {
-        grouped[key].bukan_pus++;
-        if (cur.cat === "CERAI") grouped[key].bcr++;
-        else if (cur.cat === "MENINGGAL") grouped[key].mng++;
-        else if (cur.cat === "PINDAH") grouped[key].pndh++;
-        if (cur.cat === "50+" || parseInt(r.umur_istri || 0, 10) >= 50) grouped[key].usia_50++;
+          // Ganti Cara
+          if (prev && prev.type === "PESERTA_KB" && prev.method !== cur.method) {
+            grouped[key].ganti_cara++;
+          }
+
+        // 5. Bukan Peserta KB
+        } else if (cur.type === "BUKAN_PESERTA") {
+          grouped[key].tidak_kb++;
+          if (cur.reason === "HAMIL") {
+            grouped[key].hamil++;
+            if (prev && prev.reason !== "HAMIL") {
+              grouped[key].hamil_baru++;
+            }
+          } else if (cur.reason === "IAS") grouped[key].ias++;
+          else if (cur.reason === "IAT") grouped[key].iat++;
+          else if (cur.reason === "TIAL") grouped[key].tial++;
+          else if (cur.reason === "TKI") grouped[key].tki++;
+
+        // 6. Bukan PUS / Mutasi
+        } else if (cur.type === "BUKAN_PUS" || umurIstri >= 50) {
+          grouped[key].bukan_pus++;
+          if (cur.cat === "CERAI") grouped[key].bcr++;
+          else if (cur.cat === "MENINGGAL") grouped[key].mng++;
+          else if (cur.cat === "PINDAH") grouped[key].pndh++;
+          if (cur.cat === "50+" || umurIstri >= 50) grouped[key].usia_50++;
+        }
+      });
+
+      // Render Tabel 31 Kolom
+      tbody.innerHTML = "";
+      let idx = 1;
+      let totalAll = emptyRecapItem("JUMLAH / TOTAL");
+
+      for (let k in grouped) {
+        let d = grouped[k];
+        tbody.innerHTML += `<tr>
+          <td style="text-align:center; font-weight:bold;">${idx++}</td>
+          <td style="text-align:left; font-weight:bold;">${d.wilayah}</td>
+          <td style="font-weight:bold;">${d.total_pus}</td>
+          <td style="background:#e0f2fe; font-weight:bold; color:#0284c7;">${d.pus_baru}</td>
+          <td style="background:#d4edda; font-weight:bold;">${d.ber_kb}</td>
+          <td>${d.pil}</td><td>${d.stk}</td><td>${d.kdm}</td><td>${d.imp}</td><td>${d.iud}</td><td>${d.mow}</td><td>${d.mop}</td>
+          <td style="background:#e0f2fe; font-weight:bold; color:#0284c7;">${d.kb_baru_total}</td>
+          <td>${d.kb_baru_kbpp}</td><td>${d.kb_baru_pasca_do}</td><td>${d.kb_baru_murni}</td>
+          <td style="background:#fef3c7; font-weight:bold; color:#d97706;">${d.ganti_cara}</td>
+          <td style="background:#ccfbf1; font-weight:bold;">${d.mkjp}</td>
+          <td>${d.non_mkjp}</td>
+          <td style="background:#f8d7da; font-weight:bold;">${d.tidak_kb}</td>
+          <td>${d.hamil}</td>
+          <td style="background:#fff7ed; font-weight:bold; color:#c2410c;">${d.hamil_baru}</td>
+          <td>${d.ias}</td><td>${d.iat}</td><td>${d.tial}</td><td>${d.tki}</td>
+          <td style="background:#e2e3e5; font-weight:bold;">${d.bukan_pus}</td>
+          <td>${d.bcr}</td><td>${d.mng}</td><td>${d.pndh}</td><td>${d.usia_50}</td>
+        </tr>`;
+
+        for (let prop in totalAll) {
+          if (prop !== "wilayah") totalAll[prop] += (d[prop] || 0);
+        }
       }
-    });
 
-    // Render Tabel 31 Kolom
-    tbody.innerHTML = "";
-    let idx = 1;
-    let totalAll = emptyRecapItem("JUMLAH / TOTAL");
-
-    for (let k in grouped) {
-      let d = grouped[k];
-      tbody.innerHTML += `<tr>
-        <td style="text-align:center; font-weight:bold;">${idx++}</td>
-        <td style="text-align:left; font-weight:bold;">${d.wilayah}</td>
-        <td style="font-weight:bold;">${d.total_pus}</td>
-        <td style="background:#e0f2fe; font-weight:bold; color:#0284c7;">${d.pus_baru}</td>
-        <td style="background:#d4edda; font-weight:bold;">${d.ber_kb}</td>
-        <td>${d.pil}</td><td>${d.stk}</td><td>${d.kdm}</td><td>${d.imp}</td><td>${d.iud}</td><td>${d.mow}</td><td>${d.mop}</td>
-        <td style="background:#e0f2fe; font-weight:bold; color:#0284c7;">${d.kb_baru_total}</td>
-        <td>${d.kb_baru_kbpp}</td><td>${d.kb_baru_pasca_do}</td><td>${d.kb_baru_murni}</td>
-        <td style="background:#fef3c7; font-weight:bold; color:#d97706;">${d.ganti_cara}</td>
-        <td style="background:#ccfbf1; font-weight:bold;">${d.mkjp}</td>
-        <td>${d.non_mkjp}</td>
-        <td style="background:#f8d7da; font-weight:bold;">${d.tidak_kb}</td>
-        <td>${d.hamil}</td>
-        <td style="background:#fff7ed; font-weight:bold; color:#c2410c;">${d.hamil_baru}</td>
-        <td>${d.ias}</td><td>${d.iat}</td><td>${d.tial}</td><td>${d.tki}</td>
-        <td style="background:#e2e3e5; font-weight:bold;">${d.bukan_pus}</td>
-        <td>${d.bcr}</td><td>${d.mng}</td><td>${d.pndh}</td><td>${d.usia_50}</td>
+      tbody.innerHTML += `<tr style="font-weight:bold; background:#e9ecef;">
+        <td colspan="2" style="text-align:center; font-size:13px; color:#1f4e78;">JUMLAH / TOTAL</td>
+        <td style="font-size:13px;">${totalAll.total_pus}</td>
+        <td style="background:#bae6fd; font-size:13px; color:#0369a1;">${totalAll.pus_baru}</td>
+        <td style="background:#c3e6cb; font-size:13px;">${totalAll.ber_kb}</td>
+        <td>${totalAll.pil}</td><td>${totalAll.stk}</td><td>${totalAll.kdm}</td><td>${totalAll.imp}</td><td>${totalAll.iud}</td><td>${totalAll.mow}</td><td>${totalAll.mop}</td>
+        <td style="background:#bae6fd; font-size:13px; color:#0369a1;">${totalAll.kb_baru_total}</td>
+        <td>${totalAll.kb_baru_kbpp}</td><td>${totalAll.kb_baru_pasca_do}</td><td>${totalAll.kb_baru_murni}</td>
+        <td style="background:#fde68a; font-size:13px; color:#b45309;">${totalAll.ganti_cara}</td>
+        <td style="background:#99f6e4; font-size:13px;">${totalAll.mkjp}</td>
+        <td>${totalAll.non_mkjp}</td>
+        <td style="background:#f5c6cb; font-size:13px;">${totalAll.tidak_kb}</td>
+        <td>${totalAll.hamil}</td>
+        <td style="background:#fed7aa; font-size:13px; color:#9a3412;">${totalAll.hamil_baru}</td>
+        <td>${totalAll.ias}</td><td>${totalAll.iat}</td><td>${totalAll.tial}</td><td>${totalAll.tki}</td>
+        <td style="background:#d6d8d9; font-size:13px;">${totalAll.bukan_pus}</td>
+        <td>${totalAll.bcr}</td><td>${totalAll.mng}</td><td>${totalAll.pndh}</td><td>${totalAll.usia_50}</td>
       </tr>`;
-
-      for (let prop in totalAll) {
-        if (prop !== "wilayah") totalAll[prop] += (d[prop] || 0);
-      }
+    } catch (renderErr) {
+      console.error("Render Loop Error:", renderErr);
+      tbody.innerHTML = `<tr><td colspan='31' style='text-align:center; color:red;'>Terjadi kesalahan saat memproses data: ${renderErr.message}</td></tr>`;
     }
-
-    tbody.innerHTML += `<tr style="font-weight:bold; background:#e9ecef;">
-      <td colspan="2" style="text-align:center; font-size:13px; color:#1f4e78;">JUMLAH / TOTAL</td>
-      <td style="font-size:13px;">${totalAll.total_pus}</td>
-      <td style="background:#bae6fd; font-size:13px; color:#0369a1;">${totalAll.pus_baru}</td>
-      <td style="background:#c3e6cb; font-size:13px;">${totalAll.ber_kb}</td>
-      <td>${totalAll.pil}</td><td>${totalAll.stk}</td><td>${totalAll.kdm}</td><td>${totalAll.imp}</td><td>${totalAll.iud}</td><td>${totalAll.mow}</td><td>${totalAll.mop}</td>
-      <td style="background:#bae6fd; font-size:13px; color:#0369a1;">${totalAll.kb_baru_total}</td>
-      <td>${totalAll.kb_baru_kbpp}</td><td>${totalAll.kb_baru_pasca_do}</td><td>${totalAll.kb_baru_murni}</td>
-      <td style="background:#fde68a; font-size:13px; color:#b45309;">${totalAll.ganti_cara}</td>
-      <td style="background:#99f6e4; font-size:13px;">${totalAll.mkjp}</td>
-      <td>${totalAll.non_mkjp}</td>
-      <td style="background:#f5c6cb; font-size:13px;">${totalAll.tidak_kb}</td>
-      <td>${totalAll.hamil}</td>
-      <td style="background:#fed7aa; font-size:13px; color:#9a3412;">${totalAll.hamil_baru}</td>
-      <td>${totalAll.ias}</td><td>${totalAll.iat}</td><td>${totalAll.tial}</td><td>${totalAll.tki}</td>
-      <td style="background:#d6d8d9; font-size:13px;">${totalAll.bukan_pus}</td>
-      <td>${totalAll.bcr}</td><td>${totalAll.mng}</td><td>${totalAll.pndh}</td><td>${totalAll.usia_50}</td>
-    </tr>`;
   }
 
   // --- BNBA DATA FETCH DENGAN FILTER TINGKAT ---
