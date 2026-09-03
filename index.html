@@ -569,7 +569,7 @@
             </tr>
             <tr>
               <th style="background:#d4edda;">BER-KB</th>
-              <th>PIL</th><th>STK</th><th>KDM</th><th>IMP</th><th>IUD</th><th>MOW</th><th>MOP</th>
+              <th>PIL</th><th>SUNTIK</th><th>KONDOM</th><th>IMPLAN</th><th>IUD</th><th>MOW</th><th>MOP</th>
               <th style="background:#bae6fd; color:#0369a1;">TOTAL BARU</th>
               <th>KBPP</th><th>PASCA DO</th><th>MURNI</th>
               <th style="background:#ccfbf1; color:#0f766e;">MKJP</th><th>NON-MKJP</th>
@@ -956,7 +956,7 @@
         • <code>PBI</code> | <code>BUKAN PBI</code> | <code>SWASTA</code> | <code>TIDAK MEMILIKI</code><br><br>
 
         <b>2. Kolom KB_Januari s.d KB_Desember (Kolom 25–36):</b><br>
-        • <b>Peserta KB:</b> <code>STK</code>, <code>PIL</code>, <code>KDM</code>, <code>IMP</code>, <code>IUD</code>, <code>MOW</code>, <code>MOP</code><br>
+        • <b>Peserta KB:</b> <code>SUNTIK</code>, <code>PIL</code>, <code>KONDOM</code>, <code>IMPLAN</code>, <code>IUD</code>, <code>MOW</code>, <code>MOP</code><br>
         • <b>Bukan Peserta KB:</b> <code>IAS</code>, <code>IAT</code>, <code>TIAL</code>, <code>HAMIL</code>, <code>TKI</code><br>
         • <b>Mutasi:</b> <code>BERCERAI</code>, <code>SUAMI/ISTRI MENINGGAL</code>, <code>PINDAH</code><br>        
         <small style="color: #64748b;">*Catatan: Kolom yang belum ada data bulanan dapat dikosongkan.</small>
@@ -974,6 +974,11 @@
           <option value="2028">2028</option>
           <option value="2029">2029</option>
           <option value="2030">2030</option>
+          <option value="2031">2031</option>
+          <option value="2032">2032</option>
+          <option value="2033">2033</option>
+          <option value="2034">2034</option>
+          <option value="2035">2035</option>
         </select>
       </div>
 
@@ -1365,10 +1370,10 @@
           <select id="kb_${idx+1}" onchange="onKbMonthChange(${idx+1})">
             <option value="">--KOSONG--</option>
             <optgroup label="PESERTA KB">
-              <option value="STK">STK</option>
+              <option value="SUNTIK">SUNTIK</option>
               <option value="PIL">PIL</option>
-              <option value="KDM">KDM</option>
-              <option value="IMP">IMP</option>
+              <option value="KONDOM">KONDOM</option>
+              <option value="IMPLAN">IMPLAN</option>
               <option value="IUD">IUD</option>
               <option value="MOW">MOW</option>
               <option value="MOP">MOP</option>
@@ -1693,8 +1698,7 @@
     if (s.includes("PINDAH")) return { type: "BUKAN_PUS", cat: "PINDAH" };
     if (s.includes("50")) return { type: "BUKAN_PUS", cat: "50+" };
 
-    // 2. Kategori BUKAN PESERTA KB (Dahulukan ini agar tidak salah terdeteksi)
-    // 2. Kategori BUKAN PESERTA KB (Cek spesifik dan fleksibel)
+    // 2. Kategori BUKAN PESERTA KB
     if (s.includes("HAMIL")) return { type: "BUKAN_PESERTA", reason: "HAMIL" };
     if (s === "IAS" || s.startsWith("IAS") || /\bIAS\b/.test(s)) return { type: "BUKAN_PESERTA", reason: "IAS" };
     if (s === "IAT" || s.startsWith("IAT") || /\bIAT\b/.test(s)) return { type: "BUKAN_PESERTA", reason: "IAT" };
@@ -1704,21 +1708,24 @@
       return { type: "BUKAN_PESERTA", reason: "TIAL" };
     }
 
-    // 3. Kategori PESERTA KB (Gunakan Exact Match)
-    const metodeKB = ["STK", "PIL", "KDM", "IMP", "IUD", "MOW", "MOP"];
+    // Normalisasi alias nama lama ke nama baru
+    if (s === "STK" || s.startsWith("STK ") || s.startsWith("STK-")) s = "SUNTIK";
+    if (s === "KDM" || s.startsWith("KDM ") || s.startsWith("KDM-")) s = "KONDOM";
+    if (s === "IMP" || s.startsWith("IMP ") || s.startsWith("IMP-")) s = "IMPLAN";
+
+    // 3. Kategori PESERTA KB
+    const metodeKB = ["SUNTIK", "PIL", "KONDOM", "IMPLAN", "IUD", "MOW", "MOP"];
     for (let m of metodeKB) {
-      // Cocokkan jika persis sama, atau ada spasi/strip (misal: "STK 3 BULAN", "PIL-KB")
       if (s === m || s.startsWith(m + " ") || s.startsWith(m + "-") || s.startsWith(m + "/")) {
-        const isMkjp = ["IMP", "IUD", "MOW", "MOP"].includes(m);
+        const isMkjp = ["IMPLAN", "IUD", "MOW", "MOP"].includes(m);
         return { type: "PESERTA_KB", method: m, isMkjp: isMkjp };
       }
     }
 
-    // Jika kata kunci metode ditemukan di tengah kalimat
     for (let m of metodeKB) {
       let regex = new RegExp("\\b" + m + "\\b", "i");
       if (regex.test(s)) {
-        const isMkjp = ["IMP", "IUD", "MOW", "MOP"].includes(m);
+        const isMkjp = ["IMPLAN", "IUD", "MOW", "MOP"].includes(m);
         return { type: "PESERTA_KB", method: m, isMkjp: isMkjp };
       }
     }
@@ -2846,9 +2853,9 @@
         if (cur.type === "PESERTA_KB") {
           grouped[key].ber_kb++;
           if (cur.method === "PIL") grouped[key].pil++;
-          else if (cur.method === "STK") grouped[key].stk++;
-          else if (cur.method === "KDM") grouped[key].kdm++;
-          else if (cur.method === "IMP") grouped[key].imp++;
+          else if (cur.method === "SUNTIK") grouped[key].stk++;
+          else if (cur.method === "KONDOM") grouped[key].kdm++;
+          else if (cur.method === "IMPLAN") grouped[key].imp++;
           else if (cur.method === "IUD") grouped[key].iud++;
           else if (cur.method === "MOW") grouped[key].mow++;
           else if (cur.method === "MOP") grouped[key].mop++;
@@ -3184,9 +3191,9 @@
       if (cur.type === "PESERTA_KB") {
         t.ber_kb++;
         if (cur.method === "PIL") t.pil++;
-        else if (cur.method === "STK") t.stk++;
-        else if (cur.method === "KDM") t.kdm++;
-        else if (cur.method === "IMP") t.imp++;
+        else if (cur.method === "SUNTIK") t.stk++;
+        else if (cur.method === "KONDOM") t.kdm++;
+        else if (cur.method === "IMPLAN") t.imp++;
         else if (cur.method === "IUD") t.iud++;
         else if (cur.method === "MOW") t.mow++;
         else if (cur.method === "MOP") t.mop++;
@@ -4615,8 +4622,8 @@
       "LEMBAR", "05", "MAREJE", "0001", "DUSUN SATU", "0001",
       "RT 001", "001", "AHMAD SUAMI", "5201050101850001", "SITI ISTRI", "5201054101900001",
       "1990-05-15", "36", "2", "3",
-      "PBI", "IMP", "IMP", "IMP", "IMP", "IMP",
-      "IMP", "IMP", "IMP", "IMP", "IMP", "IMP", "IMP"
+      "PBI", "IMPLAN", "IMPLAN", "IMPLAN", "IMPLAN", "IMPLAN",
+      "IMPLAN", "IMPLAN", "IMPLAN", "IMPLAN", "IMPLAN", "IMPLAN", "IMPLAN"
     ];
 
     const ws1 = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
@@ -4638,10 +4645,10 @@
       ["", "SWASTA", "Asuransi Swasta Lainnya"],
       ["", "TIDAK MEMILIKI", "Belum memiliki jaminan kesehatan"],
       [""],
-      ["KB_Januari s.d KB_Desember (Kolom 25-36)", "STK", "Suntik KB"],
+      ["KB_Januari s.d KB_Desember (Kolom 25-36)", "SUNTIK", "Suntik KB"],
       ["", "PIL", "Pil KB"],
-      ["", "KDM", "Kondom"],
-      ["", "IMP", "Implan / Susuk"],
+      ["", "KONDOM", "Kondom"],
+      ["", "IMPLAN", "Implan / Susuk"],
       ["", "IUD", "IUD / Spiral"],
       ["", "MOW", "Metode Operasi Wanita (Tubektomi)"],
       ["", "MOP", "Metode Operasi Pria (Vasektomi)"],
