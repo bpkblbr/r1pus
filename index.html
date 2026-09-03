@@ -2963,6 +2963,7 @@
   }
 
   // --- BNBA DATA FETCH DENGAN FILTER TINGKAT ---
+  // --- BNBA DATA FETCH DENGAN FILTER TINGKAT (FIXED) ---
   async function fetchBnba() {
     const tingkat = document.getElementById("bnbaTingkat").value;
     const tahun = parseInt(document.getElementById("bnbaTahun").value, 10);
@@ -2972,6 +2973,61 @@
     if (!tingkat) {
       Swal.fire("Perhatian", "Silakan pilih Tingkat Wilayah terlebih dahulu!", "warning");
       return;
+    }
+
+    let filterKec = "";
+    let filterDesa = "";
+    let filterDusun = "";
+    let filterRt = "";
+
+    // Ambil dan pastikan padding digit sesuai format tabel database
+    if (isDesaRole()) {
+      filterKec = userKodeKec;
+      filterDesa = userKodeDesa;
+      if (tingkat === "Dusun" || tingkat === "RT") {
+        filterDusun = (document.getElementById("bnbaDusun").value || "").trim().padStart(4, '0');
+      }
+      if (tingkat === "RT") {
+        filterRt = (document.getElementById("bnbaRt").value || "").trim().padStart(3, '0');
+      }
+    } else if (isKecRole()) {
+      filterKec = userKodeKec;
+      if (tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") {
+        const dVal = document.getElementById("bnbaDesa").value;
+        if (!dVal && tingkat !== "Kecamatan") {
+          Swal.fire("Perhatian", "Silakan pilih Desa terlebih dahulu!", "warning");
+          return;
+        }
+        filterDesa = dVal ? dVal.trim().padStart(4, '0') : "";
+      }
+      if (tingkat === "Dusun" || tingkat === "RT") {
+        filterDusun = (document.getElementById("bnbaDusun").value || "").trim().padStart(4, '0');
+      }
+      if (tingkat === "RT") {
+        filterRt = (document.getElementById("bnbaRt").value || "").trim().padStart(3, '0');
+      }
+    } else {
+      // Admin Kabupaten
+      if (tingkat === "Kecamatan" || tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") {
+        const kVal = document.getElementById("bnbaKecamatan").value;
+        if (!kVal) {
+          Swal.fire("Perhatian", "Silakan pilih Kecamatan terlebih dahulu!", "warning");
+          return;
+        }
+        filterKec = kVal.trim().padStart(2, '0');
+      }
+      if (tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") {
+        const dVal = document.getElementById("bnbaDesa").value;
+        if (dVal) filterDesa = dVal.trim().padStart(4, '0');
+      }
+      if (tingkat === "Dusun" || tingkat === "RT") {
+        const dsVal = document.getElementById("bnbaDusun").value;
+        if (dsVal) filterDusun = dsVal.trim().padStart(4, '0');
+      }
+      if (tingkat === "RT") {
+        const rtVal = document.getElementById("bnbaRt").value;
+        if (rtVal) filterRt = rtVal.trim().padStart(3, '0');
+      }
     }
 
     thead.innerHTML = `<tr>
@@ -3008,28 +3064,6 @@
 
     tbody.innerHTML = "<tr><td colspan='29' style='text-align:center; padding: 20px;'>Memuat seluruh data BNBA...</td></tr>";
 
-    let filterKec = "";
-    let filterDesa = "";
-    let filterDusun = "";
-    let filterRt = "";
-
-    if (isDesaRole()) {
-      filterKec = userKodeKec;
-      filterDesa = userKodeDesa;
-      if (tingkat === "Dusun" || tingkat === "RT") filterDusun = document.getElementById("bnbaDusun").value;
-      if (tingkat === "RT") filterRt = document.getElementById("bnbaRt").value;
-    } else if (isKecRole()) {
-      filterKec = userKodeKec;
-      if (tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") filterDesa = document.getElementById("bnbaDesa").value;
-      if (tingkat === "Dusun" || tingkat === "RT") filterDusun = document.getElementById("bnbaDusun").value;
-      if (tingkat === "RT") filterRt = document.getElementById("bnbaRt").value;
-    } else {
-      if (tingkat === "Kecamatan" || tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") filterKec = document.getElementById("bnbaKecamatan").value;
-      if (tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") filterDesa = document.getElementById("bnbaDesa").value;
-      if (tingkat === "Dusun" || tingkat === "RT") filterDusun = document.getElementById("bnbaDusun").value;
-      if (tingkat === "RT") filterRt = document.getElementById("bnbaRt").value;
-    }
-
     let allData = [];
     let from = 0;
     const step = 1000;
@@ -3041,8 +3075,8 @@
 
         if (filterKec) query = query.eq('kode_kec', filterKec);
         if (filterDesa) query = query.eq('kode_desa', filterDesa);
-        if (filterDusun) query = query.eq('kode_dusun', filterDusun);
-        if (filterRt) query = query.eq('kode_rt', filterRt);
+        if (filterDusun && filterDusun !== "0000") query = query.eq('kode_dusun', filterDusun);
+        if (filterRt && filterRt !== "000") query = query.eq('kode_rt', filterRt);
 
         const { data: chunk, error } = await query.order('id_pus', { ascending: true }).range(from, from + step - 1);
         if (error) throw error;
@@ -3056,7 +3090,6 @@
         }
       }
 
-      // VALIDASI JIKA KOSONG
       if (allData.length === 0) {
         tbody.innerHTML = "<tr><td colspan='29' style='text-align:center; color:#dc2626; font-weight:bold; padding: 30px;'>Tidak ada data BNBA yang ditemukan untuk wilayah dan tahun ini.</td></tr>";
         Swal.fire({
@@ -3067,9 +3100,10 @@
         return;
       }
 
-      tbody.innerHTML = "";
+      // Render data baris demi baris menggunakan fragment / string builder
+      let htmlRows = "";
       allData.forEach((r, idx) => {
-        tbody.innerHTML += `<tr>
+        htmlRows += `<tr>
           <td style="text-align:center; font-weight:bold;">${idx + 1}</td>
           <td style="font-weight:bold;">${r.id_pus || '-'}</td>
           <td>${r.provinsi_nama || '-'}</td>
@@ -3101,11 +3135,13 @@
           <td style="text-align:center;">${r.kb_des || '-'}</td>
         </tr>`;
       });
+      tbody.innerHTML = htmlRows;
     } catch (err) {
       console.error("BNBA Fetch Error:", err);
       tbody.innerHTML = `<tr><td colspan='29' style='text-align:center; color:red; padding: 20px;'>Gagal memuat data: ${err.message}</td></tr>`;
+      Swal.fire("Error", "Gagal memuat BNBA: " + err.message, "error");
     }
-  }  
+  } 
 
   // --- GRAFIK ANALYTICS DENGAN FILTER TINGKAT ---
   async function fetchChartData() {
