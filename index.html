@@ -2734,7 +2734,11 @@
 
     const tiketId = document.getElementById("id_mutasi_tiket").value;
     if (tiketId) {
-      await db.from('mutasi_pus').update({ status: 'PROCESSED' }).eq('id', tiketId);
+      await db.from('mutasi_pus').update({ status: 'PROCESSED' }).eq('id', tiketId);      
+      document.getElementById("id_mutasi_tiket").value = "";      
+      if (typeof checkPendingMutasiNotifications === "function") {
+        checkPendingMutasiNotifications();
+      }
     }
 
     Swal.fire({
@@ -2745,9 +2749,12 @@
       showConfirmButton: false
     });
 
-    if (!isEditMode) {
-      resetInputForm();
-    }
+    // 1. Pastikan id_pus di form terisi dengan idPus yang baru dibuat/disimpan
+    document.getElementById("id_pus").value = idPus;
+
+    // 2. JANGAN resetInputForm(), aktifkan Navigasi RT (Back/Next) untuk RT dan Dusun wilayah tersebut
+    const namaDsnText = document.getElementById("dusun").options[document.getElementById("dusun").selectedIndex]?.text || "";
+    initNavigationRT(kdKec, kdDesa, kdDsn, kdRt, thn, idPus, namaDsnText);
 
   } catch (err) {
     console.error("Submit Error:", err);
