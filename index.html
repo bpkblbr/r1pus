@@ -4085,6 +4085,7 @@
   }
 
   function resetFormToNew() { resetInputForm(); }
+  
   function resetInputForm() {
     document.getElementById("pusForm").reset();
     document.getElementById("id_pus").value = "";
@@ -4108,25 +4109,38 @@
 
     if (isDesaRole()) {
       setSelectValueCaseInsensitive("provinsi", defaultProv);
+      document.getElementById("kode_prov").value = defaultProv;
       provSel.style.pointerEvents = "none";
+
       updateKabupaten(userKodeKab);
+      document.getElementById("kode_kab").value = userKodeKab;
       kabSel.style.pointerEvents = "none";
+
       updateKecamatan(userKodeKec);
+      document.getElementById("kode_kec").value = userKodeKec;
       kecSel.style.pointerEvents = "none";
+
       updateDesa(userKodeDesa);
-      desaSel.style.pointerEvents = "none";      
-      updateDusun(); 
+      document.getElementById("kode_desa").value = userKodeDesa;
+      desaSel.style.pointerEvents = "none";
+
       dusunSel.style.pointerEvents = "auto";
       dusunSel.disabled = false;
       rtSel.style.pointerEvents = "auto";
       rtSel.disabled = true;
     } else if (isKecRole()) {
       setSelectValueCaseInsensitive("provinsi", defaultProv);
+      document.getElementById("kode_prov").value = defaultProv;
       provSel.style.pointerEvents = "none";
+
       updateKabupaten(userKodeKab);
+      document.getElementById("kode_kab").value = userKodeKab;
       kabSel.style.pointerEvents = "none";
+
       updateKecamatan(userKodeKec);
+      document.getElementById("kode_kec").value = userKodeKec;
       kecSel.style.pointerEvents = "none";
+
       desaSel.style.pointerEvents = "auto";
       desaSel.disabled = false;
       dusunSel.style.pointerEvents = "auto";
@@ -4148,6 +4162,7 @@
     }
     applyMutationAndAgeLocks();
   }
+  
   function togglePassword() {
     const passInput = document.getElementById("login_password");
     const eyeOpen = document.getElementById("eyeOpenSvg");
