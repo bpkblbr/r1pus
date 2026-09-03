@@ -4120,7 +4120,6 @@
       dusunSel.disabled = false;
       rtSel.style.pointerEvents = "auto";
       rtSel.disabled = true;
-    }
     } else if (isKecRole()) {
       setSelectValueCaseInsensitive("provinsi", defaultProv);
       provSel.style.pointerEvents = "none";
@@ -4147,7 +4146,7 @@
       resetDropdown("dusun", "kode_dusun");
       resetDropdown("rt", "kode_rt");
     }
-	applyMutationAndAgeLocks();
+    applyMutationAndAgeLocks();
   }
   function togglePassword() {
     const passInput = document.getElementById("login_password");
