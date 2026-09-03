@@ -4990,6 +4990,7 @@
           
           let idPus = String(r[0] || "").trim();
           if (!idPus) {
+            // Format: Kode Wilayah + SPASI + Dusun/RT + 3 digit nomor
             idPus = `${kdProv}${kdKab}${kdKec}${kdDesa} ${kdDsn}${kdRt}${String(idx + 1).padStart(3, '0')}`;
           }
 
