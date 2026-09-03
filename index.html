@@ -2271,7 +2271,7 @@
     checkPendingMutasiNotifications();
   }  
 
-  // =========================================================================
+  /// =========================================================================
   // FUNGSI INBOX & NOTIFIKASI MUTASI MASUK (BERDIRI SENDIRI DI TOP-LEVEL)
   // =========================================================================
   let cachedPendingMutasiList = [];
@@ -2315,6 +2315,8 @@
   function closeInboxMutasiModal() {
     document.getElementById("modalInboxMutasi").style.display = "none";
   }
+
+  async function loadInboxMutasiTable() {
 
   const { data, error } = await query;
   cachedPendingMutasiList = data || [];
