@@ -1660,7 +1660,7 @@
     document.getElementById("pindah_desa_tujuan").value = "";
     document.getElementById("pindah_desa_nama").value = "";
     
-    checkKbMonthSequence(monthIndex);
+    applyMutationAndAgeLocks();
   }
 
   // --- LOGIC DROPDOWN BERTINGKAT REKAP ---
@@ -2069,28 +2069,32 @@
   let cachedPendingMutasiList = [];
 
   async function checkPendingMutasiNotifications() {
-    if (!currentUser) return;
-    let query = db.from('mutasi_pus').select('*').eq('status', 'PENDING');
+  if (!currentUser) return;
+  let query = db.from('mutasi_pus').select('*').eq('status', 'PENDING');
 
-    if (isDesaRole()) {
-      query = query.eq('kode_kec_tujuan', userKodeKec).eq('kode_desa_tujuan', userKodeDesa);
-    } else if (isKecRole()) {
-      query = query.eq('kode_kec_tujuan', userKodeKec);
-    }
+  if (isDesaRole()) {
+    query = query.eq('kode_kec_tujuan', userKodeKec).eq('kode_desa_tujuan', userKodeDesa);
+  } else if (isKecRole()) {
+    query = query.eq('kode_kec_tujuan', userKodeKec);
+  } else if (isKabRole() && userKodeKab) {
+    // Pastikan hanya tiket dalam kabupaten pengguna yang terpantau
+    // Atau jika Inbox ditujukan murni untuk Operator Desa tujuan:
+    // sembunyikan untuk role Kabupaten agar tidak terjadi salah klaim data
+  }
 
-    const { data, error } = await query;
-    cachedPendingMutasiList = data || [];
+  const { data, error } = await query;
+  cachedPendingMutasiList = data || [];
 
-    const badge = document.getElementById("badgeInboxMutasi");
-    if (badge) {
-      if (cachedPendingMutasiList.length > 0) {
-        badge.innerText = cachedPendingMutasiList.length;
-        badge.style.display = "inline-block";
-      } else {
-        badge.style.display = "none";
-      }
+  const badge = document.getElementById("badgeInboxMutasi");
+  if (badge) {
+    if (cachedPendingMutasiList.length > 0) {
+      badge.innerText = cachedPendingMutasiList.length;
+      badge.style.display = "inline-block";
+    } else {
+      badge.style.display = "none";
     }
   }
+}
 
   function openInboxMutasiModal() {
     document.getElementById("modalInboxMutasi").style.display = "block";
@@ -2117,7 +2121,7 @@
     if (cachedPendingMutasiList.length === 0) {
       tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">Tidak ada data PUS mutasi masuk yang tertunda.</td></tr>`;
       return;
-    }
+    }    
 
     cachedPendingMutasiList.forEach((item, idx) => {
       const tr = document.createElement("tr");
@@ -2384,15 +2388,19 @@
       const { data: matchedRows } = await db
         .from('data_pus')
         .select('id_pus')
-        .ilike('id_pus', `${prefix}%`);
+        .ilike('id_pus', `${prefix}%`)
+        .eq('tahun', thn);
 
       let maxSeq = 0;
       if (matchedRows && matchedRows.length > 0) {
         matchedRows.forEach(row => {
           const cleanId = String(row.id_pus || "").trim();
-          const seqPart = parseInt(cleanId.slice(-3), 10);
-          if (!isNaN(seqPart) && seqPart > maxSeq) {
-            maxSeq = seqPart;
+          const matches = cleanId.match(/\d+$/); // Ambil angka paling belakang secara akurat
+          if (matches) {
+            const seqPart = parseInt(matches[0], 10);
+            if (!isNaN(seqPart) && seqPart > maxSeq) {
+              maxSeq = seqPart;
+            }
           }
         });
       }
@@ -4106,11 +4114,13 @@
       updateKecamatan(userKodeKec);
       kecSel.style.pointerEvents = "none";
       updateDesa(userKodeDesa);
-      desaSel.style.pointerEvents = "none";
+      desaSel.style.pointerEvents = "none";      
+      updateDusun(); 
       dusunSel.style.pointerEvents = "auto";
       dusunSel.disabled = false;
       rtSel.style.pointerEvents = "auto";
       rtSel.disabled = true;
+    }
     } else if (isKecRole()) {
       setSelectValueCaseInsensitive("provinsi", defaultProv);
       provSel.style.pointerEvents = "none";
