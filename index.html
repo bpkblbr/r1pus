@@ -2276,11 +2276,6 @@
   // =========================================================================
   let cachedPendingMutasiList = [];
 
-  // =========================================================================
-  // FUNGSI INBOX & NOTIFIKASI MUTASI MASUK (BERDIRI SENDIRI DI TOP-LEVEL)
-  // =========================================================================
-  let cachedPendingMutasiList = [];
-
   async function checkPendingMutasiNotifications() {
     if (!currentUser) return;
     let query = db.from('mutasi_pus').select('*').eq('status', 'PENDING');
@@ -2315,6 +2310,10 @@
   function openInboxMutasiModal() {
     document.getElementById("modalInboxMutasi").style.display = "block";
     loadInboxMutasiTable();
+  }
+
+  function closeInboxMutasiModal() {
+    document.getElementById("modalInboxMutasi").style.display = "none";
   }
 
   const { data, error } = await query;
