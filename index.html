@@ -719,8 +719,9 @@
             </select>
           </div>
         </div>
-        <div style="margin-top: 15px;">
-          <button type="button" class="btn-action" style="padding: 12px 20px; width: 100%;" onclick="fetchChartData()">📈 TAMPILKAN GRAFIK</button>
+        <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+          <button type="button" class="btn-action" style="padding: 12px 20px; flex: 2; min-width: 180px;" onclick="fetchChartData()">📈 TAMPILKAN GRAFIK</button>
+          <button type="button" class="btn-nav btn-danger" style="padding: 12px 18px; flex: 1; min-width: 150px; justify-content: center;" onclick="exportChartsToPDF()">📄 EKSPOR LAPORAN PDF</button>
         </div>
       </div>
 
@@ -3060,7 +3061,7 @@
       console.error("BNBA Fetch Error:", err);
       tbody.innerHTML = `<tr><td colspan='29' style='text-align:center; color:red; padding: 20px;'>Gagal memuat data: ${err.message}</td></tr>`;
     }
-  }
+  }  
 
   // --- GRAFIK ANALYTICS DENGAN FILTER TINGKAT ---
   async function fetchChartData() {
@@ -3344,6 +3345,208 @@
       },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
     });
+  }
+
+  // =========================================================================
+  // FUNGSI EKSPOR SELURUH DASHBOARD GRAFIK & KPI KE PDF
+  // =========================================================================
+  async function exportChartsToPDF() {
+    // Validasi apakah grafik sudah pernah dimuat
+    if (!chartStatusPropInstance) {
+      Swal.fire("Perhatian", "Silakan klik 'Tampilkan Grafik' terlebih dahulu sebelum mengunduh PDF!", "warning");
+      return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('portrait', 'pt', 'a4');
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    const tingkat = document.getElementById("chartTingkat").value || "Wilayah";
+    const tahun = document.getElementById("chartTahun").value;
+    const bulanSelect = document.getElementById("chartBulan");
+    const namaBulan = bulanSelect.options[bulanSelect.selectedIndex].text;
+
+    Swal.fire({
+      title: 'Menyiapkan Dokumen PDF...',
+      text: 'Mengonversi statistik dan grafik...',
+      allowOutsideClick: false,
+      didOpen: () => { Swal.showLoading(); }
+    });
+
+    try {
+      // --- HALAMAN 1: JUDUL & RINGKASAN KPI ---
+      doc.setFillColor(31, 78, 120);
+      doc.rect(0, 0, pageWidth, 55, 'F');
+
+      doc.setFontSize(15);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.text("LAPORAN STATISTIK & CAPAIAN KB (PUS)", 40, 34);
+
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(100);
+      doc.text(`Tingkat: ${tingkat.toUpperCase()} | Periode: ${namaBulan} ${tahun} | Waktu Ekspor: ${new Date().toLocaleString('id-ID')}`, 40, 75);
+
+      // Kotak KPI Card
+      const kpis = [
+        { title: "Total PUS", val: document.getElementById("kpiTotalPus").innerText, sub: "Pasangan Usia Subur" },
+        { title: "Akseptor KB Aktif", val: document.getElementById("kpiCpr").innerText, sub: document.getElementById("kpiTotalKb").innerText },
+        { title: "Akseptor KB Baru", val: document.getElementById("kpiKbBaru").innerText, sub: document.getElementById("kpiKbBaruSub").innerText },
+        { title: "Capaian MKJP", val: document.getElementById("kpiMkjpRate").innerText, sub: document.getElementById("kpiMkjpSub").innerText },
+        { title: "Ganti Cara", val: document.getElementById("kpiGantiCara").innerText, sub: "Metode Kontrasepsi" },
+        { title: "Unmet Need", val: document.getElementById("kpiUnmetRate").innerText, sub: document.getElementById("kpiTotalUnmet").innerText },
+        { title: "Hamil Baru", val: document.getElementById("kpiHamilBaru").innerText, sub: document.getElementById("kpiHamilBaruSub").innerText },
+        { title: "Bukan PUS", val: document.getElementById("kpiTotalNonPus").innerText, sub: document.getElementById("kpiTotalNonPusSub").innerText }
+      ];
+
+      let kpiX = 40;
+      let kpiY = 90;
+      const kpiBoxW = (pageWidth - 80 - 15) / 2;
+      const kpiBoxH = 45;
+
+      kpis.forEach((item, i) => {
+        doc.setFillColor(248, 250, 252);
+        doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(kpiX, kpiY, kpiBoxW, kpiBoxH, 4, 4, 'FD');
+
+        doc.setFontSize(8);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(100, 116, 139);
+        doc.text(item.title.toUpperCase(), kpiX + 10, kpiY + 14);
+
+        doc.setFontSize(13);
+        doc.setTextColor(30, 41, 59);
+        doc.text(item.val, kpiX + 10, kpiY + 30);
+
+        doc.setFontSize(7);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(148, 163, 184);
+        doc.text(item.sub, kpiX + 10, kpiY + 40);
+
+        if (i % 2 === 1) {
+          kpiX = 40;
+          kpiY += kpiBoxH + 8;
+        } else {
+          kpiX += kpiBoxW + 15;
+        }
+      });
+
+      // --- HELPER: Mengambil Data URL Gambar dari Kanvas ---
+      const getCanvasImg = (canvasId) => {
+        const c = document.getElementById(canvasId);
+        return c ? c.toDataURL("image/png", 1.0) : null;
+      };
+
+      // Tambahkan 2 grafik awal di Halaman 1
+      let chartY = 320;
+      const colW = (pageWidth - 80 - 15) / 2;
+      const colH = 170;
+
+      const img1 = getCanvasImg('chartStatusProp');
+      if (img1) {
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(31, 78, 120);
+        doc.text("PROPORSI KESERTAAN KB", 40, chartY);
+        doc.addImage(img1, 'PNG', 40, chartY + 10, colW, colH);
+      }
+
+      const img2 = getCanvasImg('chartMkjpRasio');
+      if (img2) {
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(31, 78, 120);
+        doc.text("RASIO MKJP vs NON-MKJP", 40 + colW + 15, chartY);
+        doc.addImage(img2, 'PNG', 40 + colW + 15, chartY + 10, colW, colH);
+      }
+
+      chartY += colH + 30;
+      const img3 = getCanvasImg('chartTrendBulanan');
+      if (img3) {
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(31, 78, 120);
+        doc.text("TREN KESERTAAN KB BULANAN", 40, chartY);
+        doc.addImage(img3, 'PNG', 40, chartY + 10, pageWidth - 80, 190);
+      }
+
+      // --- HALAMAN 2: GRAFIK DETAIL LAINNYA ---
+      doc.addPage();
+      
+      doc.setFillColor(31, 78, 120);
+      doc.rect(0, 0, pageWidth, 35, 'F');
+      doc.setFontSize(11);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.text("DETAIL MIX KONTRASEPSI & ANALISIS WILAYAH", 40, 22);
+
+      let p2Y = 55;
+      const imgMix = getCanvasImg('chartMixKontrasepsi');
+      if (imgMix) {
+        doc.setFontSize(9);
+        doc.setTextColor(31, 78, 120);
+        doc.text("MIX KONTRASEPSI AKTIF", 40, p2Y);
+        doc.addImage(imgMix, 'PNG', 40, p2Y + 8, colW, colH);
+      }
+
+      const imgAlasan = getCanvasImg('chartAlasanTidakKb');
+      if (imgAlasan) {
+        doc.setFontSize(9);
+        doc.setTextColor(31, 78, 120);
+        doc.text("ALASAN BUKAN PESERTA KB", 40 + colW + 15, p2Y);
+        doc.addImage(imgAlasan, 'PNG', 40 + colW + 15, p2Y + 8, colW, colH);
+      }
+
+      p2Y += colH + 25;
+      const imgJkn = getCanvasImg('chartJkn');
+      if (imgJkn) {
+        doc.setFontSize(9);
+        doc.setTextColor(31, 78, 120);
+        doc.text("KEPESERTAAN JKN / BPJS", 40, p2Y);
+        doc.addImage(imgJkn, 'PNG', 40, p2Y + 8, colW, colH);
+      }
+
+      const imgUmur = getCanvasImg('chartUmurIstri');
+      if (imgUmur) {
+        doc.setFontSize(9);
+        doc.setTextColor(31, 78, 120);
+        doc.text("KELOMPOK UMUR ISTRI", 40 + colW + 15, p2Y);
+        doc.addImage(imgUmur, 'PNG', 40 + colW + 15, p2Y + 8, colW, colH);
+      }
+
+      p2Y += colH + 25;
+      const imgWil = getCanvasImg('chartWilayah');
+      if (imgWil) {
+        doc.setFontSize(9);
+        doc.setTextColor(31, 78, 120);
+        const wilTitle = document.getElementById("chartWilayahTitle").innerText || "PERBANDINGAN CAPAIAN WILAYAH";
+        doc.text(wilTitle, 40, p2Y);
+        doc.addImage(imgWil, 'PNG', 40, p2Y + 8, pageWidth - 80, 200);
+      }
+
+      Swal.close();
+      const fileName = `LAPORAN_GRAFIK_PUS_${tahun}_${tingkat.toUpperCase()}.pdf`;
+      doc.save(fileName);
+
+    } catch (err) {
+      console.error("Export PDF Error:", err);
+      Swal.fire("Gagal", "Terjadi kesalahan saat membuat dokumen PDF: " + err.message, "error");
+    }
+  }
+
+  // =========================================================================
+  // FUNGSI BONUS: UNDUH SATUAN GRAFIK SEBAGAI GAMBAR PNG
+  // =========================================================================
+  function downloadSingleChartAsPNG(canvasId, title) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    const link = document.createElement('a');
+    link.download = `${title.replace(/\s+/g, '_')}.png`;
+    link.href = canvas.toDataURL('image/png', 1.0);
+    link.click();
   }
 
   // --- CARI & EDIT DATA ADVANCED ---
