@@ -2269,7 +2269,12 @@
     }
 
     checkPendingMutasiNotifications();
-  }
+  }  
+
+  // =========================================================================
+  // FUNGSI INBOX & NOTIFIKASI MUTASI MASUK (BERDIRI SENDIRI DI TOP-LEVEL)
+  // =========================================================================
+  let cachedPendingMutasiList = [];
 
   // =========================================================================
   // FUNGSI INBOX & NOTIFIKASI MUTASI MASUK (BERDIRI SENDIRI DI TOP-LEVEL)
@@ -2305,6 +2310,11 @@
         badge.style.display = "none";
       }
     }
+  }
+
+  function openInboxMutasiModal() {
+    document.getElementById("modalInboxMutasi").style.display = "block";
+    loadInboxMutasiTable();
   }
 
   const { data, error } = await query;
