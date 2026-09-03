@@ -777,49 +777,86 @@
       </div>
 
       <!-- GRID GRAFIK LENGKAP (9 CANVAS) -->
+      <!-- GRID GRAFIK LENGKAP (9 CANVAS DENGAN TOMBOL DOWNLOAD PNG) -->
       <div class="charts-grid">
+        <!-- 1. Proporsi Kesertaan KB -->
         <div class="chart-box">
-          <div class="chart-box-title">📊 PROPORSI KESERTAAN KB</div>
+          <div class="chart-box-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>📊 PROPORSI KESERTAAN KB</span>
+            <button type="button" class="btn-nav btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="downloadSingleChartAsPNG('chartStatusProp', 'Proporsi_Kesertaan_KB')">📷 PNG</button>
+          </div>
           <div class="chart-container"><canvas id="chartStatusProp"></canvas></div>
         </div>
 
+        <!-- 2. Rasio MKJP vs Non-MKJP -->
         <div class="chart-box">
-          <div class="chart-box-title">⚖️ RASIO MKJP vs NON-MKJP</div>
+          <div class="chart-box-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>⚖️ RASIO MKJP vs NON-MKJP</span>
+            <button type="button" class="btn-nav btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="downloadSingleChartAsPNG('chartMkjpRasio', 'Rasio_MKJP_vs_Non_MKJP')">📷 PNG</button>
+          </div>
           <div class="chart-container"><canvas id="chartMkjpRasio"></canvas></div>
         </div>
 
+        <!-- 3. Kepesertaan JKN / BPJS -->
         <div class="chart-box">
-          <div class="chart-box-title">💳 KEPESERTAAN JKN / BPJS</div>
+          <div class="chart-box-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>💳 KEPESERTAAN JKN / BPJS</span>
+            <button type="button" class="btn-nav btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="downloadSingleChartAsPNG('chartJkn', 'Kepesertaan_JKN_BPJS')">📷 PNG</button>
+          </div>
           <div class="chart-container"><canvas id="chartJkn"></canvas></div>
         </div>
 
+        <!-- 4. Kelompok Umur Istri -->
         <div class="chart-box">
-          <div class="chart-box-title">👩 KELOMPOK UMUR ISTRI</div>
+          <div class="chart-box-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>👩 KELOMPOK UMUR ISTRI</span>
+            <button type="button" class="btn-nav btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="downloadSingleChartAsPNG('chartUmurIstri', 'Kelompok_Umur_Istri')">📷 PNG</button>
+          </div>
           <div class="chart-container"><canvas id="chartUmurIstri"></canvas></div>
         </div>
 
+        <!-- 5. Komposisi Akseptor KB Baru -->
         <div class="chart-box">
-          <div class="chart-box-title">🆕 KOMPOSISI AKSEPTOR KB BARU</div>
+          <div class="chart-box-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>🆕 KOMPOSISI AKSEPTOR KB BARU</span>
+            <button type="button" class="btn-nav btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="downloadSingleChartAsPNG('chartKbBaruComp', 'Komposisi_Akseptor_KB_Baru')">📷 PNG</button>
+          </div>
           <div class="chart-container"><canvas id="chartKbBaruComp"></canvas></div>
         </div>
 
+        <!-- 6. Mix Kontrasepsi Aktif -->
         <div class="chart-box">
-          <div class="chart-box-title">💉 MIX KONTRASEPSI AKTIF</div>
+          <div class="chart-box-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>💉 MIX KONTRASEPSI AKTIF</span>
+            <button type="button" class="btn-nav btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="downloadSingleChartAsPNG('chartMixKontrasepsi', 'Mix_Kontrasepsi_Aktif')">📷 PNG</button>
+          </div>
           <div class="chart-container"><canvas id="chartMixKontrasepsi"></canvas></div>
         </div>
 
+        <!-- 7. Alasan Bukan Peserta KB -->
         <div class="chart-box" style="grid-column: 1 / -1;">
-          <div class="chart-box-title">🚫 ALASAN BUKAN PESERTA KB</div>
+          <div class="chart-box-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>🚫 ALASAN BUKAN PESERTA KB</span>
+            <button type="button" class="btn-nav btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="downloadSingleChartAsPNG('chartAlasanTidakKb', 'Alasan_Bukan_Peserta_KB')">📷 PNG</button>
+          </div>
           <div class="chart-container"><canvas id="chartAlasanTidakKb"></canvas></div>
         </div>
 
+        <!-- 8. Perbandingan Capaian Antar Wilayah -->
         <div class="chart-box" style="grid-column: 1 / -1;">
-          <div class="chart-box-title"><span id="chartWilayahTitle">🗺️ PERBANDINGAN CAPAIAN KB ANTAR WILAYAH</span></div>
+          <div class="chart-box-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span id="chartWilayahTitle">🗺️ PERBANDINGAN CAPAIAN KB ANTAR WILAYAH</span>
+            <button type="button" class="btn-nav btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="downloadSingleChartAsPNG('chartWilayah', 'Perbandingan_Capaian_Wilayah')">📷 PNG</button>
+          </div>
           <div class="chart-container" style="height: 320px;"><canvas id="chartWilayah"></canvas></div>
         </div>
 
+        <!-- 9. Tren Kesertaan KB Bulanan -->
         <div class="chart-box" style="grid-column: 1 / -1;">
-          <div class="chart-box-title">📈 TREN KESERTAAN KB BULANAN</div>
+          <div class="chart-box-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>📈 TREN KESERTAAN KB BULANAN</span>
+            <button type="button" class="btn-nav btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="downloadSingleChartAsPNG('chartTrendBulanan', 'Tren_Kesertaan_KB_Bulanan')">📷 PNG</button>
+          </div>
           <div class="chart-container" style="height: 300px;"><canvas id="chartTrendBulanan"></canvas></div>
         </div>
       </div>
@@ -3534,18 +3571,32 @@
       console.error("Export PDF Error:", err);
       Swal.fire("Gagal", "Terjadi kesalahan saat membuat dokumen PDF: " + err.message, "error");
     }
-  }
+  }  
 
   // =========================================================================
   // FUNGSI BONUS: UNDUH SATUAN GRAFIK SEBAGAI GAMBAR PNG
   // =========================================================================
   function downloadSingleChartAsPNG(canvasId, title) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
+    const originalCanvas = document.getElementById(canvasId);
+    if (!originalCanvas) return;
 
+    // Buat kanvas sementara untuk menambahkan background putih
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = originalCanvas.width;
+    tempCanvas.height = originalCanvas.height;
+    const ctx = tempCanvas.getContext("2d");
+
+    // Beri latar belakang putih
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+    // Salin gambar grafik ke atas background putih
+    ctx.drawImage(originalCanvas, 0, 0);
+
+    // Download sebagai file PNG
     const link = document.createElement('a');
     link.download = `${title.replace(/\s+/g, '_')}.png`;
-    link.href = canvas.toDataURL('image/png', 1.0);
+    link.href = tempCanvas.toDataURL('image/png', 1.0);
     link.click();
   }
 
