@@ -2277,17 +2277,34 @@
   let cachedPendingMutasiList = [];
 
   async function checkPendingMutasiNotifications() {
-  if (!currentUser) return;
-  let query = db.from('mutasi_pus').select('*').eq('status', 'PENDING');
+    if (!currentUser) return;
+    let query = db.from('mutasi_pus').select('*').eq('status', 'PENDING');
 
-  if (isDesaRole()) {
-    query = query.eq('kode_kec_tujuan', userKodeKec).eq('kode_desa_tujuan', userKodeDesa);
-  } else if (isKecRole()) {
-    query = query.eq('kode_kec_tujuan', userKodeKec);
-  } else if (isKabRole() && userKodeKab) {
-    // Pastikan hanya tiket dalam kabupaten pengguna yang terpantau
-    // Atau jika Inbox ditujukan murni untuk Operator Desa tujuan:
-    // sembunyikan untuk role Kabupaten agar tidak terjadi salah klaim data
+    if (isDesaRole()) {
+      const cleanKec = String(userKodeKec || "").padStart(2, '0');
+      const cleanDesa = String(userKodeDesa || "").padStart(4, '0');
+      query = query.eq('kode_kec_tujuan', cleanKec).eq('kode_desa_tujuan', cleanDesa);
+    } else if (isKecRole()) {
+      const cleanKec = String(userKodeKec || "").padStart(2, '0');
+      query = query.eq('kode_kec_tujuan', cleanKec);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error("Gagal mengambil notifikasi mutasi:", error);
+      return;
+    }
+    cachedPendingMutasiList = data || [];
+
+    const badge = document.getElementById("badgeInboxMutasi");
+    if (badge) {
+      if (cachedPendingMutasiList.length > 0) {
+        badge.innerText = cachedPendingMutasiList.length;
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+    }
   }
 
   const { data, error } = await query;
@@ -2661,14 +2678,20 @@
     if (error) throw error;
 
     // Mutasi Pindah
-    if (document.getElementById("is_pindah_dalam_kab").value === "true") {
-      let detectedBulanPindah = 1;
-      for (let m = 1; m <= 12; m++) {
-        if (document.getElementById("kb_" + m).value.toUpperCase() === "PINDAH") {
-          detectedBulanPindah = m;
-          break;
-        }
+    const isPindahDalamKab = document.getElementById("is_pindah_dalam_kab").value === "true";
+    let detectedBulanPindah = 0;
+    
+    for (let m = 1; m <= 12; m++) {
+      const kbVal = (document.getElementById("kb_" + m).value || "").toUpperCase();
+      if (kbVal === "PINDAH") {
+        detectedBulanPindah = m;
+        break;
       }
+    }
+
+    if (isPindahDalamKab && detectedBulanPindah > 0) {
+      const kdKecTujuan = document.getElementById("pindah_kec_tujuan").value.padStart(2, '0');
+      const kdDesaTujuan = document.getElementById("pindah_desa_tujuan").value.padStart(4, '0');
 
       const mutasiPayload = {
         tahun: thn,
@@ -2676,9 +2699,9 @@
         id_pus_asal: idPus,
         kode_kec_asal: kdKec,
         kode_desa_asal: kdDesa,
-        desa_asal: document.getElementById("desa").options[document.getElementById("desa").selectedIndex].text,
-        kode_kec_tujuan: document.getElementById("pindah_kec_tujuan").value,
-        kode_desa_tujuan: document.getElementById("pindah_desa_tujuan").value,
+        desa_asal: document.getElementById("desa").options[document.getElementById("desa").selectedIndex]?.text || "",
+        kode_kec_tujuan: kdKecTujuan,
+        kode_desa_tujuan: kdDesaTujuan,
         desa_tujuan: document.getElementById("pindah_desa_nama").value,
         nama_suami: document.getElementById("nama_suami").value.trim().toUpperCase(),
         nik_suami: document.getElementById("nik_suami").value.trim(),
@@ -2689,8 +2712,13 @@
         created_at: new Date().toISOString()
       };
       
-      await db.from('mutasi_pus').insert([mutasiPayload]);
-      document.getElementById("is_pindah_dalam_kab").value = "false";
+      const { error: errMutasi } = await db.from('mutasi_pus').insert([mutasiPayload]);
+      if (errMutasi) {
+        console.error("Gagal simpan tiket mutasi:", errMutasi);
+        Swal.fire('Peringatan', 'Data PUS tersimpan, namun tiket mutasi gagal terkirim: ' + errMutasi.message, 'warning');
+      } else {
+        document.getElementById("is_pindah_dalam_kab").value = "false";
+      }
     }
 
     const tiketId = document.getElementById("id_mutasi_tiket").value;
