@@ -3277,8 +3277,8 @@ function hitungStatusIndikator(r, bulan, mKeys) {
       tbody.innerHTML = `<tr><td colspan='29' style='text-align:center; color:red; padding: 20px;'>Gagal memuat data: ${err.message}</td></tr>`;
       Swal.fire("Error", "Gagal memuat BNBA: " + err.message, "error");
     }
-  } 
-
+  }
+    
   // --- GRAFIK ANALYTICS DENGAN FILTER TINGKAT ---
   async function fetchChartData() {
     const tingkat = document.getElementById("chartTingkat").value;
@@ -3329,6 +3329,7 @@ function hitungStatusIndikator(r, bulan, mKeys) {
     data.forEach(r => {
       const res = hitungStatusIndikator(r, bulan, mKeys);
       const cur = res.cur;
+      const umurIstri = res.umurIstri; // PERBAIKAN FATAL ERROR #2
 
       // 1. Total PUS (Hanya Peserta KB dan Bukan Peserta, non-mutasi, umur < 50)
       if (res.isPusAktif) {
@@ -3419,6 +3420,7 @@ function hitungStatusIndikator(r, bulan, mKeys) {
           if (cur.isMkjp) perWilayahMap[wilKey].mkjp++;
         }
       }
+    }); // <-- PERBAIKAN FATAL ERROR #1: Penutup data.forEach yang sebelumnya hilang
 
     // Perbarui 8 Kartu KPI
     const totalUnmetNeed = t.iat + t.tial;
