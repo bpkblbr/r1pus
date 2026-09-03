@@ -2012,10 +2012,21 @@
     const tingkat = document.getElementById("bnbaTingkat");
     if (tingkat && !isDesaRole()) tingkat.value = "";
 
-    document.getElementById("bnbaKecamatan").value = "";
+    const kec = document.getElementById("bnbaKecamatan");
+    if (kec) kec.value = "";
+    
     document.getElementById("bnbaDesa").innerHTML = '<option value="">-- PILIH DESA --</option>';
     document.getElementById("bnbaDusun").innerHTML = '<option value="">-- PILIH DUSUN --</option>';
     document.getElementById("bnbaRt").innerHTML = '<option value="">-- PILIH RT --</option>';
+
+    // --- KOSONGKAN HEADER & TABEL BNBA KEMBALI KE SEMULA ---
+    const thead = document.getElementById("bnbaTableHeader");
+    const tbody = document.getElementById("bnbaTableBody");
+    if (thead) thead.innerHTML = "";
+    if (tbody) {
+      tbody.innerHTML = "<tr><td colspan='29' style='text-align:center; padding: 20px;'>Silakan atur filter dan klik Tampilkan Data BNBA</td></tr>";
+    }
+
     onBnbaTingkatChange();
   }
 
