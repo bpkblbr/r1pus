@@ -2712,7 +2712,7 @@
     const prevMonthKey = bulan > 1 ? mKeys[bulan - 2] : null;
 
     const tbody = document.getElementById("recapTableBody");
-    tbody.innerHTML = "<tr><td colspan='31' style='text-align:center;'>Mengambil seluruh data rekapitulasi...</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='31' style='text-align:center; padding: 20px;'>Mengambil seluruh data rekapitulasi...</td></tr>";
 
     let filterKec = isDesaRole() || isKecRole() ? userKodeKec : document.getElementById("recapKecamatan").value;
     let filterDesa = isDesaRole() ? userKodeDesa : (document.getElementById("recapDesa") ? document.getElementById("recapDesa").value : "");
@@ -2720,7 +2720,7 @@
 
     if ((tingkat === "Kecamatan" || tingkat === "Desa" || tingkat === "Dusun") && !filterKec) {
       Swal.fire("Perhatian", "Silakan pilih Kecamatan terlebih dahulu!", "warning");
-      tbody.innerHTML = "<tr><td colspan='31' style='text-align:center; color:red;'>Kecamatan belum dipilih.</td></tr>";
+      tbody.innerHTML = "<tr><td colspan='31' style='text-align:center; color:red; padding: 20px;'>Kecamatan belum dipilih.</td></tr>";
       return;
     }
 
@@ -2729,11 +2729,21 @@
       allData = await fetchAllPusDataChunked(tahun, filterKec, filterDesa, filterDusun);
     } catch (err) {
       console.error("Fetch Error:", err);
-      tbody.innerHTML = `<tr><td colspan='31' style='text-align:center; color:red;'>Gagal memuat: ${err.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan='31' style='text-align:center; color:red; padding: 20px;'>Gagal memuat: ${err.message}</td></tr>`;
       return;
     }
 
-    let grouped = {};
+    // CEK VALIDASI: Jika tidak ada data dari database
+    if (!allData || allData.length === 0) {
+      tbody.innerHTML = "<tr><td colspan='31' style='text-align:center; color:#dc2626; font-weight:bold; padding: 30px;'>Tidak ada data PUS yang terdaftar untuk filter wilayah dan tahun ini.</td></tr>";
+      Swal.fire({
+        icon: 'info',
+        title: 'Data Kosong',
+        text: 'Tidak ada data PUS yang ditemukan untuk kriteria wilayah terpilih.'
+      });
+      return;
+    }
+
     function emptyRecapItem(name) {
       return {
         wilayah: name, total_pus: 0, pus_baru: 0, ber_kb: 0, tidak_kb: 0,
@@ -2745,26 +2755,9 @@
       };
     }
 
-    if (tingkat === "Kabupaten") {
-      for (let k in dataKecamatan) {
-        for (let kd in dataKecamatan[k]) grouped[dataKecamatan[k][kd].toUpperCase()] = emptyRecapItem(dataKecamatan[k][kd].toUpperCase());
-      }
-    } else if (tingkat === "Kecamatan") {
-      let desas = dataDesa[String(filterKec).padStart(2, '0')] || {};
-      for (let kd in desas) grouped[desas[kd].toUpperCase()] = emptyRecapItem(desas[kd].toUpperCase());
-    } else if (tingkat === "Desa") {
-      let dusuns = getDusunList(filterKec, filterDesa) || {};
-      for (let kd in dusuns) grouped[dusuns[kd].nama.toUpperCase()] = emptyRecapItem(dusuns[kd].nama.toUpperCase());
-    } else if (tingkat === "Dusun") {
-      let dusuns = getDusunList(filterKec, filterDesa) || {};
-      let dsnInfo = dusuns[String(filterDusun).padStart(4, '0')];
-      if (dsnInfo) {
-        for (let i = 1; i <= dsnInfo.jumlah_rt; i++) {
-          let rtName = "RT " + String(i).padStart(3, '0');
-          grouped[rtName] = emptyRecapItem(rtName);
-        }
-      }
-    }
+    // PERUBAHAN: grouped TIDAK DI-PREPOPULATE DARI MASTER WILAYAH.
+    // Wilayah hanya dibentuk jika benar-benar ada data record PUS-nya di database.
+    let grouped = {};
 
     try {
       allData.forEach(r => {
@@ -2785,8 +2778,6 @@
 
         grouped[key].total_pus++;
         
-        // 1. Evaluasi PUS BARU:
-        // Cek apakah pasangan ini memiliki data sebelum bulan yang sedang dilihat
         let hasPastRecord = false;
         for (let i = 0; i < bulan - 1; i++) {
           let pastVal = String(r[mKeys[i]] || "").trim();
@@ -2798,9 +2789,6 @@
 
         let umurIstri = parseInt(r.umur_istri || 0, 10);
 
-        // Kriteria PUS BARU:
-        // - Jika Bulan 1 (Januari): Dihitung baru jika timestamp pendaftarannya di tahun berjalan
-        // - Jika Bulan 2-12: Dihitung baru jika bulan-bulan sebelumnya belum pernah terisi
         let isNewPus = false;
         if (bulan === 1) {
           let createdAtYear = r.timestamp ? new Date(r.timestamp).getFullYear() : tahun;
@@ -2817,7 +2805,6 @@
           grouped[key].pus_baru++;
         }
 
-        // 2. Evaluasi PESERTA KB AKTIF & AKSEPTOR KB BARU
         if (cur.type === "PESERTA_KB") {
           grouped[key].ber_kb++;
           if (cur.method === "PIL") grouped[key].pil++;
@@ -2831,8 +2818,6 @@
           if (cur.isMkjp) grouped[key].mkjp++;
           else grouped[key].non_mkjp++;
 
-          // Akseptor KB Baru:
-          // A. Pasca Persalinan / Pasca DO (Bulan lalu jelas-jelas tercatat BUKAN_PESERTA)
           if (prev && prev.type === "BUKAN_PESERTA") {
             grouped[key].kb_baru_total++;
             if (prev.reason === "HAMIL") {
@@ -2840,21 +2825,16 @@
             } else {
               grouped[key].kb_baru_pasca_do++;
             }
-          } 
-          // B. Baru Murni: HANYA jika pasangan tersebut memang PUS Baru yang langsung ikut KB
-          else if (isNewPus && (!prev || prev.type === "EMPTY")) {
+          } else if (isNewPus && (!prev || prev.type === "EMPTY")) {
             grouped[key].kb_baru_total++;
             grouped[key].kb_baru_murni++;
           }
 
-          // Ganti Cara: Bulan lalu Peserta KB, bulan ini metodenya beda
           if (prev && prev.type === "PESERTA_KB" && prev.method && prev.method !== cur.method) {
             grouped[key].ganti_cara++;
           }
-
-        // 3. Evaluasi BUKAN PESERTA KB (TDK-KB)
         } else if (cur.type === "BUKAN_PESERTA") {
-          grouped[key].tidak_kb++; // Ini akan terhitung dengan benar sekarang!
+          grouped[key].tidak_kb++;
           
           if (cur.reason === "HAMIL") {
             grouped[key].hamil++;
@@ -2865,8 +2845,6 @@
           else if (cur.reason === "IAT") grouped[key].iat++;
           else if (cur.reason === "TIAL") grouped[key].tial++;
           else if (cur.reason === "TKI") grouped[key].tki++;
-
-        // 4. Evaluasi BUKAN PUS / MUTASI
         } else if (cur.type === "BUKAN_PUS" || umurIstri >= 50) {
           grouped[key].bukan_pus++;
           if (cur.cat === "CERAI") grouped[key].bcr++;
@@ -2876,12 +2854,19 @@
         }
       });
 
-      // Render Tabel 31 Kolom
+      // Cek jika setelah diproses grouping ternyata tidak ada data valid
+      const groupKeys = Object.keys(grouped);
+      if (groupKeys.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='31' style='text-align:center; color:#dc2626; font-weight:bold; padding: 30px;'>Tidak ada data PUS yang terdaftar untuk filter wilayah ini.</td></tr>";
+        return;
+      }
+
+      // Render Baris Tabel
       tbody.innerHTML = "";
       let idx = 1;
       let totalAll = emptyRecapItem("JUMLAH / TOTAL");
 
-      for (let k in grouped) {
+      groupKeys.sort().forEach(k => {
         let d = grouped[k];
         tbody.innerHTML += `<tr>
           <td style="text-align:center; font-weight:bold;">${idx++}</td>
@@ -2906,7 +2891,7 @@
         for (let prop in totalAll) {
           if (prop !== "wilayah") totalAll[prop] += (d[prop] || 0);
         }
-      }
+      });
 
       tbody.innerHTML += `<tr style="font-weight:bold; background:#e9ecef;">
         <td colspan="2" style="text-align:center; font-size:13px; color:#1f4e78;">JUMLAH / TOTAL</td>
@@ -2928,151 +2913,154 @@
       </tr>`;
     } catch (renderErr) {
       console.error("Render Loop Error:", renderErr);
-      tbody.innerHTML = `<tr><td colspan='31' style='text-align:center; color:red;'>Terjadi kesalahan saat memproses data: ${renderErr.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan='31' style='text-align:center; color:red; padding: 20px;'>Terjadi kesalahan saat memproses data: ${renderErr.message}</td></tr>`;
     }
   }
 
   // --- BNBA DATA FETCH DENGAN FILTER TINGKAT ---
   async function fetchBnba() {
-  const tingkat = document.getElementById("bnbaTingkat").value;
-  const tahun = parseInt(document.getElementById("bnbaTahun").value, 10);
-  const thead = document.getElementById("bnbaTableHeader");
-  const tbody = document.getElementById("bnbaTableBody");
+    const tingkat = document.getElementById("bnbaTingkat").value;
+    const tahun = parseInt(document.getElementById("bnbaTahun").value, 10);
+    const thead = document.getElementById("bnbaTableHeader");
+    const tbody = document.getElementById("bnbaTableBody");
 
-  thead.innerHTML = `<tr>
-    <th style="background:#1f4e78; color:white; width:35px;">NO.</th>
-    <th style="background:#1f4e78; color:white;">ID PUS</th>
-    <th style="background:#1f4e78; color:white;">PROVINSI</th>
-    <th style="background:#1f4e78; color:white;">KABUPATEN</th>
-    <th style="background:#1f4e78; color:white;">KECAMATAN</th>
-    <th style="background:#1f4e78; color:white;">DESA</th>
-    <th style="background:#1f4e78; color:white;">DUSUN</th>
-    <th style="background:#1f4e78; color:white;">RT</th>
-    <th style="background:#1f4e78; color:white;">NAMA SUAMI</th>
-    <th style="background:#1f4e78; color:white;">NIK SUAMI</th>
-    <th style="background:#1f4e78; color:white;">NAMA ISTRI</th>
-    <th style="background:#1f4e78; color:white;">NIK ISTRI</th>
-    <th style="background:#1f4e78; color:white;">TGL LAHIR ISTRI</th>
-    <th style="background:#1f4e78; color:white;">UMUR ISTRI</th>
-    <th style="background:#1f4e78; color:white;">JML ANAK</th>
-    <th style="background:#1f4e78; color:white;">UMUR ANAK TERKECIL</th>
-    <th style="background:#1f4e78; color:white;">PESERTA JKN</th>
-    <th style="background:#28a745; color:white;">JAN</th>
-    <th style="background:#28a745; color:white;">FEB</th>
-    <th style="background:#28a745; color:white;">MAR</th>
-    <th style="background:#28a745; color:white;">APR</th>
-    <th style="background:#28a745; color:white;">MEI</th>
-    <th style="background:#28a745; color:white;">JUN</th>
-    <th style="background:#28a745; color:white;">JUL</th>
-    <th style="background:#28a745; color:white;">AGU</th>
-    <th style="background:#28a745; color:white;">SEP</th>
-    <th style="background:#28a745; color:white;">OKT</th>
-    <th style="background:#28a745; color:white;">NOV</th>
-    <th style="background:#28a745; color:white;">DES</th>
-  </tr>`;
-
-  if (!tingkat) {
-    Swal.fire("Perhatian", "Silakan pilih Tingkat Wilayah terlebih dahulu!", "warning");
-    tbody.innerHTML = "<tr><td colspan='29' style='text-align:center; color:red;'>Tingkat wilayah belum dipilih.</td></tr>";
-    return;
-  }
-
-  tbody.innerHTML = "<tr><td colspan='29' style='text-align:center; padding: 20px;'>Memuat seluruh data BNBA...</td></tr>";
-
-  // Penentuan parameter filter
-  let filterKec = "";
-  let filterDesa = "";
-  let filterDusun = "";
-  let filterRt = "";
-
-  if (isDesaRole()) {
-    filterKec = userKodeKec;
-    filterDesa = userKodeDesa;
-    if (tingkat === "Dusun" || tingkat === "RT") filterDusun = document.getElementById("bnbaDusun").value;
-    if (tingkat === "RT") filterRt = document.getElementById("bnbaRt").value;
-  } else if (isKecRole()) {
-    filterKec = userKodeKec;
-    if (tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") filterDesa = document.getElementById("bnbaDesa").value;
-    if (tingkat === "Dusun" || tingkat === "RT") filterDusun = document.getElementById("bnbaDusun").value;
-    if (tingkat === "RT") filterRt = document.getElementById("bnbaRt").value;
-  } else {
-    if (tingkat === "Kecamatan" || tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") filterKec = document.getElementById("bnbaKecamatan").value;
-    if (tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") filterDesa = document.getElementById("bnbaDesa").value;
-    if (tingkat === "Dusun" || tingkat === "RT") filterDusun = document.getElementById("bnbaDusun").value;
-    if (tingkat === "RT") filterRt = document.getElementById("bnbaRt").value;
-  }
-
-  // Pengambilan data bertahap (Chunking 1000 baris per iterasi)
-  let allData = [];
-  let from = 0;
-  const step = 1000;
-  let hasMore = true;
-
-  try {
-    while (hasMore) {
-      let query = db.from('data_pus').select('*').eq('tahun', tahun);
-
-      if (filterKec) query = query.eq('kode_kec', filterKec);
-      if (filterDesa) query = query.eq('kode_desa', filterDesa);
-      if (filterDusun) query = query.eq('kode_dusun', filterDusun);
-      if (filterRt) query = query.eq('kode_rt', filterRt);
-
-      const { data: chunk, error } = await query.order('id_pus', { ascending: true }).range(from, from + step - 1);
-      if (error) throw error;
-
-      if (chunk && chunk.length > 0) {
-        allData = allData.concat(chunk);
-        from += step;
-        if (chunk.length < step) hasMore = false;
-      } else {
-        hasMore = false;
-      }
-    }
-
-    if (allData.length === 0) {
-      tbody.innerHTML = "<tr><td colspan='29' style='text-align:center; color:red; padding: 20px;'>Data tidak ditemukan.</td></tr>";
+    if (!tingkat) {
+      Swal.fire("Perhatian", "Silakan pilih Tingkat Wilayah terlebih dahulu!", "warning");
       return;
     }
 
-    tbody.innerHTML = "";
-    allData.forEach((r, idx) => {
-      tbody.innerHTML += `<tr>
-        <td style="text-align:center; font-weight:bold;">${idx + 1}</td>
-        <td style="font-weight:bold;">${r.id_pus || '-'}</td>
-        <td>${r.provinsi_nama || '-'}</td>
-        <td>${r.kabupaten_nama || '-'}</td>
-        <td>${r.kecamatan_nama || '-'}</td>
-        <td>${r.desa_nama || '-'}</td>
-        <td>${r.dusun_nama || '-'}</td>
-        <td style="text-align:center;">${r.kode_rt || r.rt_nama || '-'}</td>
-        <td style="text-align:left;">${r.nama_suami || '-'}</td>
-        <td style="font-family: monospace;">${r.nik_suami || '-'}</td>
-        <td style="text-align:left; font-weight:bold;">${r.nama_istri || '-'}</td>
-        <td style="font-family: monospace;">${r.nik_istri || '-'}</td>
-        <td style="text-align:center;">${r.tgl_lahir_istri || '-'}</td>
-        <td style="text-align:center;">${r.umur_istri || '0'}</td>
-        <td style="text-align:center;">${r.jumlah_anak || '0'}</td>
-        <td style="text-align:center;">${r.umur_anak_terkecil || '0'}</td>
-        <td style="text-align:center;">${r.peserta_jkn || '-'}</td>
-        <td style="text-align:center;">${r.kb_jan || '-'}</td>
-        <td style="text-align:center;">${r.kb_feb || '-'}</td>
-        <td style="text-align:center;">${r.kb_mar || '-'}</td>
-        <td style="text-align:center;">${r.kb_apr || '-'}</td>
-        <td style="text-align:center;">${r.kb_mei || '-'}</td>
-        <td style="text-align:center;">${r.kb_jun || '-'}</td>
-        <td style="text-align:center;">${r.kb_jul || '-'}</td>
-        <td style="text-align:center;">${r.kb_agu || '-'}</td>
-        <td style="text-align:center;">${r.kb_sep || '-'}</td>
-        <td style="text-align:center;">${r.kb_okt || '-'}</td>
-        <td style="text-align:center;">${r.kb_nov || '-'}</td>
-        <td style="text-align:center;">${r.kb_des || '-'}</td>
-      </tr>`;
-    });
-  } catch (err) {
-    console.error("BNBA Fetch Error:", err);
-    tbody.innerHTML = `<tr><td colspan='29' style='text-align:center; color:red; padding: 20px;'>Gagal memuat data: ${err.message}</td></tr>`;
+    thead.innerHTML = `<tr>
+      <th style="background:#1f4e78; color:white; width:35px;">NO.</th>
+      <th style="background:#1f4e78; color:white;">ID PUS</th>
+      <th style="background:#1f4e78; color:white;">PROVINSI</th>
+      <th style="background:#1f4e78; color:white;">KABUPATEN</th>
+      <th style="background:#1f4e78; color:white;">KECAMATAN</th>
+      <th style="background:#1f4e78; color:white;">DESA</th>
+      <th style="background:#1f4e78; color:white;">DUSUN</th>
+      <th style="background:#1f4e78; color:white;">RT</th>
+      <th style="background:#1f4e78; color:white;">NAMA SUAMI</th>
+      <th style="background:#1f4e78; color:white;">NIK SUAMI</th>
+      <th style="background:#1f4e78; color:white;">NAMA ISTRI</th>
+      <th style="background:#1f4e78; color:white;">NIK ISTRI</th>
+      <th style="background:#1f4e78; color:white;">TGL LAHIR ISTRI</th>
+      <th style="background:#1f4e78; color:white;">UMUR ISTRI</th>
+      <th style="background:#1f4e78; color:white;">JML ANAK</th>
+      <th style="background:#1f4e78; color:white;">UMUR ANAK TERKECIL</th>
+      <th style="background:#1f4e78; color:white;">PESERTA JKN</th>
+      <th style="background:#28a745; color:white;">JAN</th>
+      <th style="background:#28a745; color:white;">FEB</th>
+      <th style="background:#28a745; color:white;">MAR</th>
+      <th style="background:#28a745; color:white;">APR</th>
+      <th style="background:#28a745; color:white;">MEI</th>
+      <th style="background:#28a745; color:white;">JUN</th>
+      <th style="background:#28a745; color:white;">JUL</th>
+      <th style="background:#28a745; color:white;">AGU</th>
+      <th style="background:#28a745; color:white;">SEP</th>
+      <th style="background:#28a745; color:white;">OKT</th>
+      <th style="background:#28a745; color:white;">NOV</th>
+      <th style="background:#28a745; color:white;">DES</th>
+    </tr>`;
+
+    tbody.innerHTML = "<tr><td colspan='29' style='text-align:center; padding: 20px;'>Memuat seluruh data BNBA...</td></tr>";
+
+    let filterKec = "";
+    let filterDesa = "";
+    let filterDusun = "";
+    let filterRt = "";
+
+    if (isDesaRole()) {
+      filterKec = userKodeKec;
+      filterDesa = userKodeDesa;
+      if (tingkat === "Dusun" || tingkat === "RT") filterDusun = document.getElementById("bnbaDusun").value;
+      if (tingkat === "RT") filterRt = document.getElementById("bnbaRt").value;
+    } else if (isKecRole()) {
+      filterKec = userKodeKec;
+      if (tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") filterDesa = document.getElementById("bnbaDesa").value;
+      if (tingkat === "Dusun" || tingkat === "RT") filterDusun = document.getElementById("bnbaDusun").value;
+      if (tingkat === "RT") filterRt = document.getElementById("bnbaRt").value;
+    } else {
+      if (tingkat === "Kecamatan" || tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") filterKec = document.getElementById("bnbaKecamatan").value;
+      if (tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") filterDesa = document.getElementById("bnbaDesa").value;
+      if (tingkat === "Dusun" || tingkat === "RT") filterDusun = document.getElementById("bnbaDusun").value;
+      if (tingkat === "RT") filterRt = document.getElementById("bnbaRt").value;
+    }
+
+    let allData = [];
+    let from = 0;
+    const step = 1000;
+    let hasMore = true;
+
+    try {
+      while (hasMore) {
+        let query = db.from('data_pus').select('*').eq('tahun', tahun);
+
+        if (filterKec) query = query.eq('kode_kec', filterKec);
+        if (filterDesa) query = query.eq('kode_desa', filterDesa);
+        if (filterDusun) query = query.eq('kode_dusun', filterDusun);
+        if (filterRt) query = query.eq('kode_rt', filterRt);
+
+        const { data: chunk, error } = await query.order('id_pus', { ascending: true }).range(from, from + step - 1);
+        if (error) throw error;
+
+        if (chunk && chunk.length > 0) {
+          allData = allData.concat(chunk);
+          from += step;
+          if (chunk.length < step) hasMore = false;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      // VALIDASI JIKA KOSONG
+      if (allData.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='29' style='text-align:center; color:#dc2626; font-weight:bold; padding: 30px;'>Tidak ada data BNBA yang ditemukan untuk wilayah dan tahun ini.</td></tr>";
+        Swal.fire({
+          icon: 'info',
+          title: 'Data Kosong',
+          text: 'Tidak ada data BNBA Pasangan Usia Subur yang sesuai kriteria.'
+        });
+        return;
+      }
+
+      tbody.innerHTML = "";
+      allData.forEach((r, idx) => {
+        tbody.innerHTML += `<tr>
+          <td style="text-align:center; font-weight:bold;">${idx + 1}</td>
+          <td style="font-weight:bold;">${r.id_pus || '-'}</td>
+          <td>${r.provinsi_nama || '-'}</td>
+          <td>${r.kabupaten_nama || '-'}</td>
+          <td>${r.kecamatan_nama || '-'}</td>
+          <td>${r.desa_nama || '-'}</td>
+          <td>${r.dusun_nama || '-'}</td>
+          <td style="text-align:center;">${r.kode_rt || r.rt_nama || '-'}</td>
+          <td style="text-align:left;">${r.nama_suami || '-'}</td>
+          <td style="font-family: monospace;">${r.nik_suami || '-'}</td>
+          <td style="text-align:left; font-weight:bold;">${r.nama_istri || '-'}</td>
+          <td style="font-family: monospace;">${r.nik_istri || '-'}</td>
+          <td style="text-align:center;">${r.tgl_lahir_istri || '-'}</td>
+          <td style="text-align:center;">${r.umur_istri || '0'}</td>
+          <td style="text-align:center;">${r.jumlah_anak || '0'}</td>
+          <td style="text-align:center;">${r.umur_anak_terkecil || '0'}</td>
+          <td style="text-align:center;">${r.peserta_jkn || '-'}</td>
+          <td style="text-align:center;">${r.kb_jan || '-'}</td>
+          <td style="text-align:center;">${r.kb_feb || '-'}</td>
+          <td style="text-align:center;">${r.kb_mar || '-'}</td>
+          <td style="text-align:center;">${r.kb_apr || '-'}</td>
+          <td style="text-align:center;">${r.kb_mei || '-'}</td>
+          <td style="text-align:center;">${r.kb_jun || '-'}</td>
+          <td style="text-align:center;">${r.kb_jul || '-'}</td>
+          <td style="text-align:center;">${r.kb_agu || '-'}</td>
+          <td style="text-align:center;">${r.kb_sep || '-'}</td>
+          <td style="text-align:center;">${r.kb_okt || '-'}</td>
+          <td style="text-align:center;">${r.kb_nov || '-'}</td>
+          <td style="text-align:center;">${r.kb_des || '-'}</td>
+        </tr>`;
+      });
+    } catch (err) {
+      console.error("BNBA Fetch Error:", err);
+      tbody.innerHTML = `<tr><td colspan='29' style='text-align:center; color:red; padding: 20px;'>Gagal memuat data: ${err.message}</td></tr>`;
+    }
   }
-}
 
   // --- GRAFIK ANALYTICS DENGAN FILTER TINGKAT ---
   async function fetchChartData() {
@@ -4595,6 +4583,7 @@
         ["", "SUAMI/ISTRI MENINGGAL", "Suami atau Istri Meninggal Dunia (MUTASI)"],
         ["", "PINDAH", "Pindah Domisili Keluar Wilayah (MUTASI)"]
       ];
+
       const ws2 = XLSX.utils.aoa_to_sheet(guideData);
       ws2['!cols'] = [{ wch: 35 }, { wch: 40 }, { wch: 45 }];
 
