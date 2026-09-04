@@ -130,6 +130,17 @@
       box-sizing: border-box; 
     }
 
+    input:disabled,
+    select:disabled,
+    input[readonly],
+    select[readonly],
+    .is-locked {
+      background-color: #e9ecef !important;
+      color: #6c757d !important;
+      cursor: not-allowed !important;
+      border-color: #ced4da !important;
+    }
+
     select, option, optgroup { text-transform: uppercase !important; }
     #pusForm input[type="text"] { text-transform: uppercase; }
 
@@ -4914,26 +4925,59 @@ function hitungStatusIndikator(r, bulan, mKeys) {
       dusunSel.disabled = false;
       rtSel.style.pointerEvents = "auto";
       rtSel.disabled = true;
-    } else if (isKecRole()) {
+
+    if (isDesaRole()) {
       setSelectValueCaseInsensitive("provinsi", defaultProv);
       document.getElementById("kode_prov").value = defaultProv;
       provSel.style.pointerEvents = "none";
+      provSel.style.backgroundColor = "#e9ecef"; // Abu-abu
 
       updateKabupaten(userKodeKab);
       document.getElementById("kode_kab").value = userKodeKab;
       kabSel.style.pointerEvents = "none";
+      kabSel.style.backgroundColor = "#e9ecef"; // Abu-abu
 
       updateKecamatan(userKodeKec);
       document.getElementById("kode_kec").value = userKodeKec;
       kecSel.style.pointerEvents = "none";
+      kecSel.style.backgroundColor = "#e9ecef"; // Abu-abu
+
+      updateDesa(userKodeDesa);
+      document.getElementById("kode_desa").value = userKodeDesa;
+      desaSel.style.pointerEvents = "none";
+      desaSel.style.backgroundColor = "#e9ecef"; // Abu-abu
+
+      dusunSel.style.pointerEvents = "auto";
+      dusunSel.style.backgroundColor = "#ffffff";
+      dusunSel.disabled = false;
+      rtSel.style.pointerEvents = "auto";
+      rtSel.disabled = true; // Otomatis abu-abu oleh CSS
+    } else if (isKecRole()) {
+      setSelectValueCaseInsensitive("provinsi", defaultProv);
+      document.getElementById("kode_prov").value = defaultProv;
+      provSel.style.pointerEvents = "none";
+      provSel.style.backgroundColor = "#e9ecef"; // Abu-abu
+
+      updateKabupaten(userKodeKab);
+      document.getElementById("kode_kab").value = userKodeKab;
+      kabSel.style.pointerEvents = "none";
+      kabSel.style.backgroundColor = "#e9ecef"; // Abu-abu
+
+      updateKecamatan(userKodeKec);
+      document.getElementById("kode_kec").value = userKodeKec;
+      kecSel.style.pointerEvents = "none";
+      kecSel.style.backgroundColor = "#e9ecef"; // Abu-abu
 
       desaSel.style.pointerEvents = "auto";
+      desaSel.style.backgroundColor = "#ffffff";
       desaSel.disabled = false;
       dusunSel.style.pointerEvents = "auto";
+      dusunSel.style.backgroundColor = "#ffffff";
       rtSel.style.pointerEvents = "auto";
-
+      rtSel.style.backgroundColor = "#ffffff";
     } else {
       provSel.style.pointerEvents = "auto";
+      provSel.style.backgroundColor = "#ffffff";
       kabSel.style.pointerEvents = "auto";
       kecSel.style.pointerEvents = "auto";
       desaSel.style.pointerEvents = "auto";
