@@ -636,6 +636,39 @@
               <option value="2034">2034</option>
               <option value="2035">2035</option>
             </select>
+            <select id="bnbaBulan" style="flex: 1;">
+              <option value="" selected>-- PILIH BULAN (STATUS KB) --</option>
+              <option value="1">JANUARI</option>
+              <option value="2">FEBRUARI</option>
+              <option value="3">MARET</option>
+              <option value="4">APRIL</option>
+              <option value="5">MEI</option>
+              <option value="6">JUNI</option>
+              <option value="7">JULI</option>
+              <option value="8">AGUSTUS</option>
+              <option value="9">SEPTEMBER</option>
+              <option value="10">OKTOBER</option>
+              <option value="11">NOVEMBER</option>
+              <option value="12">DESEMBER</option>
+            </select>
+          </div>
+          
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <select id="bnbaFilterAdvCategory" onchange="onBnbaAdvCategoryChange()" style="flex: 1; min-width: 200px;">
+              <option value="">-- PENCARIAN LANJUTAN (OPSIONAL) --</option>
+              <option value="JKN">JKN</option>
+              <option value="KESERTAAN_KB">KESERTAAN KB</option>
+              <option value="METODE_KONTRASEPSI">METODE KONTRASEPSI</option>
+              <option value="ALASAN_TIDAK_KB">ALASAN TIDAK BER KB</option>
+              <option value="HAMIL">HAMIL</option>
+              <option value="HAMIL_BARU">HAMIL BARU</option>
+              <option value="PUS_BARU">PUS BARU</option>
+              <option value="MUTASI">MUTASI</option>
+            </select>
+
+            <select id="bnbaFilterAdvValue" style="display: none; flex: 1; min-width: 200px;">              
+            </select>
+          </div>
           </div>
         </div>
 
@@ -2008,6 +2041,61 @@
     }
   }
 
+  function onBnbaAdvCategoryChange() {
+    const cat = document.getElementById("bnbaFilterAdvCategory").value;
+    const subSelect = document.getElementById("bnbaFilterAdvValue");
+
+    subSelect.innerHTML = "";
+    subSelect.style.display = "none";
+
+    if (cat === "JKN") {
+      subSelect.innerHTML = `
+        <option value="">-- PILIH STATUS JKN --</option>
+        <option value="PBI">PBI</option>
+        <option value="BUKAN PBI">BUKAN PBI</option>
+        <option value="TIDAK MEMILIKI">TIDAK MEMILIKI</option>
+      `;
+      subSelect.style.display = "block";
+    } else if (cat === "KESERTAAN_KB") {
+      subSelect.innerHTML = `
+        <option value="">-- PILIH KESERTAAN KB --</option>
+        <option value="BER_KB">BER KB</option>
+        <option value="TIDAK_BER_KB">TIDAK BER KB</option>
+      `;
+      subSelect.style.display = "block";
+    } else if (cat === "METODE_KONTRASEPSI") {
+      subSelect.innerHTML = `
+        <option value="">-- PILIH METODE --</option>
+        <option value="PIL">PIL</option>
+        <option value="SUNTIK">SUNTIK</option>
+        <option value="KONDOM">KONDOM</option>
+        <option value="IMPLAN">IMPLAN</option>
+        <option value="IUD">IUD</option>
+        <option value="MOW">MOW</option>
+        <option value="MOP">MOP</option>
+      `;
+      subSelect.style.display = "block";
+    } else if (cat === "ALASAN_TIDAK_KB") {
+      subSelect.innerHTML = `
+        <option value="">-- PILIH ALASAN --</option>
+        <option value="IAS">IAS</option>
+        <option value="IAT">IAT</option>
+        <option value="TIAL">TIAL</option>
+        <option value="HAMIL">HAMIL</option>
+        <option value="TKI">TKI</option>
+      `;
+      subSelect.style.display = "block";
+    } else if (cat === "MUTASI") {
+      subSelect.innerHTML = `
+        <option value="">-- PILIH MUTASI --</option>
+        <option value="BERCERAI">BERCERAI</option>
+        <option value="SUAMI/ISTRI MENINGGAL">SUAMI/ISTRI MENINGGAL</option>
+        <option value="PINDAH">PINDAH</option>
+      `;
+      subSelect.style.display = "block";
+    }
+  }
+
   function resetBnbaFilters() {
     const tingkat = document.getElementById("bnbaTingkat");
     if (tingkat && !isDesaRole()) tingkat.value = "";
@@ -2019,7 +2107,13 @@
     document.getElementById("bnbaDusun").innerHTML = '<option value="">-- PILIH DUSUN --</option>';
     document.getElementById("bnbaRt").innerHTML = '<option value="">-- PILIH RT --</option>';
 
-    // --- KOSONGKAN HEADER & TABEL BNBA KEMBALI KE SEMULA ---
+    // Reset Dropdown Lanjutan & Bulan
+    const bln = document.getElementById("bnbaBulan");
+    if (bln) bln.value = "";
+    const advCat = document.getElementById("bnbaFilterAdvCategory");
+    if (advCat) advCat.value = "";
+    onBnbaAdvCategoryChange();
+
     const thead = document.getElementById("bnbaTableHeader");
     const tbody = document.getElementById("bnbaTableBody");
     if (thead) thead.innerHTML = "";
@@ -3104,12 +3198,15 @@ function hitungStatusIndikator(r, bulan, mKeys) {
       tbody.innerHTML = `<tr><td colspan='31' style='text-align:center; color:red; padding: 20px;'>Terjadi kesalahan saat memproses data: ${renderErr.message}</td></tr>`;
     }
   }
-
-  // --- BNBA DATA FETCH DENGAN FILTER TINGKAT ---
+  
   // --- BNBA DATA FETCH DENGAN FILTER TINGKAT (FIXED) ---
   async function fetchBnba() {
     const tingkat = document.getElementById("bnbaTingkat").value;
     const tahun = parseInt(document.getElementById("bnbaTahun").value, 10);
+    const bulanVal = document.getElementById("bnbaBulan").value;
+    const advCat = document.getElementById("bnbaFilterAdvCategory").value;
+    const advVal = document.getElementById("bnbaFilterAdvValue").value;
+
     const thead = document.getElementById("bnbaTableHeader");
     const tbody = document.getElementById("bnbaTableBody");
 
@@ -3118,12 +3215,18 @@ function hitungStatusIndikator(r, bulan, mKeys) {
       return;
     }
 
+    // Filter berbasis status KB bulanan membutuhkan pilihan bulan
+    const needMonthFilters = ["KESERTAAN_KB", "METODE_KONTRASEPSI", "ALASAN_TIDAK_KB", "HAMIL", "HAMIL_BARU", "PUS_BARU", "MUTASI"];
+    if (advCat && needMonthFilters.includes(advCat) && !bulanVal) {
+      Swal.fire("Perhatian", `Pencarian lanjutan "${advCat.replace(/_/g, ' ')}" memerlukan pilihan BULAN!`, "warning");
+      return;
+    }
+
     let filterKec = "";
     let filterDesa = "";
     let filterDusun = "";
     let filterRt = "";
 
-    // Ambil dan pastikan padding digit sesuai format tabel database
     if (isDesaRole()) {
       filterKec = userKodeKec;
       filterDesa = userKodeDesa;
@@ -3150,7 +3253,6 @@ function hitungStatusIndikator(r, bulan, mKeys) {
         filterRt = (document.getElementById("bnbaRt").value || "").trim().padStart(3, '0');
       }
     } else {
-      // Admin Kabupaten
       if (tingkat === "Kecamatan" || tingkat === "Desa" || tingkat === "Dusun" || tingkat === "RT") {
         const kVal = document.getElementById("bnbaKecamatan").value;
         if (!kVal) {
@@ -3233,17 +3335,81 @@ function hitungStatusIndikator(r, bulan, mKeys) {
         }
       }
 
-      if (allData.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='29' style='text-align:center; color:#dc2626; font-weight:bold; padding: 30px;'>Tidak ada data BNBA yang ditemukan untuk wilayah dan tahun ini.</td></tr>";
-        Swal.fire({
-          icon: 'info',
-          title: 'Data Kosong',
-          text: 'Tidak ada data BNBA Pasangan Usia Subur yang sesuai kriteria.'
+      // Filter Pencarian Lanjutan (jika dipilih)
+      if (advCat) {
+        const mKeys = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"];
+        const targetBulan = bulanVal ? parseInt(bulanVal, 10) : 1;
+
+        allData = allData.filter(r => {
+          // 1. JKN
+          if (advCat === "JKN") {
+            const jknVal = String(r.peserta_jkn || "").toUpperCase();
+            if (!advVal) return true;
+            if (advVal === "PBI") return jknVal === "PBI";
+            if (advVal === "BUKAN PBI") return jknVal === "BUKAN PBI";
+            if (advVal === "TIDAK MEMILIKI") return jknVal.includes("TIDAK");
+            return jknVal === advVal;
+          }
+
+          // Untuk filter berbasis KB bulanan
+          const res = hitungStatusIndikator(r, targetBulan, mKeys);
+          const cur = res.cur;
+
+          // 2. KESERTAAN KB
+          if (advCat === "KESERTAAN_KB") {
+            if (advVal === "BER_KB") return cur.type === "PESERTA_KB" && !res.isMutasiOr50;
+            if (advVal === "TIDAK_BER_KB") return cur.type === "BUKAN_PESERTA" && !res.isMutasiOr50;
+            return res.isPusAktif;
+          }
+
+          // 3. METODE KONTRASEPSI
+          if (advCat === "METODE_KONTRASEPSI") {
+            if (cur.type !== "PESERTA_KB" || res.isMutasiOr50) return false;
+            if (!advVal) return true;
+            return cur.method === advVal;
+          }
+
+          // 4. ALASAN TIDAK BER KB
+          if (advCat === "ALASAN_TIDAK_KB") {
+            if (cur.type !== "BUKAN_PESERTA" || res.isMutasiOr50) return false;
+            if (!advVal) return true;
+            return cur.reason === advVal;
+          }
+
+          // 5. HAMIL
+          if (advCat === "HAMIL") {
+            return cur.type === "BUKAN_PESERTA" && cur.reason === "HAMIL" && !res.isMutasiOr50;
+          }
+
+          // 6. HAMIL BARU
+          if (advCat === "HAMIL_BARU") {
+            return res.isHamilBaru;
+          }
+
+          // 7. PUS BARU
+          if (advCat === "PUS_BARU") {
+            return res.isPusBaru;
+          }
+
+          // 8. MUTASI
+          if (advCat === "MUTASI") {
+            if (cur.type !== "BUKAN_PUS") return false;
+            if (!advVal) return true;
+            if (advVal === "BERCERAI") return cur.cat === "CERAI";
+            if (advVal === "SUAMI/ISTRI MENINGGAL") return cur.cat === "MENINGGAL";
+            if (advVal === "PINDAH") return cur.cat === "PINDAH";
+            return false;
+          }
+
+          return true;
         });
+      }
+
+      if (allData.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='29' style='text-align:center; color:#dc2626; font-weight:bold; padding: 30px;'>Tidak ada data BNBA yang sesuai kriteria pencarian dan filter lanjutan.</td></tr>";
         return;
       }
 
-      // Render data baris demi baris menggunakan fragment / string builder
       let htmlRows = "";
       allData.forEach((r, idx) => {
         htmlRows += `<tr>
