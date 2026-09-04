@@ -635,7 +635,21 @@
               <option value="2033">2033</option>
               <option value="2034">2034</option>
               <option value="2035">2035</option>
+            </select>            
+          
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <select id="bnbaFilterAdvCategory" onchange="onBnbaAdvCategoryChange()" style="flex: 1; min-width: 200px;">
+              <option value="">-- PENCARIAN LANJUTAN (OPSIONAL) --</option>
+              <option value="JKN">JKN</option>
+              <option value="KESERTAAN_KB">KESERTAAN KB</option>
+              <option value="METODE_KONTRASEPSI">METODE KONTRASEPSI</option>
+              <option value="ALASAN_TIDAK_KB">ALASAN TIDAK BER KB</option>
+              <option value="HAMIL">HAMIL</option>
+              <option value="HAMIL_BARU">HAMIL BARU</option>
+              <option value="PUS_BARU">PUS BARU</option>
+              <option value="MUTASI">MUTASI</option>
             </select>
+
             <select id="bnbaBulan" style="flex: 1;">
               <option value="" selected>-- PILIH BULAN (STATUS KB) --</option>
               <option value="1">JANUARI</option>
@@ -652,19 +666,6 @@
               <option value="12">DESEMBER</option>
             </select>
           </div>
-          
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <select id="bnbaFilterAdvCategory" onchange="onBnbaAdvCategoryChange()" style="flex: 1; min-width: 200px;">
-              <option value="">-- PENCARIAN LANJUTAN (OPSIONAL) --</option>
-              <option value="JKN">JKN</option>
-              <option value="KESERTAAN_KB">KESERTAAN KB</option>
-              <option value="METODE_KONTRASEPSI">METODE KONTRASEPSI</option>
-              <option value="ALASAN_TIDAK_KB">ALASAN TIDAK BER KB</option>
-              <option value="HAMIL">HAMIL</option>
-              <option value="HAMIL_BARU">HAMIL BARU</option>
-              <option value="PUS_BARU">PUS BARU</option>
-              <option value="MUTASI">MUTASI</option>
-            </select>
 
             <select id="bnbaFilterAdvValue" style="display: none; flex: 1; min-width: 200px;">              
             </select>
@@ -1369,7 +1370,7 @@
     });
 
     // Set dropdown bulan ke default kosong (-- PILIH BULAN --)
-    const monthSelects = ["recapBulan", "chartBulan"];
+    const monthSelects = ["recapBulan", "chartBulan", "bnbaBulan"];
     monthSelects.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = "";
