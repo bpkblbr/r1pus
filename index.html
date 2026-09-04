@@ -2045,6 +2045,16 @@
   function onBnbaAdvCategoryChange() {
     const cat = document.getElementById("bnbaFilterAdvCategory").value;
     const subSelect = document.getElementById("bnbaFilterAdvValue");
+    const bulanSelect = document.getElementById("bnbaBulan");
+
+    // Highlight border merah jika kategori lanjutan dipilih
+    if (cat) {
+      bulanSelect.style.border = "2px solid #ef4444";
+      bulanSelect.setAttribute("title", "Wajib memilih bulan untuk pencarian lanjutan");
+    } else {
+      bulanSelect.style.border = "1px solid #ccc";
+      bulanSelect.removeAttribute("title");
+    }
 
     subSelect.innerHTML = "";
     subSelect.style.display = "none";
@@ -2115,6 +2125,11 @@
     const advCat = document.getElementById("bnbaFilterAdvCategory");
     if (advCat) advCat.value = "";
     onBnbaAdvCategoryChange();
+
+    if (bln) {
+    bln.value = "";
+    bln.style.border = "1px solid #ccc";
+    }
 
     const thead = document.getElementById("bnbaTableHeader");
     const tbody = document.getElementById("bnbaTableBody");
@@ -3217,10 +3232,12 @@ function hitungStatusIndikator(r, bulan, mKeys) {
       return;
     }
 
-    // Filter berbasis status KB bulanan membutuhkan pilihan bulan
-    const needMonthFilters = ["KESERTAAN_KB", "METODE_KONTRASEPSI", "ALASAN_TIDAK_KB", "HAMIL", "HAMIL_BARU", "PUS_BARU", "MUTASI"];
-    if (advCat && needMonthFilters.includes(advCat) && !bulanVal) {
-      Swal.fire("Perhatian", `Pencarian lanjutan "${advCat.replace(/_/g, ' ')}" memerlukan pilihan BULAN!`, "warning");
+    if (advCat && !bulanVal) {
+      Swal.fire({
+        icon: "warning",
+        title: "Bulan Wajib Dipilih",
+        text: "Jika menggunakan fitur Pencarian Lanjutan, Anda wajib memilih BULAN (STATUS KB) terlebih dahulu!"
+      });
       return;
     }
 
