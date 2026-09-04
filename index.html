@@ -633,6 +633,7 @@
             <select id="bnbaRt"><option value="">-- PILIH RT --</option></select>
           </div>
           
+          <!-- 1. TAHUN -->
           <div>
             <select id="bnbaTahun">
               <option value="2025">2025</option>
@@ -647,7 +648,9 @@
               <option value="2034">2034</option>
               <option value="2035">2035</option>
             </select>            
-          
+          </div>
+
+          <!-- 2. PENCARIAN LANJUTAN & SUB DROPDOWN -->
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             <select id="bnbaFilterAdvCategory" onchange="onBnbaAdvCategoryChange()" style="flex: 1; min-width: 200px;">
               <option value="">-- PENCARIAN LANJUTAN (OPSIONAL) --</option>
@@ -661,7 +664,13 @@
               <option value="MUTASI">MUTASI</option>
             </select>
 
-            <select id="bnbaBulan" style="flex: 1;">
+            <select id="bnbaFilterAdvValue" style="display: none; flex: 1; min-width: 200px;">              
+            </select>
+          </div>
+
+          <!-- 3. BULAN (DILETAKKAN DI BAWAH PENCARIAN LANJUTAN) -->
+          <div>
+            <select id="bnbaBulan">
               <option value="" selected>-- PILIH BULAN --</option>
               <option value="1">JANUARI</option>
               <option value="2">FEBRUARI</option>
@@ -3096,10 +3105,7 @@ function hitungStatusIndikator(r, bulan, mKeys) {
         }
 
         if (!key) return;
-        if (!grouped[key]) grouped[key] = emptyRecapItem(key);
-
-        if (!key) return;
-        if (!grouped[key]) grouped[key] = emptyRecapItem(key);
+        if (!grouped[key]) grouped[key] = emptyRecapItem(key);        
 
         // Panggil helper evaluasi indikator
         const res = hitungStatusIndikator(r, bulan, mKeys);
@@ -4908,65 +4914,43 @@ function hitungStatusIndikator(r, bulan, mKeys) {
       setSelectValueCaseInsensitive("provinsi", defaultProv);
       document.getElementById("kode_prov").value = defaultProv;
       provSel.style.pointerEvents = "none";
+      provSel.style.backgroundColor = "#e9ecef";
 
       updateKabupaten(userKodeKab);
       document.getElementById("kode_kab").value = userKodeKab;
       kabSel.style.pointerEvents = "none";
+      kabSel.style.backgroundColor = "#e9ecef";
 
       updateKecamatan(userKodeKec);
       document.getElementById("kode_kec").value = userKodeKec;
       kecSel.style.pointerEvents = "none";
+      kecSel.style.backgroundColor = "#e9ecef";
 
       updateDesa(userKodeDesa);
       document.getElementById("kode_desa").value = userKodeDesa;
       desaSel.style.pointerEvents = "none";
-
-      dusunSel.style.pointerEvents = "auto";
-      dusunSel.disabled = false;
-      rtSel.style.pointerEvents = "auto";
-      rtSel.disabled = true;
-
-    if (isDesaRole()) {
-      setSelectValueCaseInsensitive("provinsi", defaultProv);
-      document.getElementById("kode_prov").value = defaultProv;
-      provSel.style.pointerEvents = "none";
-      provSel.style.backgroundColor = "#e9ecef"; // Abu-abu
-
-      updateKabupaten(userKodeKab);
-      document.getElementById("kode_kab").value = userKodeKab;
-      kabSel.style.pointerEvents = "none";
-      kabSel.style.backgroundColor = "#e9ecef"; // Abu-abu
-
-      updateKecamatan(userKodeKec);
-      document.getElementById("kode_kec").value = userKodeKec;
-      kecSel.style.pointerEvents = "none";
-      kecSel.style.backgroundColor = "#e9ecef"; // Abu-abu
-
-      updateDesa(userKodeDesa);
-      document.getElementById("kode_desa").value = userKodeDesa;
-      desaSel.style.pointerEvents = "none";
-      desaSel.style.backgroundColor = "#e9ecef"; // Abu-abu
+      desaSel.style.backgroundColor = "#e9ecef";
 
       dusunSel.style.pointerEvents = "auto";
       dusunSel.style.backgroundColor = "#ffffff";
       dusunSel.disabled = false;
       rtSel.style.pointerEvents = "auto";
-      rtSel.disabled = true; // Otomatis abu-abu oleh CSS
+      rtSel.disabled = true;
     } else if (isKecRole()) {
       setSelectValueCaseInsensitive("provinsi", defaultProv);
       document.getElementById("kode_prov").value = defaultProv;
       provSel.style.pointerEvents = "none";
-      provSel.style.backgroundColor = "#e9ecef"; // Abu-abu
+      provSel.style.backgroundColor = "#e9ecef";
 
       updateKabupaten(userKodeKab);
       document.getElementById("kode_kab").value = userKodeKab;
       kabSel.style.pointerEvents = "none";
-      kabSel.style.backgroundColor = "#e9ecef"; // Abu-abu
+      kabSel.style.backgroundColor = "#e9ecef";
 
       updateKecamatan(userKodeKec);
       document.getElementById("kode_kec").value = userKodeKec;
       kecSel.style.pointerEvents = "none";
-      kecSel.style.backgroundColor = "#e9ecef"; // Abu-abu
+      kecSel.style.backgroundColor = "#e9ecef";
 
       desaSel.style.pointerEvents = "auto";
       desaSel.style.backgroundColor = "#ffffff";
