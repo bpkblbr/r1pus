@@ -2053,6 +2053,7 @@
         <option value="">-- PILIH STATUS JKN --</option>
         <option value="PBI">PBI</option>
         <option value="BUKAN PBI">BUKAN PBI</option>
+        <option value="SWASTA">SWASTA</option>
         <option value="TIDAK MEMILIKI">TIDAK MEMILIKI</option>
       `;
       subSelect.style.display = "block";
@@ -3346,7 +3347,8 @@ function hitungStatusIndikator(r, bulan, mKeys) {
             const jknVal = String(r.peserta_jkn || "").toUpperCase();
             if (!advVal) return true;
             if (advVal === "PBI") return jknVal === "PBI";
-            if (advVal === "BUKAN PBI") return jknVal === "BUKAN PBI";
+            if (advVal === "BUKAN PBI") return jknVal.includes("BUKAN PBI") || jknVal.includes("NON PBI") || jknVal.includes("NON-PBI");
+            if (advVal === "SWASTA") return jknVal.includes("SWASTA");
             if (advVal === "TIDAK MEMILIKI") return jknVal.includes("TIDAK");
             return jknVal === advVal;
           }
