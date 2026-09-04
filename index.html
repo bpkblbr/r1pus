@@ -2687,6 +2687,67 @@
 
   async function handleFormSubmit(event) {
   event.preventDefault();
+
+  const errors = [];
+
+    // 1. Validasi Wilayah
+    if (!document.getElementById("provinsi").value) errors.push("Provinsi belum dipilih");
+    if (!document.getElementById("kabupaten").value) errors.push("Kabupaten belum dipilih");
+    if (!document.getElementById("kecamatan").value) errors.push("Kecamatan belum dipilih");
+    if (!document.getElementById("desa").value) errors.push("Desa belum dipilih");
+    if (!document.getElementById("dusun").value) errors.push("Dusun belum dipilih");
+    if (!document.getElementById("rt").value) errors.push("RT belum dipilih");
+
+    // 2. Validasi Identitas PUS
+    const namaSuami = document.getElementById("nama_suami").value.trim();
+    const nikSuami = document.getElementById("nik_suami").value.trim();
+    const namaIstri = document.getElementById("nama_istri").value.trim();
+    const nikIstri = document.getElementById("nik_istri").value.trim();
+    const tglLahir = document.getElementById("tgl_lahir_istri").value;
+    const jkn = document.getElementById("peserta_jkn").value;
+    const jmlAnak = parseInt(document.getElementById("jumlah_anak").value || 0, 10);
+    const umurAnakTerkecil = document.getElementById("umur_anak_terkecil").value;
+
+    if (!namaSuami) errors.push("Nama Suami wajib diisi");
+    if (!nikSuami) {
+      errors.push("NIK Suami wajib diisi");
+    } else if (nikSuami.length !== 16) {
+      errors.push("NIK Suami harus 16 digit");
+    }
+
+    if (!namaIstri) errors.push("Nama Istri wajib diisi");
+    if (!nikIstri) {
+      errors.push("NIK Istri wajib diisi");
+    } else if (nikIstri.length !== 16) {
+      errors.push("NIK Istri harus 16 digit");
+    }
+
+    if (!tglLahir) errors.push("Tanggal Lahir Istri belum diisi");
+    if (!jkn) errors.push("Kepesertaan JKN belum dipilih");
+
+    if (jmlAnak > 0 && (!umurAnakTerkecil || parseInt(umurAnakTerkecil, 10) < 0)) {
+      errors.push("Umur Anak Terkecil wajib diisi (karena anak > 0)");
+    }
+
+    // Jika ada kolom yang belum lengkap, munculkan pop-up daftar kolomnya
+    if (errors.length > 0) {
+      const errorListHtml = errors.map(err => `<li style="margin-bottom: 4px;">${err}</li>`).join("");
+      Swal.fire({
+        icon: 'warning',
+        title: 'Form Belum Lengkap!',
+        html: `
+          <div style="text-align: left; font-size: 13px; color: #333;">
+            <p style="margin-bottom: 8px;">Silakan lengkapi kolom berikut sebelum menyimpan:</p>
+            <ul style="margin: 0; padding-left: 20px; color: #dc2626;">
+              ${errorListHtml}
+            </ul>
+          </div>
+        `,
+        confirmButtonColor: '#0284c7'
+      });
+      return; // Batalkan proses simpan
+    }
+
   const submitBtn = document.getElementById("submitBtn");
   submitBtn.disabled = true;
   submitBtn.innerText = "Menyimpan...";
@@ -4992,21 +5053,44 @@ function hitungStatusIndikator(r, bulan, mKeys) {
   }
 
   function handleLogout() {
-    currentUser = "";
-    userRole = "";
-    userKodeKab = "";
-    userKodeKec = "";
-    userKodeDesa = "";
+    Swal.fire({
+      title: 'Konfirmasi Keluar Sesi',
+      text: 'Apakah Anda yakin ingin mengakhiri sesi kerja dan kembali ke halaman login?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Ya, Keluar Sesi',
+      cancelButtonText: 'Batal',
+      reverseButtons: true,
+      focusCancel: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+        currentUser = "";
+        userRole = "";
+        userKodeKab = "";
+        userKodeKec = "";
+        userKodeDesa = "";
 
-    // Reset seluruh modul dan form
-    resetLoginForm();
-    resetInputForm();
-    resetRecapFilters();
-    resetBnbaFilters();
-    resetChartFilters();
+        // Reset seluruh modul dan form
+        resetLoginForm();
+        resetInputForm();
+        resetRecapFilters();
+        resetBnbaFilters();
+        resetChartFilters();
 
-    document.getElementById("appContainer").style.display = "none";
-    document.getElementById("loginContainer").style.display = "block";
+        document.getElementById("appContainer").style.display = "none";
+        document.getElementById("loginContainer").style.display = "block";
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Sesi Berakhir',
+          text: 'Anda telah berhasil keluar dari sistem.',
+          timer: 1300,
+          showConfirmButton: false
+        });
+      }
+    });
   }
   
   // FUNGSI DOWNLOAD TEMPLATE EXCEL BAKU BESERTA PETUNJUKNYA
@@ -5750,12 +5834,26 @@ function hitungStatusIndikator(r, bulan, mKeys) {
       if (data) selectDataForEdit(data);
     }
   }
-  function exitApp() { 
-   	window.close();
-	
-   	setTimeout(() => {
-    	window.location.href = "https://bpkblbr.github.io/r1puslbr/?status=out";
-   	}, 500);
+  function exitApp() {
+    Swal.fire({
+      title: 'Konfirmasi Tutup Aplikasi',
+      text: 'Apakah Anda yakin ingin menutup dan keluar dari Aplikasi Register PUS?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Ya, Keluar Aplikasi',
+      cancelButtonText: 'Batal',
+      reverseButtons: true,
+      focusCancel: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+        window.close();
+        setTimeout(() => {
+          window.location.href = "https://bpkblbr.github.io/r1puslbr/?status=out";
+        }, 300);
+      }
+    });
   }
   
 </script>
