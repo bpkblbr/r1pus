@@ -3619,7 +3619,8 @@ function hitungStatusIndikator(r, bulan, mKeys) {
       tbody.innerHTML = `<tr><td colspan='29' style='text-align:center; color:red; padding: 20px;'>Gagal memuat data: ${err.message}</td></tr>`;
       Swal.fire("Error", "Gagal memuat BNBA: " + err.message, "error");
     }
-    
+  }
+  
   // --- GRAFIK ANALYTICS DENGAN FILTER TINGKAT ---
   async function fetchChartData() {
     const tingkat = document.getElementById("chartTingkat").value;
