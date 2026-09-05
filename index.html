@@ -1443,6 +1443,24 @@
         </td>`;
       tbody.appendChild(tr);
     });
+
+    // Pantau setiap perubahan data di Bagian I (Wilayah) dan Bagian II (Identitas PUS)
+    const watchedFieldIds = [
+      "provinsi", "kabupaten", "kecamatan", "desa", "dusun", "rt",
+      "nama_suami", "nik_suami", "nama_istri", "nik_istri",
+      "tgl_lahir_istri", "peserta_jkn"
+    ];
+
+    watchedFieldIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener("input", checkAndLockKbTable);
+        el.addEventListener("change", checkAndLockKbTable);
+      }
+    });
+
+    // Jalankan penguncian awal saat form pertama kali dimuat
+    checkAndLockKbTable();
   };
 
   async function loadMasterWilayahFromDB() {
@@ -1478,6 +1496,68 @@
     }
     populateAllKecamatanDropdowns();
   }
+
+  // Helper mengecek kelengkapan data wilayah dan identitas PUS
+function isIdentitasDanWilayahLengkap() {
+  const missingFields = [];
+
+  // Validasi Wilayah Asal
+  if (!document.getElementById("provinsi").value) missingFields.push("Provinsi");
+  if (!document.getElementById("kabupaten").value) missingFields.push("Kabupaten / Kota");
+  if (!document.getElementById("kecamatan").value) missingFields.push("Kecamatan");
+  if (!document.getElementById("desa").value) missingFields.push("Desa");
+  if (!document.getElementById("dusun").value) missingFields.push("Dusun");
+  if (!document.getElementById("rt").value) missingFields.push("RT");
+
+  // Validasi Identitas PUS
+  const namaSuami = document.getElementById("nama_suami").value.trim();
+  const nikSuami  = document.getElementById("nik_suami").value.trim();
+  const namaIstri = document.getElementById("nama_istri").value.trim();
+  const nikIstri  = document.getElementById("nik_istri").value.trim();
+  const tglLahir  = document.getElementById("tgl_lahir_istri").value;
+  const jkn       = document.getElementById("peserta_jkn").value;
+
+  if (!namaSuami) missingFields.push("Nama Suami");
+  if (!nikSuami || nikSuami.length !== 16) missingFields.push("NIK Suami (16 digit)");
+  if (!namaIstri) missingFields.push("Nama Istri");
+  if (!nikIstri || nikIstri.length !== 16) missingFields.push("NIK Istri (16 digit)");
+  if (!tglLahir)  missingFields.push("Tanggal Lahir Istri");
+  if (!jkn)       missingFields.push("Kepesertaan JKN");
+
+  return {
+    isLengkap: missingFields.length === 0,
+    missing: missingFields
+  };
+}
+
+// Fungsi pengunci tabel KB jika data belum lengkap
+function checkAndLockKbTable() {
+  const check = isIdentitasDanWilayahLengkap();
+
+  for (let i = 1; i <= 12; i++) {
+    const sel = document.getElementById("kb_" + i);
+    if (!sel) continue;
+
+    if (!check.isLengkap) {
+      // Kunci jika data wilayah & PUS belum lengkap
+      sel.style.backgroundColor = "#e9ecef";
+      sel.style.pointerEvents = "none";
+      sel.tabIndex = -1;
+      sel.title = "Lengkapi data Wilayah dan Identitas PUS terlebih dahulu";
+    } else {
+      // Buka kunci jika sudah lengkap (kemudian aturan umur 50+ / mutasi akan menyesuaikan)
+      sel.style.backgroundColor = "#ffffff";
+      sel.style.pointerEvents = "auto";
+      sel.tabIndex = 0;
+      sel.title = "";
+    }
+  }
+
+  // Jika sudah lengkap, jalankan proteksi usia/mutasi
+  if (check.isLengkap) {
+    applyMutationAndAgeLocks();
+  }
+}
   
   function applyMutationAndAgeLocks() {
   const tglLahir = document.getElementById("tgl_lahir_istri").value;
@@ -2599,7 +2679,7 @@
     }
 
     // Terapkan ulang penguncian form jika ada kondisi lain (misal umur 50+)
-    applyMutationAndAgeLocks();
+    checkAndLockKbTable();
 
     Swal.fire({
       icon: 'info',
@@ -4186,7 +4266,7 @@ function hitungStatusIndikator(r, bulan, mKeys) {
       setSelectValueCaseInsensitive("kb_" + i, d[mKey]);
     }
 	
-	applyMutationAndAgeLocks();    
+	checkAndLockKbTable();    
     initNavigationRT(d.kode_kec, d.kode_desa, d.kode_dusun, d.kode_rt, d.tahun, d.id_pus, d.dusun_nama);
   }
 
@@ -5079,7 +5159,7 @@ function hitungStatusIndikator(r, bulan, mKeys) {
       resetDropdown("dusun", "kode_dusun");
       resetDropdown("rt", "kode_rt");
     }
-    applyMutationAndAgeLocks();
+    checkAndLockKbTable();
   }
 
   function togglePassword() {
