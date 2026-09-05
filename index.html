@@ -3405,6 +3405,12 @@ function hitungStatusIndikator(r, bulan, mKeys) {
       kbHeaderHtml = monthNamesShort.map(m => `<th style="background:#28a745; color:white;">${m}</th>`).join("");
     }
 
+    const hideNik = isDesaRole(); // Cek apakah role User Desa
+
+    // Header NIK hanya dimunculkan jika BUKAN User Desa
+    const nikSuamiHeader = !hideNik ? `<th style="background:#1f4e78; color:white;">NIK SUAMI</th>` : ``;
+    const nikIstriHeader = !hideNik ? `<th style="background:#1f4e78; color:white;">NIK ISTRI</th>` : ``;
+
     thead.innerHTML = `<tr>
       <th style="background:#1f4e78; color:white; width:35px;">NO.</th>
       <th style="background:#1f4e78; color:white;">ID PUS</th>
@@ -3415,9 +3421,9 @@ function hitungStatusIndikator(r, bulan, mKeys) {
       <th style="background:#1f4e78; color:white;">DUSUN</th>
       <th style="background:#1f4e78; color:white;">RT</th>
       <th style="background:#1f4e78; color:white;">NAMA SUAMI</th>
-      <th style="background:#1f4e78; color:white;">NIK SUAMI</th>
+      ${nikSuamiHeader}
       <th style="background:#1f4e78; color:white;">NAMA ISTRI</th>
-      <th style="background:#1f4e78; color:white;">NIK ISTRI</th>
+      ${nikIstriHeader}
       <th style="background:#1f4e78; color:white;">TGL LAHIR ISTRI</th>
       <th style="background:#1f4e78; color:white;">UMUR ISTRI</th>
       <th style="background:#1f4e78; color:white;">JML ANAK</th>
@@ -3592,6 +3598,10 @@ function hitungStatusIndikator(r, bulan, mKeys) {
           kbRowTd = mKeys.map(k => `<td style="text-align:center;">${r[k] || '-'}</td>`).join("");
         }
 
+        // Kolom NIK Suami & Istri disembunyikan jika User Desa
+        const nikSuamiTd = !hideNik ? `<td style="font-family: monospace;">${r.nik_suami || '-'}</td>` : ``;
+        const nikIstriTd = !hideNik ? `<td style="font-family: monospace;">${r.nik_istri || '-'}</td>` : ``;
+
         htmlRows += `<tr>
           <td style="text-align:center; font-weight:bold;">${idx + 1}</td>
           <td style="font-weight:bold;">${r.id_pus || '-'}</td>
@@ -3602,9 +3612,9 @@ function hitungStatusIndikator(r, bulan, mKeys) {
           <td>${r.dusun_nama || '-'}</td>
           <td style="text-align:center;">${r.kode_rt || r.rt_nama || '-'}</td>
           <td style="text-align:left;">${r.nama_suami || '-'}</td>
-          <td style="font-family: monospace;">${r.nik_suami || '-'}</td>
+          ${nikSuamiTd}
           <td style="text-align:left; font-weight:bold;">${r.nama_istri || '-'}</td>
-          <td style="font-family: monospace;">${r.nik_istri || '-'}</td>
+          ${nikIstriTd}
           <td style="text-align:center;">${r.tgl_lahir_istri || '-'}</td>
           <td style="text-align:center;">${r.umur_istri || '0'}</td>
           <td style="text-align:center;">${r.jumlah_anak || '0'}</td>
@@ -3616,7 +3626,8 @@ function hitungStatusIndikator(r, bulan, mKeys) {
       tbody.innerHTML = htmlRows;
     } catch (err) {
       console.error("BNBA Fetch Error:", err);
-      tbody.innerHTML = `<tr><td colspan='29' style='text-align:center; color:red; padding: 20px;'>Gagal memuat data: ${err.message}</td></tr>`;
+      const totalCols = (targetBulanIdx ? 18 : 29) - (hideNik ? 2 : 0);
+      tbody.innerHTML = `<tr><td colspan='${totalCols}' style='text-align:center; padding: 20px;'>Memuat seluruh data BNBA...</td></tr>`;
       Swal.fire("Error", "Gagal memuat BNBA: " + err.message, "error");
     }
   }
