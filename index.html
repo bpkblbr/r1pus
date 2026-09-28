@@ -2677,6 +2677,7 @@
         sel.tabIndex = -1;
         sel.title = lockReason;
       } else {
+        // Pastikan warna putih dan aktif kembali jika belum terkunci
         sel.style.backgroundColor = "#ffffff";
         sel.style.pointerEvents = "auto";
         sel.tabIndex = 0;
@@ -4064,7 +4065,7 @@
       }
     }
 
-    applyMutationAndAgeLocks();
+    checkAndLockKbTable();
 
     Swal.fire({
       icon: 'info',
@@ -4175,11 +4176,18 @@
         let kodeRTFormatted = i.toString().padStart(3, '0');
         rtSelect.add(new Option("RT " + kodeRTFormatted, kodeRTFormatted));
       }
-      if (selectedVal) { setSelectValueCaseInsensitive("rt", selectedVal); setKodeRT(); }
-    }
+      if (selectedVal) { 
+        setSelectValueCaseInsensitive("rt", selectedVal); 
+        setKodeRT(); 
+      }
+    }    
+    checkAndLockKbTable();
   }
 
-  function setKodeRT() { document.getElementById("kode_rt").value = document.getElementById("rt").value; }
+  function setKodeRT() { 
+    document.getElementById("kode_rt").value = document.getElementById("rt").value;    
+    checkAndLockKbTable();
+  }
 
   function resetDropdown(selectId, inputKodeId) {
     const select = document.getElementById(selectId);
