@@ -7017,11 +7017,41 @@
     }
   }
 
-    function initFilterUserDropdowns() {
+  function initFilterUserDropdowns() {
+    const selRole = document.getElementById("filterUserRole");
     const selKec = document.getElementById("filterUserKec");
     const selDesa = document.getElementById("filterUserDesa");
     if (!selKec || !selDesa) return;
 
+    // 1. BATASI OPSI ROLE SESUAI HAK LOGIN
+    if (selRole) {
+      if (isDesaRole()) {
+        selRole.innerHTML = '<option value="User Desa">User Desa</option>';
+        selRole.disabled = true;
+      } else if (isKecRole()) {
+        // Admin Kec hanya mengawasi User Desa
+        selRole.innerHTML = '<option value="User Desa">User Desa</option>';
+        selRole.disabled = true;
+      } else if (isKabRole()) {
+        selRole.innerHTML = `
+          <option value="">-- SEMUA ROLE --</option>
+          <option value="Admin Kec">Admin Kec</option>
+          <option value="User Desa">User Desa</option>
+        `;
+        selRole.disabled = false;
+      } else {
+        // Admin Prov
+        selRole.innerHTML = `
+          <option value="">-- SEMUA ROLE --</option>
+          <option value="Admin Kab">Admin Kab</option>
+          <option value="Admin Kec">Admin Kec</option>
+          <option value="User Desa">User Desa</option>
+        `;
+        selRole.disabled = false;
+      }
+    }
+
+    // 2. KUNCI DROPDOWN WILAYAH KECAMATAN & DESA
     selKec.innerHTML = '<option value="">-- SEMUA KECAMATAN --</option>';
     selDesa.innerHTML = '<option value="">-- SEMUA DESA --</option>';
 
@@ -7033,15 +7063,18 @@
       populateDesaByKec(userKodeKec, "filterUserDesa");
       selDesa.value = userKodeDesa;
       selDesa.disabled = true;
+
     } else if (isKecRole()) {
       populateKecamatanOptions("filterUserKec");
       selKec.value = userKodeKec;
       selKec.disabled = true;
 
+      // Admin Kec bebas memfilter desa-desa binaannya
       populateDesaByKec(userKodeKec, "filterUserDesa");
       selDesa.disabled = false;
+
     } else {
-      // Admin Kab / Admin Prov
+      // Admin Kab / Prov
       populateKecamatanOptions("filterUserKec");
       selKec.disabled = false;
       selDesa.disabled = false;
@@ -7066,10 +7099,25 @@
 
     let query = db.from('users').select('*').order('username', { ascending: true });
 
+    // HIERARKI KETAT HAK LIHAT DAFTAR AKUN:
     if (isDesaRole()) {
-      query = query.eq('kode_kec', userKodeKec).eq('kode_desa', userKodeDesa);
+      // User Desa: Hanya melihat akun di desanya sendiri
+      query = query.eq('kode_kab', userKodeKab)
+                   .eq('kode_kec', userKodeKec)
+                   .eq('kode_desa', userKodeDesa)
+                   .eq('role', 'User Desa');
+
     } else if (isKecRole()) {
-      query = query.eq('kode_kec', userKodeKec);
+      // Admin Kecamatan: HANYA BOLEH MELIHAT User Desa di wilayah kecamatannya!
+      // Dilarang melihat Admin Kab maupun Admin Prov
+      query = query.eq('kode_kab', userKodeKab)
+                   .eq('kode_kec', userKodeKec)
+                   .eq('role', 'User Desa');
+
+    } else if (isKabRole()) {
+      // Admin Kabupaten: Melihat akun di wilayah kabupatennya, tidak boleh melihat Admin Prov
+      query = query.eq('kode_kab', userKodeKab)
+                   .neq('role', 'Admin Prov');
     }
 
     const { data, error } = await query;
