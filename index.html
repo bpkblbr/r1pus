@@ -5920,6 +5920,51 @@
       Swal.fire("Gagal", "Terjadi kesalahan saat membuat dokumen PDF: " + err.message, "error");
     }
   }
+
+  function downloadSingleChartAsPNG(canvasId, title) {
+    const originalCanvas = document.getElementById(canvasId);
+    if (!originalCanvas) {
+      Swal.fire("Perhatian", "Elemen grafik tidak ditemukan!", "error");
+      return;
+    }
+    
+    if (originalCanvas.width === 0 || originalCanvas.height === 0) {
+      Swal.fire({
+        icon: "warning",
+        title: "Grafik Belum Dimuat",
+        text: "Silakan atur filter dan klik tombol 'Tampilkan Grafik' terlebih dahulu sebelum mengunduh gambar PNG!"
+      });
+      return;
+    }
+
+    try {      
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = originalCanvas.width;
+      tempCanvas.height = originalCanvas.height;
+      const ctx = tempCanvas.getContext("2d");
+      
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+      
+      ctx.drawImage(originalCanvas, 0, 0);
+      
+      const dataURL = tempCanvas.toDataURL("image/png", 1.0);
+      const cleanTitle = (title || "Grafik_PUS").trim().replace(/[^a-zA-Z0-9_\-]/g, "_");
+      const tahunVal = document.getElementById("chartTahun")?.value || new Date().getFullYear();
+      const fileName = `${cleanTitle}_${tahunVal}.png`;
+
+      const link = document.createElement("a");
+      link.download = fileName;
+      link.href = dataURL;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+    } catch (err) {
+      console.error("Gagal mengunduh grafik PNG:", err);
+      Swal.fire("Gagal", "Terjadi kesalahan saat mengunduh gambar: " + err.message, "error");
+    }
+  }
   
   function highlightText(text, keyword) {
     if (!text) return "-";
