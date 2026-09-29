@@ -2281,6 +2281,7 @@
                 class="input-control-kb" 
                 required 
                 placeholder="-- PILIH ATAU KETIK FASKES --"
+                onfocus="if(!this.value && typeof populateDropdownFaskesLayanan === 'function') populateDropdownFaskesLayanan();"
                 oninput="onInputFaskesLayanan()"
                 style="height: 42px; line-height: 40px; box-sizing: border-box; margin: 0; padding: 0 12px; font-weight: 600; text-transform: uppercase; width: 100%; border-radius: 6px;"
               >
@@ -9736,7 +9737,6 @@
   // =========================================================================
   let mapFaskesNameToKode = {};
 
-  // 1. Muat pilihan ke dalam <datalist>
   async function populateDropdownFaskesLayanan() {
     const dataList = document.getElementById("listFaskesOptions");
     if (!dataList) return;
@@ -9745,24 +9745,33 @@
     mapFaskesNameToKode = {};
 
     try {
-      let query = db.from('master_faskes').select('*').order('nama_faskes', { ascending: true });
+      let query = db.from('master_faskes').select('*').order('nama_faskes', { ascending: true });      
       
       if (userKodeKab) {
         query = query.eq('kode_kab', String(userKodeKab).padStart(2, '0'));
       }
 
       const { data, error } = await query;
-      if (!error && data && data.length > 0) {
+      if (error) {
+        console.error("Gagal mengambil data master faskes:", error);
+        return;
+      }
+
+      if (data && data.length > 0) {
         data.forEach(f => {
           const nmUpper = (f.nama_faskes || '').trim().toUpperCase();
           const kdClean = (f.kode_faskes || '').trim().toUpperCase();
+
+          if (!nmUpper) return;
 
           mapFaskesNameToKode[nmUpper] = kdClean;
 
           // Buat elemen option di dalam datalist
           const opt = document.createElement("option");
           opt.value = nmUpper;
-          opt.label = `[${kdClean}] - Kec. ${f.kecamatan}`;
+          if (f.kecamatan) {
+            opt.label = `[${kdClean}] - Kec. ${f.kecamatan}`;
+          }
           dataList.appendChild(opt);
         });
       }
@@ -9770,20 +9779,17 @@
       console.warn("Gagal memuat datalist faskes:", err);
     }
   }
-
-  // 2. Saat pengguna memilih dari dropdown ATAU mengetik manual
+  
   function onInputFaskesLayanan() {
     const inputEl = document.getElementById("reg_faskes_tujuan");
     const kodeEl = document.getElementById("reg_kode_faskes");
     if (!inputEl || !kodeEl) return;
 
     const val = inputEl.value.trim().toUpperCase();
-
-    // Jika nama yang diketik/dipilih cocok dengan data di database, isi kodenya otomatis
+    
     if (mapFaskesNameToKode[val]) {
       kodeEl.value = mapFaskesNameToKode[val];
-    }
-    // Jika tidak cocok (nama faskes baru/manual), biarkan pengguna mengisi kolom kode jika ada
+    }    
   }  
 
   let navRtDataList = [];
@@ -10074,57 +10080,67 @@
 
   function openPelayananKbModal() {    
     const modal = document.getElementById("modalPelayananKb");
-    if (modal) {
-      modal.style.display = "block";
+    if (!modal) {
+      console.error("Elemen #modalPelayananKb tidak ditemukan di HTML!");
+      return;
+    }    
+    
+    modal.style.display = "block";    
+    
+    cachedAntreanLayanan = [];
+    
+    if (typeof populateDropdownFaskesLayanan === "function") {
+      populateDropdownFaskesLayanan();
     }
     
-    // 1. Kosongkan cache data antrean
-    cachedAntreanLayanan = [];
-
     if (typeof switchLayananTab === "function") {
       switchLayananTab('antrean');
-    }
+    }    
     
     if (typeof resetFormPendaftaranLayanan === "function") {
       resetFormPendaftaranLayanan();
-    }
+    }    
     
     const currentMonth = new Date().getMonth() + 1;
     const blnEl = document.getElementById("reg_bulan_rencana");
     if (blnEl) {
       blnEl.value = String(currentMonth);
-    }
+    }    
     
     const kaderInput = document.getElementById("reg_nama_kader");
     if (kaderInput) {
-      kaderInput.value = "";
-    }
+      kaderInput.value = (currentNamaLengkap || currentUser || "").toUpperCase();
+    }    
     
     const tahunEl = document.getElementById("filterLayananTahun");
     if (tahunEl) {
-      tahunEl.value = String(new Date().getFullYear());
+      const currentYear = String(new Date().getFullYear());
+      // Jika tahun berjalan belum ada di pilihan, tambahkan opsinya
+      let exists = Array.from(tahunEl.options).some(opt => opt.value === currentYear);
+      if (!exists) {
+        tahunEl.add(new Option(currentYear, currentYear));
+      }
+      tahunEl.value = currentYear;
     }
-
-    // 2. Kosongkan dropdown periode bulan
+    
     const bMulaiEl = document.getElementById("filterLayananBulanMulai");
     const bSampaiEl = document.getElementById("filterLayananBulanSampai");
     if (bMulaiEl) bMulaiEl.value = "";
-    if (bSampaiEl) bSampaiEl.value = "";
+    if (bSampaiEl) bSampaiEl.value = "";    
     
-    // 3. Sembunyikan pembungkus filter wilayah
     const wrapperWilayah = document.getElementById("filterWilayahLayananWrapper");
     if (wrapperWilayah) {
       wrapperWilayah.style.display = "none";
-    }
+    }    
     
-    // 4. Reset isi tbody ke teks panduan awal
     const tbody = document.getElementById("antreanLayananTbody");
     if (tbody) {
       tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: #64748b;">Silakan pilih periode Bulan Mulai & Sampai terlebih dahulu.</td></tr>`;
     }
-
-    // 5. Perbarui status tombol cetak
-    updateStatusTombolCetak();
+    
+    if (typeof updateStatusTombolCetak === "function") {
+      updateStatusTombolCetak();
+    }
   }
 
   function closePelayananKbModal() {
