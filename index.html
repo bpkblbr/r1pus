@@ -9317,6 +9317,27 @@
     }
   }
 
+  function onFilterFaskesKabChange() {
+    const selKab = document.getElementById("filterFaskesKab");
+    const selKec = document.getElementById("filterFaskesKec");
+    const selDesa = document.getElementById("filterFaskesDesa");
+    if (!selKec) return;
+
+    const kdKab = selKab ? selKab.value : (userKodeKab || "");
+    selKec.innerHTML = '<option value="">-- SEMUA KECAMATAN --</option>';
+    if (selDesa) selDesa.innerHTML = '<option value="">-- SEMUA DESA --</option>';
+
+    if (kdKab && typeof dataKecamatan !== 'undefined' && dataKecamatan[kdKab]) {
+      for (let kd in dataKecamatan[kdKab]) {
+        selKec.add(new Option(dataKecamatan[kdKab][kd].toUpperCase(), String(kd).padStart(2, '0')));
+      }
+    }
+
+    if (typeof renderRegisteredFaskesTable === "function") {
+      renderRegisteredFaskesTable();
+    }
+  }
+
   function onFilterFaskesKecChange() {
     const selKab = document.getElementById("filterFaskesKab");
     const selKec = document.getElementById("filterFaskesKec");
