@@ -2677,7 +2677,6 @@
         sel.tabIndex = -1;
         sel.title = lockReason;
       } else {
-        // Pastikan warna putih dan aktif kembali jika belum terkunci
         sel.style.backgroundColor = "#ffffff";
         sel.style.pointerEvents = "auto";
         sel.tabIndex = 0;
@@ -4065,7 +4064,7 @@
       }
     }
 
-    checkAndLockKbTable();
+    applyMutationAndAgeLocks();
 
     Swal.fire({
       icon: 'info',
@@ -4125,24 +4124,28 @@
   }
 
   function updateDusun(selectedVal = "") {
-    const kodeKab = document.getElementById("kode_kab")?.value || userKodeKab || "01";
-    const kodeKec = document.getElementById("kecamatan").value;
-    const kodeDesa = document.getElementById("desa").value;
+    const kodeKab = document.getElementById("kode_kab")?.value || userKodeKab || "";
+    const kodeKec = document.getElementById("kecamatan")?.value || userKodeKec || "";
+    const kodeDesa = document.getElementById("desa")?.value || userKodeDesa || "";
     document.getElementById("kode_desa").value = kodeDesa;
+
     resetDropdown("dusun", "kode_dusun"); 
-    resetDropdown("rt", "kode_rt");
+    resetDropdown("rt", "kode_rt");    
     
     let dusunObj = getDusunList(kodeKec, kodeDesa, kodeKab);
     
     if (kodeDesa && dusunObj) {
       const dusunSelect = document.getElementById("dusun");
       dusunSelect.disabled = false;
-      
+      dusunSelect.style.pointerEvents = "auto";
+      dusunSelect.style.backgroundColor = "#ffffff";
+
       const allowedSet = new Set((userAllowedDusun || []).map(d => String(d).trim().padStart(4, '0')));
 
       for (let kode in dusunObj) {
-        let cleanKd = String(kode).trim().padStart(4, '0');      
+        let cleanKd = String(kode).trim().padStart(4, '0');        
         
+        // Filter hak akses dusun untuk User Desa
         if (isDesaRole() && allowedSet.size > 0) {
           if (!allowedSet.has(cleanKd)) {
             continue; 
@@ -4154,40 +4157,55 @@
       
       if (isDesaRole() && dusunSelect.options.length === 2) {
         dusunSelect.selectedIndex = 1;
-        updateRT();
-      } else if (selectedVal) { 
+        document.getElementById("kode_dusun").value = dusunSelect.value;
+        updateRT(); // Langsung isi dan buka RT
+      }      
+      else if (selectedVal) { 
         setSelectValueCaseInsensitive("dusun", selectedVal); 
+        document.getElementById("kode_dusun").value = dusunSelect.value;
         updateRT(); 
       }
     }
   }
 
   function updateRT(selectedVal = "") {
-    const kodeKec = document.getElementById("kecamatan").value;
-    const kodeDesa = document.getElementById("desa").value;
-    const kodeDusun = document.getElementById("dusun").value;
+    const kodeKab = document.getElementById("kode_kab")?.value || userKodeKab || "";
+    const kodeKec = document.getElementById("kecamatan")?.value || userKodeKec || "";
+    const kodeDesa = document.getElementById("desa")?.value || userKodeDesa || "";
+    const kodeDusun = document.getElementById("dusun")?.value || "";
+    
     document.getElementById("kode_dusun").value = kodeDusun;
     resetDropdown("rt", "kode_rt");
-    let dusunObj = getDusunList(kodeKec, kodeDesa);
+
+    if (!kodeDusun) return;
+
+    let dusunObj = getDusunList(kodeKec, kodeDesa, kodeKab);
+    
     if (kodeDesa && kodeDusun && dusunObj && dusunObj[kodeDusun]) {
-      const rtSelect = document.getElementById("rt");
+      const rtSelect = document.getElementById("rt");      
+      
       rtSelect.disabled = false;
+      rtSelect.style.pointerEvents = "auto";
+      rtSelect.style.backgroundColor = "#ffffff";
+      rtSelect.style.cursor = "default";
+
       for (let i = 1; i <= dusunObj[kodeDusun].jumlah_rt; i++) {
         let kodeRTFormatted = i.toString().padStart(3, '0');
         rtSelect.add(new Option("RT " + kodeRTFormatted, kodeRTFormatted));
       }
+
       if (selectedVal) { 
         setSelectValueCaseInsensitive("rt", selectedVal); 
         setKodeRT(); 
       }
-    }    
-    checkAndLockKbTable();
+    }
+    
+    if (typeof checkAndLockKbTable === "function") {
+      checkAndLockKbTable();
+    }
   }
 
-  function setKodeRT() { 
-    document.getElementById("kode_rt").value = document.getElementById("rt").value;    
-    checkAndLockKbTable();
-  }
+  function setKodeRT() { document.getElementById("kode_rt").value = document.getElementById("rt").value; }
 
   function resetDropdown(selectId, inputKodeId) {
     const select = document.getElementById(selectId);
@@ -5920,51 +5938,6 @@
       Swal.fire("Gagal", "Terjadi kesalahan saat membuat dokumen PDF: " + err.message, "error");
     }
   }
-
-  function downloadSingleChartAsPNG(canvasId, title) {
-    const originalCanvas = document.getElementById(canvasId);
-    if (!originalCanvas) {
-      Swal.fire("Perhatian", "Elemen grafik tidak ditemukan!", "error");
-      return;
-    }
-    
-    if (originalCanvas.width === 0 || originalCanvas.height === 0) {
-      Swal.fire({
-        icon: "warning",
-        title: "Grafik Belum Dimuat",
-        text: "Silakan atur filter dan klik tombol 'Tampilkan Grafik' terlebih dahulu sebelum mengunduh gambar PNG!"
-      });
-      return;
-    }
-
-    try {      
-      const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = originalCanvas.width;
-      tempCanvas.height = originalCanvas.height;
-      const ctx = tempCanvas.getContext("2d");
-      
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-      
-      ctx.drawImage(originalCanvas, 0, 0);
-      
-      const dataURL = tempCanvas.toDataURL("image/png", 1.0);
-      const cleanTitle = (title || "Grafik_PUS").trim().replace(/[^a-zA-Z0-9_\-]/g, "_");
-      const tahunVal = document.getElementById("chartTahun")?.value || new Date().getFullYear();
-      const fileName = `${cleanTitle}_${tahunVal}.png`;
-
-      const link = document.createElement("a");
-      link.download = fileName;
-      link.href = dataURL;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-    } catch (err) {
-      console.error("Gagal mengunduh grafik PNG:", err);
-      Swal.fire("Gagal", "Terjadi kesalahan saat mengunduh gambar: " + err.message, "error");
-    }
-  }
   
   function highlightText(text, keyword) {
     if (!text) return "-";
@@ -7552,12 +7525,23 @@
       document.getElementById("kode_desa").value = userKodeDesa;
       desaSel.style.pointerEvents = "none";
       desaSel.style.backgroundColor = "#e9ecef";
-
+      
+      updateDusun();
+      
       dusunSel.style.pointerEvents = "auto";
       dusunSel.style.backgroundColor = "#ffffff";
       dusunSel.disabled = false;
-      rtSel.style.pointerEvents = "auto";
-      rtSel.disabled = true;
+      
+      if (dusunSel.value) {
+        rtSel.disabled = false;
+        rtSel.style.pointerEvents = "auto";
+        rtSel.style.backgroundColor = "#ffffff";
+        updateRT();
+      } else {
+        rtSel.disabled = true;
+        rtSel.style.backgroundColor = "#e9ecef";
+        rtSel.style.pointerEvents = "none";
+      }
     } else if (isKecRole()) {
       setSelectValueCaseInsensitive("provinsi", defaultProv);
       document.getElementById("kode_prov").value = defaultProv;
@@ -7597,6 +7581,7 @@
       resetDropdown("dusun", "kode_dusun");
       resetDropdown("rt", "kode_rt");
     }
+
     checkAndLockKbTable();
 
     const btnDel = document.getElementById("btnDeletePus");
