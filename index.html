@@ -2269,49 +2269,47 @@
           </div>
 
           <!-- Baris 3: Tempat Pelayanan & Kader Pendamping (Simetris 2 Kolom) -->
-          <div class="grid-2-col" style="align-items: start;">            
-            <div class="form-col-kb">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <label for="reg_faskes_tujuan" class="label-field-kb" style="margin-bottom: 0;">
-                  TEMPAT / FASILITAS PELAYANAN <span style="color:#ef4444;">*</span>
-                </label>
-              </div>
-              
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1.6fr; gap: 12px; align-items: start; margin-top: 10px;">
+
+            <!-- 1. TEMPAT / FASILITAS PELAYANAN -->
+            <div class="form-col-kb" style="margin-bottom: 0;">
+              <label for="reg_faskes_tujuan" class="label-field-kb">
+                TEMPAT / FASILITAS PELAYANAN <span style="color:#ef4444;">*</span>
+              </label>
               <input 
                 type="text" 
                 id="reg_faskes_tujuan" 
                 list="listFaskesOptions" 
                 class="input-control-kb" 
                 required 
-                placeholder="-- PILIH DARI DAFTAR ATAU KETIK LANGSUNG --"
+                placeholder="-- Pilih atau ketik faskes --"
                 oninput="onInputFaskesLayanan()"
                 style="font-weight: 600; text-transform: uppercase;"
               >
               <datalist id="listFaskesOptions"></datalist>
-
-              <!-- Baris Kode Faskes di Bawahnya -->
-              <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
-                <label style="font-size: 11px; font-weight: bold; color: #475569; white-space: nowrap;">Kode Faskes:</label>
-                <input 
-                  type="text" 
-                  id="reg_kode_faskes" 
-                  maxlength="11" 
-                  class="input-control-kb" 
-                  placeholder="7/9 digit" 
-                  oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')"
-                  style="height: 28px; font-size: 11px; font-family: monospace; font-weight: bold; text-align: center; max-width: 140px; padding: 2px 6px;"
-                >
-                <small style="color: #64748b; font-size: 10px;">*(Otomatis/Manual)*</small>
-              </div>
             </div>
 
-            <!-- KOLOM KANAN: NAMA KADER (DIBERI PENGAMAN AGAR TIDAK MELEBAR) -->
-            <div class="form-col-kb" style="align-self: start;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <label for="reg_nama_kader" class="label-field-kb" style="margin-bottom: 0;">
-                  NAMA KADER <span style="color:#ef4444;">*</span>
-                </label>
-              </div>
+            <!-- 2. KODE FASKES (DI TENGAH) -->
+            <div class="form-col-kb" style="margin-bottom: 0;">
+              <label for="reg_kode_faskes" class="label-field-kb">
+                KODE FASKES <span style="font-size: 10px; color: #64748b; font-weight: normal;">(7/9 digit)</span>
+              </label>
+              <input 
+                type="text" 
+                id="reg_kode_faskes" 
+                maxlength="11" 
+                class="input-control-kb" 
+                placeholder="Contoh: 5201054" 
+                oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')"
+                style="font-family: monospace; font-weight: bold; text-align: center;"
+              >
+            </div>
+
+            <!-- 3. NAMA KADER PENDAMPING -->
+            <div class="form-col-kb" style="margin-bottom: 0;">
+              <label for="reg_nama_kader" class="label-field-kb">
+                NAMA KADER <span style="color:#ef4444;">*</span>
+              </label>
               <input 
                 type="text" 
                 id="reg_nama_kader" 
@@ -2323,13 +2321,6 @@
               >
             </div>
           </div>
-
-          <!-- Baris 4: Catatan Tambahan (Lebar Penuh) -->
-          <div class="form-col-kb">
-            <label for="reg_catatan" class="label-field-kb" style="min-height: auto;">Catatan Tambahan:</label>
-            <input type="text" id="reg_catatan" class="input-control-kb" placeholder="Contoh: Riwayat tensi tinggi, ganti dari suntik 3 bulanan, dll." style="text-transform: none;">
-          </div>
-        </div>
 
         <!-- TOMBOL AKSI -->
         <div style="display: flex; gap: 10px;">
