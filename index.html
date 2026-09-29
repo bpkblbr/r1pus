@@ -9333,6 +9333,85 @@
     renderRegisteredFaskesTable();
   }
 
+  async function loadRegisteredFaskesList() {
+    const tbody = document.getElementById("faskesRegisteredTbody");
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:15px; color:#475569;">Memuat data tempat pelayanan (faskes)...</td></tr>`;
+    }
+
+    try {
+      let query = db.from('master_faskes').select('*').order('nama_faskes', { ascending: true });
+
+      // Batasi filter sesuai lingkup wilayah akun yang login
+      if (isDesaRole() && userKodeKab && userKodeKec && userKodeDesa) {
+        query = query.eq('kode_kab', String(userKodeKab).padStart(2, '0'))
+                     .eq('kode_kec', String(userKodeKec).padStart(2, '0'))
+                     .eq('kode_desa', String(userKodeDesa).padStart(4, '0'));
+      } else if (isKecRole() && userKodeKab && userKodeKec) {
+        query = query.eq('kode_kab', String(userKodeKab).padStart(2, '0'))
+                     .eq('kode_kec', String(userKodeKec).padStart(2, '0'));
+      } else if (userKodeKab) {
+        query = query.eq('kode_kab', String(userKodeKab).padStart(2, '0'));
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      allMasterFaskesData = data || [];
+
+      // Inisialisasi dropdown filter jika ada
+      if (typeof initFilterFaskesListDropdowns === "function") {
+        initFilterFaskesListDropdowns();
+      }
+
+      // Render data ke dalam tabel
+      if (typeof renderRegisteredFaskesTable === "function") {
+        renderRegisteredFaskesTable();
+      }
+
+    } catch (err) {
+      console.error("Gagal memuat master faskes:", err);
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="7" style="color:#ef4444; text-align:center; padding:15px;">Gagal memuat data faskes: ${err.message || 'Koneksi terputus'}</td></tr>`;
+      }
+    }
+  }
+  
+  function confirmDeleteFaskes(id, namaFaskes) {
+    Swal.fire({
+      title: 'Hapus Tempat Pelayanan?',
+      text: `Apakah Anda yakin ingin menghapus "${namaFaskes}" dari database?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const { error } = await db.from('master_faskes').delete().eq('id', id);
+          if (error) throw error;
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Terhapus!',
+            text: `Data faskes "${namaFaskes}" berhasil dihapus.`,
+            timer: 1300,
+            showConfirmButton: false
+          });
+
+          loadRegisteredFaskesList();
+          if (typeof populateDropdownFaskesLayanan === "function") {
+            populateDropdownFaskesLayanan();
+          }
+        } catch (err) {
+          Swal.fire("Gagal Menghapus", err.message, "error");
+        }
+      }
+    });
+  }
+
   function renderRegisteredFaskesTable() {
     const keyword = (document.getElementById("filterFaskesKeyword")?.value || "").toUpperCase().trim();
     const selKab = document.getElementById("filterFaskesKab")?.value || "";
