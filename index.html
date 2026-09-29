@@ -786,7 +786,8 @@
             <button type="button" class="btn-admin-sync" style="background-color: #0891b2;" onclick="openMasterWilayahModal()">📍 KELOLA WILAYAH</button>
             <button type="button" class="btn-admin-sync" style="background-color: #d97706;" onclick="openManageUsersModal()">🔑 KELOLA LOGIN</button>
             <button type="button" class="btn-admin-sync" style="background-color: #4f46e5;" onclick="openMasterFaskesModal()">🏥 KELOLA FASKES</button>
-            <button type="button" id="btnAdminTambahTahun" class="btn-admin-sync" style="background-color: #28a745;" onclick="triggerOpenNewYear()">🚀 TAMBAH TAHUN</button>
+            <button type="button" id="btnAdminTambahTahun" class="btn-admin-sync" style="background-color: #28a745;" onclick="triggerOpenNewYear()">🚀 TAMBAH TAHUN</button>            
+            <button type="button" id="btnAdminSyncRollover" class="btn-admin-sync" style="display: none; background-color: #0284c7;" onclick="triggerManualCarryForward()">⚡ SINKRON STATUS KB</button>
             <button type="button" class="btn-admin-sync" style="background-color: #10b981;" onclick="openImportExcelModal()">📥 UPLOAD EXCEL</button>
           </div>
         </div>
@@ -4033,6 +4034,7 @@
 
     const adminBox = document.getElementById("adminSyncContainer");
     const btnTambahTahun = document.getElementById("btnAdminTambahTahun");
+    const btnSyncRollover = document.getElementById("btnAdminSyncRollover");
 
     if (adminBox) {
       adminBox.style.display = (isKabRole() || isKecRole()) ? "block" : "none";
@@ -4040,15 +4042,15 @@
     if (btnTambahTahun) {
       btnTambahTahun.style.display = isKabRole() ? "inline-block" : "none";
     }
+    if (btnSyncRollover) {      
+      btnSyncRollover.style.display = isKabRole() ? "inline-block" : "none";
+    }
 
     checkPendingMutasiNotifications();
     if (typeof updateDashboardBadgeLayanan === "function") updateDashboardBadgeLayanan();
     if (typeof refreshGreeting === "function") refreshGreeting();
   }
-
-  /// =========================================================================
-  // FUNGSI INBOX & NOTIFIKASI MUTASI MASUK (BERDIRI SENDIRI DI TOP-LEVEL)
-  // =========================================================================  
+  
   let cachedPendingMutasiList = [];
   let realtimeMutasiChannel = null;
 
@@ -6620,6 +6622,60 @@
         Swal.fire('Tahun Baru Dibuat', `Sistem siap untuk input tahun ${res.value}`, 'success');
       }
     });
+  }
+
+  async function triggerManualCarryForward() {    
+    if (!isKabRole() && !isKecRole()) {
+      Swal.fire("Akses Ditolak", "Fitur ini hanya dapat dijalankan oleh Admin!", "warning");
+      return;
+    }
+
+    const confirm = await Swal.fire({
+      title: 'Sinkronkan Status KB?',
+      html: `
+        <div style="text-align: left; font-size: 13px; color: #334155; line-height: 1.5;">
+          Sistem akan memeriksa seluruh data PUS di tahun berjalan.<br><br>
+          • Kolom bulan yang <b>masih kosong</b> akan otomatis diisi status terakhir yang valid.<br>
+          • Kolom yang <b>sudah terisi tidak akan ditimpa</b>.<br>
+          • Data mutasi (Pindah/Cerai/Meninggal) dan usia 50+ tetap terlindungi.
+        </div>
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: '⚡ Ya, Sinkronkan Sekarang',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#0284c7',
+      cancelButtonColor: '#64748b'
+    });
+
+    if (confirm.isConfirmed) {
+      Swal.fire({
+        title: 'Memproses Sinkronisasi...',
+        text: 'Sedang mengisi celah bulan kosong di database...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      try {
+        const { error } = await db.rpc('carry_forward_status_kb');
+        if (error) throw error;
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Sinkronisasi Berhasil!',
+          text: 'Status KB berhasil diperbarui dari data bulan terakhir yang terisi.',
+          timer: 1800,
+          showConfirmButton: false
+        });
+        
+        if (typeof fetchRecap === 'function' && document.getElementById("recapSection")?.style.display === "block") {
+          fetchRecap();
+        }
+      } catch (err) {
+        console.error("Carry forward error:", err);
+        Swal.fire('Gagal', err.message || 'Terjadi kesalahan sistem.', 'error');
+      }
+    }
   }
 
   let allRegisteredWilayahData = [];
