@@ -2269,11 +2269,10 @@
           </div>
 
           <!-- Baris 3: Tempat Pelayanan & Kader Pendamping (Simetris 2 Kolom) -->
-          <div style="display: grid; grid-template-columns: 2fr 1fr 1.6fr; gap: 14px; align-items: start; margin-top: 12px; margin-bottom: 26px;">
-            <!-- 1. TEMPAT / FASILITAS PELAYANAN -->
-            <div class="form-col-kb" style="margin-bottom: 0; display: flex; flex-direction: column;">
-              <label for="reg_faskes_tujuan" class="label-field-kb" style="min-height: 20px; line-height: 20px; margin-bottom: 6px; display: flex; align-items: center;">
-                TEMPAT / FASILITAS PELAYANAN <span style="color:#ef4444; margin-left: 2px;">*</span>
+          <div style="display: grid; grid-template-columns: 2fr 1.1fr 1.7fr; gap: 14px; margin-top: 12px; margin-bottom: 24px;">            
+            <div style="display: flex; flex-direction: column;">
+              <label for="reg_faskes_tujuan" class="label-field-kb" style="height: 34px; margin: 0 0 6px 0; display: flex; align-items: flex-end; font-size: 11.5px; font-weight: 700; color: #334155; line-height: 1.2;">
+                <span>TEMPAT / FASILITAS PELAYANAN <span style="color:#ef4444;">*</span></span>
               </label>
               <input 
                 type="text" 
@@ -2281,34 +2280,31 @@
                 list="listFaskesOptions" 
                 class="input-control-kb" 
                 required 
-                placeholder="-- Pilih atau ketik faskes --"
+                placeholder="-- PILIH ATAU KETIK FASKES --"
                 oninput="onInputFaskesLayanan()"
-                style="height: 42px; line-height: 42px; box-sizing: border-box; font-weight: 600; text-transform: uppercase; padding: 0 12px;"
+                style="height: 42px; line-height: 40px; box-sizing: border-box; margin: 0; padding: 0 12px; font-weight: 600; text-transform: uppercase; width: 100%; border-radius: 6px;"
               >
               <datalist id="listFaskesOptions"></datalist>
             </div>
-
-            <!-- 2. KODE FASKES (DI TENGAH) -->
-            <div class="form-col-kb" style="margin-bottom: 0; display: flex; flex-direction: column;">
-              <label for="reg_kode_faskes" class="label-field-kb" style="min-height: 20px; line-height: 20px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+            
+            <div style="display: flex; flex-direction: column;">
+              <label for="reg_kode_faskes" class="label-field-kb" style="height: 34px; margin: 0 0 6px 0; display: flex; align-items: flex-end; font-size: 11.5px; font-weight: 700; color: #334155; line-height: 1.2;">
                 <span>KODE FASKES</span>
-                <span style="font-size: 10.5px; color: #64748b; font-weight: normal;">(7/9 digit)</span>
               </label>
               <input 
                 type="text" 
                 id="reg_kode_faskes" 
                 maxlength="11" 
                 class="input-control-kb" 
-                placeholder="Contoh: 5201054" 
+                placeholder="KODE (7/9 DIGIT)" 
                 oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')"
-                style="height: 42px; line-height: 42px; box-sizing: border-box; font-family: monospace; font-weight: bold; text-align: center; padding: 0 8px; letter-spacing: 0.5px;"
+                style="height: 42px; line-height: 40px; box-sizing: border-box; margin: 0; padding: 0 8px; font-family: monospace; font-weight: bold; text-align: center; width: 100%; border-radius: 6px; letter-spacing: 0.5px;"
               >
             </div>
-
-            <!-- 3. NAMA KADER PENDAMPING -->
-            <div class="form-col-kb" style="margin-bottom: 0; display: flex; flex-direction: column;">
-              <label for="reg_nama_kader" class="label-field-kb" style="min-height: 20px; line-height: 20px; margin-bottom: 6px; display: flex; align-items: center;">
-                NAMA KADER <span style="color:#ef4444; margin-left: 2px;">*</span>
+            
+            <div style="display: flex; flex-direction: column;">
+              <label for="reg_nama_kader" class="label-field-kb" style="height: 34px; margin: 0 0 6px 0; display: flex; align-items: flex-end; font-size: 11.5px; font-weight: 700; color: #334155; line-height: 1.2;">
+                <span>NAMA KADER <span style="color:#ef4444;">*</span></span>
               </label>
               <input 
                 type="text" 
@@ -2317,12 +2313,11 @@
                 required 
                 placeholder="NAMA LENGKAP KADER" 
                 oninput="this.value = this.value.toUpperCase()" 
-                style="height: 42px; line-height: 42px; box-sizing: border-box; font-weight: 600; padding: 0 12px;"
+                style="height: 42px; line-height: 40px; box-sizing: border-box; margin: 0; padding: 0 12px; font-weight: 600; width: 100%; border-radius: 6px;"
               >
             </div>
           </div>
-
-        <!-- TOMBOL AKSI -->
+          
         <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid #e2e8f0; display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">          
           <button 
             type="button" 
