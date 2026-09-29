@@ -2269,12 +2269,11 @@
           </div>
 
           <!-- Baris 3: Tempat Pelayanan & Kader Pendamping (Simetris 2 Kolom) -->
-          <div style="display: grid; grid-template-columns: 2fr 1fr 1.6fr; gap: 12px; align-items: start; margin-top: 10px;">
-
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1.6fr; gap: 14px; align-items: start; margin-top: 12px; margin-bottom: 26px;">
             <!-- 1. TEMPAT / FASILITAS PELAYANAN -->
-            <div class="form-col-kb" style="margin-bottom: 0;">
-              <label for="reg_faskes_tujuan" class="label-field-kb">
-                TEMPAT / FASILITAS PELAYANAN <span style="color:#ef4444;">*</span>
+            <div class="form-col-kb" style="margin-bottom: 0; display: flex; flex-direction: column;">
+              <label for="reg_faskes_tujuan" class="label-field-kb" style="min-height: 20px; line-height: 20px; margin-bottom: 6px; display: flex; align-items: center;">
+                TEMPAT / FASILITAS PELAYANAN <span style="color:#ef4444; margin-left: 2px;">*</span>
               </label>
               <input 
                 type="text" 
@@ -2284,15 +2283,16 @@
                 required 
                 placeholder="-- Pilih atau ketik faskes --"
                 oninput="onInputFaskesLayanan()"
-                style="font-weight: 600; text-transform: uppercase;"
+                style="height: 42px; line-height: 42px; box-sizing: border-box; font-weight: 600; text-transform: uppercase; padding: 0 12px;"
               >
               <datalist id="listFaskesOptions"></datalist>
             </div>
 
             <!-- 2. KODE FASKES (DI TENGAH) -->
-            <div class="form-col-kb" style="margin-bottom: 0;">
-              <label for="reg_kode_faskes" class="label-field-kb">
-                KODE FASKES <span style="font-size: 10px; color: #64748b; font-weight: normal;">(7/9 digit)</span>
+            <div class="form-col-kb" style="margin-bottom: 0; display: flex; flex-direction: column;">
+              <label for="reg_kode_faskes" class="label-field-kb" style="min-height: 20px; line-height: 20px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+                <span>KODE FASKES</span>
+                <span style="font-size: 10.5px; color: #64748b; font-weight: normal;">(7/9 digit)</span>
               </label>
               <input 
                 type="text" 
@@ -2301,14 +2301,14 @@
                 class="input-control-kb" 
                 placeholder="Contoh: 5201054" 
                 oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')"
-                style="font-family: monospace; font-weight: bold; text-align: center;"
+                style="height: 42px; line-height: 42px; box-sizing: border-box; font-family: monospace; font-weight: bold; text-align: center; padding: 0 8px; letter-spacing: 0.5px;"
               >
             </div>
 
             <!-- 3. NAMA KADER PENDAMPING -->
-            <div class="form-col-kb" style="margin-bottom: 0;">
-              <label for="reg_nama_kader" class="label-field-kb">
-                NAMA KADER <span style="color:#ef4444;">*</span>
+            <div class="form-col-kb" style="margin-bottom: 0; display: flex; flex-direction: column;">
+              <label for="reg_nama_kader" class="label-field-kb" style="min-height: 20px; line-height: 20px; margin-bottom: 6px; display: flex; align-items: center;">
+                NAMA KADER <span style="color:#ef4444; margin-left: 2px;">*</span>
               </label>
               <input 
                 type="text" 
@@ -2317,18 +2317,18 @@
                 required 
                 placeholder="NAMA LENGKAP KADER" 
                 oninput="this.value = this.value.toUpperCase()" 
-                style="font-weight: 600;"
+                style="height: 42px; line-height: 42px; box-sizing: border-box; font-weight: 600; padding: 0 12px;"
               >
             </div>
           </div>
 
         <!-- TOMBOL AKSI -->
-        <div style="display: flex; gap: 10px;">
-          <button type="submit" id="btnSimpanPendaftaranLayanan" class="btn-submit" style="margin-top: 0; flex: 2; background-color: #0284c7; padding: 12px; font-size: 14px;">
-            💾 DAFTARKAN CALON AKSEPTOR
-          </button>
-          <button type="button" class="btn-nav btn-secondary" style="flex: 1; justify-content: center; padding: 12px; font-size: 14px;" onclick="resetFormPendaftaranLayanan()">
+        <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn-nav btn-secondary" onclick="resetFormPendaftaranLayanan()" style="padding: 10px 18px;">
             Bersihkan
+          </button>
+          <button type="submit" id="btnSimpanLayanan" class="btn-submit" style="margin: 0; padding: 10px 24px; font-weight: bold;">
+            💾 DAFTARKAN CALON AKSEPTOR
           </button>
         </div>
       </form>
