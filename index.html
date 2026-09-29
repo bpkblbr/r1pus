@@ -2317,7 +2317,7 @@
               >
             </div>
           </div>
-          
+
         <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid #e2e8f0; display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">          
           <button 
             type="button" 
@@ -6363,55 +6363,73 @@
   // HELPER EKSPOR TABEL HTML KE EXCEL (.XLSX)
   // ==========================================
   function exportTableToExcel(tableId, defaultFilename) {
-  const table = document.getElementById(tableId);
-  if (!table) {
-    Swal.fire("Peringatan", "Tabel data tidak ditemukan!", "warning");
-    return;
-  }
-
-  // Gunakan fungsi isTableDataEmpty untuk validasi yang lebih akurat
-  if (isTableDataEmpty(tableId)) {
-    if (tableId === 'bnbaTable') {
-      Swal.fire(
-        "Data Kosong",
-        "Tabel BNBA belum memiliki data untuk diekspor, silahkan atur filter dan klik 'Tampilkan Data BNBA' terlebih dahulu!",
-        "warning"
-      );
-    } else {
-      Swal.fire(
-        "Data Kosong",
-        "Tabel Rekapitulasi belum memiliki data untuk diekspor, silahkan atur filter dan klik 'Tampilkan Rekap' terlebih dahulu!",
-        "warning"
-      );
+    const table = document.getElementById(tableId);
+    if (!table) {
+      Swal.fire("Peringatan", "Tabel data tidak ditemukan di halaman!", "warning");
+      return;
     }
-    return;
-  }
+    
+    if (typeof isTableDataEmpty === "function" && isTableDataEmpty(tableId)) {
+      if (tableId === 'bnbaTable') {
+        Swal.fire(
+          "Data Kosong",
+          "Tabel BNBA belum memiliki data untuk diekspor. Silakan atur filter dan klik 'Tampilkan Data BNBA' terlebih dahulu!",
+          "warning"
+        );
+      } else {
+        Swal.fire(
+          "Data Kosong",
+          "Tabel Rekapitulasi belum memiliki data untuk diekspor. Silakan atur filter dan klik 'Tampilkan Rekap' terlebih dahulu!",
+          "warning"
+        );
+      }
+      return;
+    }
 
-  try {
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.table_to_sheet(table, { raw: true });
-
-    // Format cell teks agar angka/kode dengan awalan nol tidak terpotong
-    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
-    for (let R = range.s.r; R <= range.e.r; ++R) {
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
-        if (ws[cellRef] && typeof ws[cellRef].v === 'string') {
-          ws[cellRef].t = 's';
+    try {      
+      const ws = XLSX.utils.table_to_sheet(table, { raw: true });
+      
+      if (ws['!ref']) {
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+          for (let C = range.s.c; C <= range.e.c; ++C) {
+            const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+            if (ws[cellRef] && typeof ws[cellRef].v === 'string') {
+              ws[cellRef].t = 's';
+            }
+          }
         }
       }
+      
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "DATA");
+      
+      const activeTahun = document.getElementById("recapTahun")?.value || 
+                          document.getElementById("bnbaTahun")?.value || 
+                          new Date().getFullYear();
+
+      let fileName = "";
+      if (typeof generateExportFileName === "function") {
+        fileName = generateExportFileName(defaultFilename, activeTahun);
+      } else {
+        fileName = `${defaultFilename}_${activeTahun}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      }
+      
+      XLSX.writeFile(wb, fileName);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Ekspor Berhasil!',
+        text: `Berkas ${fileName} berhasil diunduh.`,
+        timer: 1500,
+        showConfirmButton: false
+      });
+
+    } catch (err) {
+      console.error("Gagal ekspor Excel:", err);
+      Swal.fire("Error", "Gagal mengekspor berkas Excel: " + err.message, "error");
     }
-
-    XLSX.utils.book_append_sheet(wb, ws, "DATA");
-    
-    const fileName = `${defaultFilename}_${new Date().toISOString().split('T')[0]}.xlsx`;
-    XLSX.writeFile(wb, fileName);
-
-  } catch (err) {
-    console.error("Gagal ekspor Excel:", err);
-    Swal.fire("Error", "Gagal mengekspor file Excel: " + err.message, "error");
   }
-}
 
   function exportRecapToExcel() { exportTableToExcel('recapTable', 'REKAP_PUS'); }  
 
@@ -7996,8 +8014,9 @@
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws1, "TEMPLATE_PUS");
     XLSX.utils.book_append_sheet(wb, ws2, "PETUNJUK_PENGISIAN");
-
-    XLSX.writeFile(wb, `TEMPLATE_REGISTER_PUS_${w.kabupaten.replace(/\s+/g, '_')}.xlsx`);
+    
+    const scopeName = getUserScopeFileNameSuffix();
+    XLSX.writeFile(wb, `TEMPLATE_REGISTER_PUS_${scopeName}.xlsx`);
   }
 
   // FUNGSI DOWNLOAD DATA PUS TERISI KE TEMPLATE EXCEL DENGAN FILTER PERAN & WILAYAH
@@ -8214,9 +8233,23 @@
       XLSX.utils.book_append_sheet(wb, ws1, "TEMPLATE_PUS");
       XLSX.utils.book_append_sheet(wb, ws2, "PETUNJUK_PENGISIAN");
 
-      // Label file dinamis
-      let suffix = targetDusun ? `DSN_${targetDusun}` : (targetDesa ? `DESA_${targetDesa}` : (targetKec ? `KEC_${targetKec}` : `KAB_${targetKab}`));
-      const fileName = `DATA_PUS_${targetTahun}_${suffix}.xlsx`;
+      let scopeLabel = "";
+      if (targetDusun) {
+        const dsnObj = getDusunList(targetKec, targetDesa, targetKab);
+        const nmDsn = dsnObj && dsnObj[targetDusun] ? dsnObj[targetDusun].nama : targetDusun;
+        scopeLabel = `DSN_${nmDsn.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      } else if (targetDesa) {
+        const nmDesa = getNamaDesaByKode(targetKec, targetDesa, targetKab);
+        scopeLabel = `DESA_${nmDesa.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      } else if (targetKec) {
+        const nmKec = dataKecamatan[targetKab]?.[targetKec] || targetKec;
+        scopeLabel = `KEC_${nmKec.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      } else {
+        const nmKab = (dataKabupaten[userKodeProv || "52"] && dataKabupaten[userKodeProv || "52"][targetKab]) ? dataKabupaten[userKodeProv || "52"][targetKab] : targetKab;
+        scopeLabel = `KAB_${nmKab.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      }
+
+      const fileName = `DATA_PUS_${targetTahun}_${scopeLabel.toUpperCase()}.xlsx`;
       XLSX.writeFile(wb, fileName);
 
     } catch (err) {
@@ -8325,6 +8358,7 @@
   }
 
   // Logika upload Excel dengan pencatatan identitas NIK ganda
+  // Logika upload Excel dengan validasi wilayah (validateRowScope) & deteksi duplikasi NIK
   async function handleUploadExcelFile(event) {
     event.preventDefault();
 
@@ -8398,11 +8432,11 @@
 
         const payloadList = [];
         const seenIstriNiksInExcel = new Map();
+        const unauthorizedScopeRows = []; // Wadah baris data di luar batasan wilayah
         lastSkippedRowsData = []; // Reset penampung data duplikat
 
         const rtSequenceTracker = new Map();
-
-        // Evaluasi Nilai Fallback Dinamis di Luar Perulangan (Bebas Hardcode)
+        
         const fallbackProvKey = Object.keys(dataProvinsi)[0] || document.getElementById("kode_prov")?.value || "";
         const fallbackProvName = (fallbackProvKey && dataProvinsi[fallbackProvKey])
           ? dataProvinsi[fallbackProvKey]
@@ -8417,9 +8451,8 @@
         }
 
         dataRows.forEach((r, idx) => {
-          if (!r[15] && !r[17]) return; // Lewati jika nama suami & istri kosong
-
-          // 1. Deklarasi & Sanitasi Identitas
+          if (!r[15] && !r[17]) return;
+          
           let rawNikIstri = String(r[18] || "").replace(/[^0-9]/g, "").trim();
           let nikIstri = (rawNikIstri.length === 16) ? rawNikIstri : "9999999999999999";
 
@@ -8433,16 +8466,22 @@
           let namaIstriVal = String(r[17] || "").toUpperCase().trim();
           let namaSuamiVal = String(r[15] || "").toUpperCase().trim();
           let idPus = String(r[0] || "").trim();
-
-          // 2. Deklarasi Kode Wilayah di Awal (Dinamis & Bebas ReferenceError)
+          
           let kdProv = String(r[4] || fallbackProvKey).trim().padStart(2, '0');
           let kdKab  = String(r[6] || fallbackKabKey).trim().padStart(2, '0');
           let kdKec  = String(r[8] || userKodeKec || "").trim().padStart(2, '0');
           let kdDesa = String(r[10] || userKodeDesa || "").trim().padStart(4, '0');
           let kdDsn  = String(r[12] || "").trim().padStart(4, '0');
           let kdRt   = String(r[14] || "").trim().padStart(3, '0');
-
-          // 3. Cek Status Mutasi di Baris Excel
+          
+          if (typeof validateRowScope === "function") {
+            const scopeCheck = validateRowScope(kdKab, kdKec, kdDesa);
+            if (!scopeCheck.valid) {
+              unauthorizedScopeRows.push(`Baris ${idx + 2}: Istri ${namaIstriVal || '-'} (${scopeCheck.reason})`);
+              return;
+            }
+          }
+          
           let isMutasi = false;
           for (let col = 24; col <= 35; col++) {
             let val = String(r[col] || "").toUpperCase();
@@ -8451,10 +8490,8 @@
               break;
             }
           }
-
-          // 4. Deteksi Duplikasi NIK Istri
-          if (!idPus && !isDummy && !isMutasi && nikIstri) {
-            // A. Cek di Database Supabase
+          
+          if (!idPus && !isDummy && !isMutasi && nikIstri) {            
             if (dbActiveIstriNiks.has(nikIstri)) {
               const pemilikDb = dbActiveIstriNiks.get(nikIstri);
               lastSkippedRowsData.push({
@@ -8471,8 +8508,7 @@
               });
               return;
             }
-
-            // B. Cek Duplikat di Internal File Excel
+            
             if (seenIstriNiksInExcel.has(nikIstri)) {
               const prevRow = seenIstriNiksInExcel.get(nikIstri);
               lastSkippedRowsData.push({
@@ -8491,9 +8527,8 @@
             }
 
             seenIstriNiksInExcel.set(nikIstri, { nama: namaIstriVal, desa: r[9] || "", baris: idx + 2 });
-          }          
-
-          // 5. Pembentukan ID PUS Otomatis Jika Kosong
+          }
+          
           const rtKey = `${kdProv}${kdKab}${kdKec}${kdDesa} ${kdDsn}${kdRt}`;
           if (!idPus) {
             let curSeq = rtSequenceTracker.get(rtKey) || 0;
@@ -8501,8 +8536,7 @@
             rtSequenceTracker.set(rtKey, curSeq);
             idPus = `${rtKey}${String(curSeq).padStart(3, '0')}`;
           }
-
-          // 6. Normalisasi Nilai KB Bulanan
+          
           let cleanedKb = [];
           let mutasiSudahTerjadi = false;
           for (let col = 24; col <= 35; col++) {
@@ -8519,8 +8553,7 @@
               }
             }
           }
-
-          // 7. Perhitungan Tanggal Lahir dan Umur Presisi
+          
           let parsedTglLahir = formatExcelDate(r[19]);          
           let tahunBaris = parseInt(r[1] || targetTahun, 10);
           let umurFromExcel = hitungUmurPresisi(parsedTglLahir, tahunBaris);
@@ -8528,8 +8561,7 @@
           if (umurFromExcel === 0 && r[20]) {
             umurFromExcel = parseInt(r[20] || 0, 10);
           }
-
-          // 8. Resolusi Nama Wilayah Dinamis
+          
           const namaProv = String(r[3] || dataProvinsi[kdProv] || fallbackProvName || "PROVINSI").toUpperCase().trim();
           
           let namaKab = String(r[5] || "").toUpperCase().trim();
@@ -8539,8 +8571,7 @@
           if (!namaKab) {
             namaKab = String(fallbackKabName || "KABUPATEN/KOTA").toUpperCase().trim();
           }
-
-          // 9. Masukkan ke Payload (Aman dan Lengkap)
+          
           payloadList.push({
             id_pus: idPus,
             tahun: tahunBaris,
@@ -8580,8 +8611,23 @@
             kb_des: cleanedKb[11]
           });
         });
-
-        // Tampilkan Modal Hasil jika ada data yang dilewati
+        
+        if (unauthorizedScopeRows.length > 0) {
+          btn.disabled = false;
+          btn.innerText = "🚀 UPLOAD KE DATABASE";
+          Swal.fire({
+            icon: 'error',
+            title: 'Akses Upload Ditolak!',
+            html: `<div style="text-align: left; font-size: 12px; max-height: 220px; overflow-y: auto;">
+              Ditemukan data yang berada di luar batas wilayah kewenangan akun Anda!<br><br>
+              <b>Daftar Pelanggaran Wilayah:</b><br>
+              ${unauthorizedScopeRows.slice(0, 8).join('<br>')}
+              ${unauthorizedScopeRows.length > 8 ? `<br>...dan ${unauthorizedScopeRows.length - 8} baris lainnya.` : ''}
+            </div>`
+          });
+          return;
+        }
+        
         const buildSkippedHtml = () => {
           if (lastSkippedRowsData.length === 0) return "";
 
@@ -8603,7 +8649,7 @@
             </div>
           `;
         };
-
+        
         if (payloadList.length === 0) {
           btn.disabled = false;
           btn.innerText = "🚀 UPLOAD KE DATABASE";
@@ -8614,7 +8660,7 @@
             showConfirmButton: true
           });
           return;
-        }
+        }        
         
         const CHUNK_SIZE = 500;
         for (let i = 0; i < payloadList.length; i += CHUNK_SIZE) {
@@ -8625,7 +8671,7 @@
 
           if (upsertError) throw upsertError;
         }
-
+        
         Swal.fire({
           icon: 'success',
           title: 'Upload Berhasil!',
@@ -8644,7 +8690,7 @@
       }
     };
     reader.readAsArrayBuffer(file);
-  }  
+  }
 
   function downloadWilayahTemplate() {
     const headers = [
@@ -8687,8 +8733,10 @@
     ];
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "TEMPLATE_WILAYAH");
-    XLSX.writeFile(wb, `TEMPLATE_MASTER_WILAYAH_${w.kabupaten.replace(/\s+/g, '_')}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, "TEMPLATE_WILAYAH");   
+
+    const scopeName = getUserScopeFileNameSuffix();
+    XLSX.writeFile(wb, `TEMPLATE_MASTER_WILAYAH_${scopeName}.xlsx`);
   }
 
   async function handleUploadWilayahExcel(file) {
@@ -8715,8 +8763,8 @@
         if (!rows || rows.length <= 1) {
           Swal.fire("Kosong", "File Excel tidak memiliki data baris!", "warning");
           return;
-        }        
-        
+        }
+
         const fallbackProvKey = Object.keys(dataProvinsi)[0] || document.getElementById("kode_prov")?.value || "";
         const fallbackProvName = (fallbackProvKey && dataProvinsi[fallbackProvKey]) 
           ? dataProvinsi[fallbackProvKey] 
@@ -8731,6 +8779,7 @@
         }
 
         const payloadList = [];
+        const unauthorizedWilayahRows = []; // Wadah baris wilayah yang melanggar hak akses login
         
         for (let i = 1; i < rows.length; i++) {
           const r = rows[i];
@@ -8745,7 +8794,15 @@
           const cleanKdDesa = String(r[7] || "").trim().padStart(4, '0');
           const cleanKdDsn  = String(r[9] || "").trim().padStart(4, '0');
           
-          if (!cleanKdKec || !cleanKdDesa || !cleanKdDsn) continue;          
+          if (!cleanKdKec || !cleanKdDesa || !cleanKdDsn) continue;
+          
+          if (typeof validateRowScope === "function") {
+            const check = validateRowScope(cleanKdKab, cleanKdKec, cleanKdDesa);
+            if (!check.valid) {
+              unauthorizedWilayahRows.push(`Baris ${i + 1}: Desa ${rawDesa} - Dusun ${rawDusun} (${check.reason})`);
+              continue;
+            }
+          }
           
           const namaProv = String(r[0] || dataProvinsi[cleanKdProv] || fallbackProvName || "PROVINSI").trim().toUpperCase();          
           
@@ -8771,7 +8828,21 @@
             jumlah_rt: Math.max(1, parseInt(r[10] || 1, 10))
           });
         }
-
+        
+        if (unauthorizedWilayahRows.length > 0) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Akses Upload Ditolak!',
+            html: `<div style="text-align: left; font-size: 12px; max-height: 220px; overflow-y: auto;">
+              Anda tidak diizinkan mengubah master wilayah di luar wewenang Anda!<br><br>
+              <b>Daftar Pelanggaran:</b><br>
+              ${unauthorizedWilayahRows.slice(0, 8).join('<br>')}
+              ${unauthorizedWilayahRows.length > 8 ? `<br>...dan ${unauthorizedWilayahRows.length - 8} baris lainnya.` : ''}
+            </div>`
+          });
+          return;
+        }
+        
         if (payloadList.length === 0) {
           Swal.fire({
             icon: 'warning',
@@ -8779,14 +8850,14 @@
             text: 'Pastikan kolom Kecamatan, Desa, Dusun, dan Kodenya terisi dengan benar di file Excel.'
           });
           return;
-        }
+        }        
         
         const { error } = await db
           .from('master_wilayah')
           .upsert(payloadList, { onConflict: 'kode_kec,kode_desa,kode_dusun' });
 
         if (error) throw error;
-
+        
         Swal.fire({
           icon: 'success',
           title: 'Berhasil',
@@ -8854,8 +8925,10 @@
     ];
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "TEMPLATE_USERS");
-    XLSX.writeFile(wb, `TEMPLATE_KELOLA_LOGIN_${w.kabupaten.replace(/\s+/g, '_')}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, "TEMPLATE_USERS");    
+
+    const scopeName = getUserScopeFileNameSuffix();
+    XLSX.writeFile(wb, `TEMPLATE_KELOLA_LOGIN_${scopeName}.xlsx`);   
   }
 
   async function handleUploadUserExcel(file) {
@@ -9323,9 +9396,86 @@
     document.getElementById("btnSaveFaskes").innerText = "💾 PERBARUI FASKES";
   }
 
-  // =========================================================================
-  // DOWNLOAD TEMPLATE & UPLOAD EXCEL MASTER FASKES
-  // =========================================================================
+  function getUserScopeFileNameSuffix() {
+    let suffix = "";
+    
+    // Ambil nama wilayah dari cache master data
+    let kabName = (typeof dataKabupaten !== 'undefined' && dataKabupaten && userKodeKab) 
+      ? (dataKabupaten[userKodeProv || "52"]?.[userKodeKab] || "KAB") : "KAB";
+    let kecName = (typeof dataKecamatan !== 'undefined' && dataKecamatan && userKodeKab && userKodeKec) 
+      ? (dataKecamatan[userKodeKab]?.[userKodeKec] || "KEC") : "KEC";
+    let desaName = (typeof getNamaDesaByKode === 'function' && userKodeKec && userKodeDesa) 
+      ? getNamaDesaByKode(userKodeKec, userKodeDesa, userKodeKab) : "DESA";
+
+    if (isDesaRole()) {
+      suffix = `DESA_${desaName.replace(/\s+/g, '_')}`;
+    } else if (isKecRole()) {
+      suffix = `KEC_${kecName.replace(/\s+/g, '_')}`;
+    } else if (isKabRole()) {
+      suffix = `KAB_${kabName.replace(/\s+/g, '_')}`;
+    } else { // Admin Prov
+      suffix = `PROV_${(typeof dataProvinsi !== 'undefined' ? (dataProvinsi[userKodeProv] || "PROV") : "NTB").replace(/\s+/g, '_')}`;
+    }
+    return suffix.toUpperCase();
+  }
+
+  function generateExportFileName(prefix, tahun) {
+    const thn = tahun || new Date().getFullYear();
+    let parts = [prefix, thn];
+
+    const selKab   = document.getElementById("recapKab") || document.getElementById("bnbaKab") || document.getElementById("kabupaten");
+    const selKec   = document.getElementById("recapKec") || document.getElementById("bnbaKec") || document.getElementById("kecamatan");
+    const selDesa  = document.getElementById("recapDesa") || document.getElementById("bnbaDesa") || document.getElementById("desa");
+    const selDusun = document.getElementById("recapDusun") || document.getElementById("bnbaDusun") || document.getElementById("dusun");
+    const selRT    = document.getElementById("recapRT") || document.getElementById("bnbaRT") || document.getElementById("rt");
+
+    const namaRT    = selRT?.options[selRT.selectedIndex]?.text || "";
+    const namaDusun = selDusun?.options[selDusun.selectedIndex]?.text || "";
+    const namaDesa  = selDesa?.options[selDesa.selectedIndex]?.text || "";
+    const namaKec   = selKec?.options[selKec.selectedIndex]?.text || "";
+    const namaKab   = selKab?.options[selKab.selectedIndex]?.text || "";
+
+    if (selRT?.value && !namaRT.includes("SEMUA")) {
+      parts.push(`RT_${namaRT.replace(/[^a-zA-Z0-9]/g, '_')}`);
+    } else if (selDusun?.value && !namaDusun.includes("SEMUA")) {
+      parts.push(`DSN_${namaDusun.replace(/[^a-zA-Z0-9]/g, '_')}`);
+    } else if (selDesa?.value && !namaDesa.includes("SEMUA")) {
+      parts.push(`DESA_${namaDesa.replace(/[^a-zA-Z0-9]/g, '_')}`);
+    } else if (selKec?.value && !namaKec.includes("SEMUA")) {
+      parts.push(`KEC_${namaKec.replace(/[^a-zA-Z0-9]/g, '_')}`);
+    } else if (selKab?.value && !namaKab.includes("SEMUA")) {
+      parts.push(`KAB_${namaKab.replace(/[^a-zA-Z0-9]/g, '_')}`);
+    }
+
+    // Contoh Hasil: DATA_PUS_2026_DSN_BUN_BELENG.xlsx
+    return parts.join('_').replace(/_+/g, '_').toUpperCase() + '.xlsx';
+  }
+
+  function validateRowScope(kdKab, kdKec, kdDesa) {
+    // 1. Validasi Kabupaten
+    if ((isKabRole() || isKecRole() || isDesaRole()) && userKodeKab) {
+      if (String(kdKab).padStart(2, '0') !== String(userKodeKab).padStart(2, '0')) {
+        return { valid: false, reason: `Kabupaten tidak sesuai (${kdKab} vs ${userKodeKab})` };
+      }
+    }
+
+    // 2. Validasi Kecamatan (Admin Kec & User Desa tidak boleh upload kecamatan lain)
+    if ((isKecRole() || isDesaRole()) && userKodeKec) {
+      if (String(kdKec).padStart(2, '0') !== String(userKodeKec).padStart(2, '0')) {
+        return { valid: false, reason: `Kecamatan di luar wewenang (${kdKec} vs ${userKodeKec})` };
+      }
+    }
+
+    // 3. Validasi Desa (User Desa tidak boleh upload desa lain)
+    if (isDesaRole() && userKodeDesa) {
+      if (kdDesa && String(kdDesa).padStart(4, '0') !== String(userKodeDesa).padStart(4, '0')) {
+        return { valid: false, reason: `Desa di luar wewenang (${kdDesa} vs ${userKodeDesa})` };
+      }
+    }
+
+    return { valid: true };
+  }
+  
   function downloadFaskesTemplate() {
     const headers = [
       "Kabupaten", 
@@ -9366,8 +9516,10 @@
     ];
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "TEMPLATE_FASKES");
-    XLSX.writeFile(wb, `TEMPLATE_MASTER_FASKES_${w.kabupaten.replace(/\s+/g, '_')}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, "TEMPLATE_FASKES");    
+
+    const scopeName = getUserScopeFileNameSuffix();
+    XLSX.writeFile(wb, `TEMPLATE_MASTER_FASKES_${scopeName}.xlsx`);
   }
 
   // Upload Excel Master Faskes (Membaca 8 Kolom)
@@ -9376,13 +9528,13 @@
     const file = fileInput ? fileInput.files[0] : null;
 
     if (!file) {
-      Swal.fire("Perhatian", "Silakan pilih berkas Excel (.xlsx / .xls) faskes terlebih dahulu!", "warning");
+      Swal.fire("Perhatian", "Silakan pilih berkas Excel faskes terlebih dahulu!", "warning");
       return;
     }
 
     Swal.fire({
       title: 'Membaca Berkas...',
-      text: 'Sedang memproses baris data faskes...',
+      text: 'Sedang memvalidasi hak akses wilayah...',
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading()
     });
@@ -9402,6 +9554,7 @@
 
         const payloadList = [];
         const seenCodes = new Set();
+        const unauthorizedRows = [];
 
         for (let i = 1; i < rows.length; i++) {
           const r = rows[i];
@@ -9410,9 +9563,16 @@
 
           if (!nmFaskes || !kdFaskes) continue;
 
-          const kdKab = String(r[1] || userKodeKab || "").trim().padStart(2, '0');
-          const kdKec = String(r[3] || userKodeKec || "").trim().padStart(2, '0');
+          const kdKab  = String(r[1] || userKodeKab || "").trim().padStart(2, '0');
+          const kdKec  = String(r[3] || userKodeKec || "").trim().padStart(2, '0');
           const kdDesa = String(r[5] || "").trim().padStart(4, '0');
+
+          // CEK BATASAN WILAYAH LOGIN (SECURITY CHECK)
+          const check = validateRowScope(kdKab, kdKec, kdDesa);
+          if (!check.valid) {
+            unauthorizedRows.push(`Baris ${i + 1}: ${nmFaskes} (${check.reason})`);
+            continue;
+          }
 
           if (seenCodes.has(kdFaskes)) continue;
           seenCodes.add(kdFaskes);
@@ -9429,19 +9589,34 @@
           });
         }
 
-        if (payloadList.length === 0) {
-          Swal.fire("Data Tidak Valid", "Pastikan kolom Kode Faskes dan Nama Faskes terisi lengkap.", "warning");
+        // JIKA DITEMUKAN BARIS DI LUAR WILAYAH KEWENANGAN:
+        if (unauthorizedRows.length > 0) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Akses Ditolak!',
+            html: `<div style="text-align: left; font-size: 12px; max-height: 200px; overflow-y: auto;">
+              Anda tidak berhak mengunggah data untuk wilayah lain!<br><br>
+              <b>Daftar Pelanggaran:</b><br>
+              ${unauthorizedRows.slice(0, 10).join('<br>')}
+              ${unauthorizedRows.length > 10 ? `<br>...dan ${unauthorizedRows.length - 10} baris lainnya.` : ''}
+            </div>`
+          });
           return;
         }
 
-        // Upsert ke tabel master_faskes
+        if (payloadList.length === 0) {
+          Swal.fire("Data Tidak Valid", "Tidak ada baris data valid yang dapat disimpan.", "warning");
+          return;
+        }
+
+        // Simpan ke Supabase jika semua lolos validasi
         const { error } = await db.from('master_faskes').upsert(payloadList, { onConflict: 'kode_faskes' });
         if (error) throw error;
 
         Swal.fire({
           icon: 'success',
           title: 'Berhasil!',
-          text: `Sebanyak ${payloadList.length} data tempat pelayanan KB berhasil disinkronkan ke database.`
+          text: `Sebanyak ${payloadList.length} data faskes wilayah Anda berhasil disinkronkan.`
         });
 
         fileInput.value = "";
