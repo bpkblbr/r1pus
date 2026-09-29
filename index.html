@@ -684,6 +684,49 @@
         width: 100% !important;
       }
     }
+
+    .grid-layanan-faskes {
+      display: grid;
+      grid-template-columns: 2fr 1.1fr 1.7fr;
+      gap: 14px;
+      align-items: start;
+      margin-top: 12px;
+      margin-bottom: 24px;
+    }
+
+    .btn-layanan-actions {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid #e2e8f0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    /* Penyesuaian Mode Tablet (Layar <= 768px) */
+    @media (max-width: 768px) {
+      .grid-layanan-faskes {
+        grid-template-columns: 1.5fr 1fr 1.5fr;
+        gap: 10px;
+      }
+    }
+
+    /* Penyesuaian Mode HP / Mobile (Layar <= 640px) */
+    @media (max-width: 640px) {
+      .grid-layanan-faskes {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+        margin-bottom: 16px !important;
+      }
+      .grid-layanan-faskes .label-field-kb {
+        height: auto !important;
+        min-height: auto !important;
+      }
+      .btn-layanan-actions {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -2125,30 +2168,54 @@
 
     <!-- TAB 2: FORM DAFTARKAN CALON AKSEPTOR DARI DATABASE PUS -->
     <div id="layananTabDaftar" style="display: none;">
-      <div style="background: #f1f5f9; padding: 12px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid #0284c7;">
-        <div style="font-size: 12.5px; color: #334155; font-weight: bold; margin-bottom: 8px;">Cari Calon Akseptor dari Database</div>
+      
+      <!-- KOTAK PENCARIAN CALON AKSEPTOR -->
+      <div style="background: #f1f5f9; padding: 14px; border-radius: 8px; margin-bottom: 18px; border-left: 4px solid #0284c7;">
+        <div style="font-size: 13px; color: #1e293b; font-weight: 700; margin-bottom: 10px;">
+          🔍 Cari Calon Akseptor dari Database PUS
+        </div>
         
-        <!-- GRID FILTER WILAYAH KHUSUS TINGKAT KABUPATEN -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 10px;">
-          <select id="cariLayananKec" onchange="onCariLayananKecChangeKab()" style="padding: 8px; font-size: 12px; border-radius: 4px; border: 1px solid #cbd5e1; width: 100%;">
-            <option value="">-- PILIH KECAMATAN --</option>
-          </select>
-          <select id="cariLayananDesa" onchange="onCariLayananDesaChangeKab()" style="padding: 8px; font-size: 12px; border-radius: 4px; border: 1px solid #cbd5e1; width: 100%;">
-            <option value="">-- PILIH DESA --</option>
-          </select>
-          <select id="cariLayananDusun" style="padding: 8px; font-size: 12px; border-radius: 4px; border: 1px solid #cbd5e1; width: 100%;">
-            <option value="">-- PILIH DUSUN --</option>
-          </select>
+        <!-- Filter Wilayah Pencarian: 3 Kolom di PC/Tablet, 1 Kolom di HP -->
+        <div class="search-filter-grid" style="margin-bottom: 10px;">
+          <div>
+            <select id="cariLayananKec" onchange="onCariLayananKecChangeKab()">
+              <option value="">-- PILIH KECAMATAN --</option>
+            </select>
+          </div>
+          <div>
+            <select id="cariLayananDesa" onchange="onCariLayananDesaChangeKab()">
+              <option value="">-- PILIH DESA --</option>
+            </select>
+          </div>
+          <div>
+            <select id="cariLayananDusun">
+              <option value="">-- PILIH DUSUN --</option>
+            </select>
+          </div>
         </div>
 
-        <!-- INPUT KATA KUNCI & TOMBOL CARI -->
-        <div style="display: flex; gap: 8px;">
-          <input type="text" id="cariPusLayananInput" placeholder="KETIK NAMA ISTRI, NIK, ATAU ID PUS..." oninput="this.value = this.value.toUpperCase()" style="flex: 1; padding: 10px 12px; font-size: 13px; text-transform: uppercase; border: 1px solid #cbd5e1; border-radius: 6px;">
-          <button type="button" class="btn-action" style="padding: 8px 16px; font-size: 12px;" onclick="cariPusUntukLayanan()">🔍 Cari PUS</button>
+        <!-- Baris Input Kata Kunci & Tombol Cari -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <input 
+            type="text" 
+            id="cariPusLayananInput" 
+            placeholder="KETIK NAMA ISTRI, NIK, ATAU ID PUS..." 
+            oninput="this.value = this.value.toUpperCase()" 
+            style="flex: 1; min-width: 200px; height: 42px; padding: 0 12px; font-size: 13px; text-transform: uppercase; border: 1.5px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;"
+          >
+          <button 
+            type="button" 
+            class="btn-action" 
+            style="height: 42px; padding: 0 18px; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" 
+            onclick="cariPusUntukLayanan()"
+          >
+            🔍 Cari PUS
+          </button>
         </div>
-        <div id="hasilPencarianPusLayanan" style="max-height: 240px; overflow-y: auto; margin-top: 8px; border: 1px solid #cbd5e1; border-radius: 6px; display: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);"></div>
+        <div id="hasilPencarianPusLayanan" style="max-height: 240px; overflow-y: auto; margin-top: 8px; border: 1px solid #cbd5e1; border-radius: 6px; display: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); background: #ffffff;"></div>
       </div>
 
+      <!-- FORMULIR INPUT RENCANA TINDAKAN -->
       <form id="formPendaftaranLayanan" onsubmit="handleSimpanPendaftaranLayanan(event)">
         <input type="hidden" id="reg_id_pus" value="">
         <input type="hidden" id="reg_tahun" value="">
@@ -2173,11 +2240,11 @@
           <!-- Baris 1: Nama Istri & NIK Istri (Simetris 2 Kolom) -->
           <div class="grid-2-col">
             <div class="form-col-kb">
-              <label for="reg_nama_istri" class="label-field-kb">Nama Istri:</label>
+              <label for="reg_nama_istri" class="label-field-kb">NAMA ISTRI:</label>
               <input type="text" id="reg_nama_istri" class="input-control-kb" readonly placeholder="PILIH PUS TERLEBIH DAHULU" style="font-weight: 700; color: #0f172a;">
             </div>
             <div class="form-col-kb">
-              <label for="reg_nik_istri" class="label-field-kb">NIK Istri:</label>
+              <label for="reg_nik_istri" class="label-field-kb">NIK ISTRI:</label>
               <input type="text" id="reg_nik_istri" class="input-control-kb" readonly placeholder="-" style="font-family: monospace; font-weight: 600;">
             </div>
           </div>
@@ -2185,11 +2252,11 @@
           <!-- Baris 2: Nama Suami & Wilayah Domisili (Simetris 2 Kolom) -->
           <div class="grid-2-col" style="margin-bottom: 0;">
             <div class="form-col-kb">
-              <label for="reg_nama_suami" class="label-field-kb">Nama Suami:</label>
+              <label for="reg_nama_suami" class="label-field-kb">NAMA SUAMI:</label>
               <input type="text" id="reg_nama_suami" class="input-control-kb" readonly placeholder="-" style="font-weight: 600;">
             </div>
             <div class="form-col-kb">
-              <label for="reg_info_wilayah" class="label-field-kb">Wilayah Domisili:</label>
+              <label for="reg_info_wilayah" class="label-field-kb">WILAYAH DOMISILI:</label>
               <input type="text" id="reg_info_wilayah" class="input-control-kb" readonly placeholder="-">
             </div>
           </div>
@@ -2207,11 +2274,11 @@
             <span style="font-size: 11px; color: #ef4444; font-weight: 700;">* Wajib Diisi</span>
           </div>
 
-          <!-- Baris 1: Jenis Pelayanan, Metode, & Jenis Akseptor (Simetris 3 Kolom) -->
+          <!-- Baris 1: Jenis Pelayanan, Metode, & Jenis Akseptor (3 Kolom Sejajar) -->
           <div class="grid-3-col">
             <div class="form-col-kb">
               <label for="reg_jenis_pelayanan" class="label-field-kb">
-                Jenis Pelayanan <span style="color:#ef4444; margin-left:2px;">*</span>
+                JENIS PELAYANAN <span style="color:#ef4444; margin-left:2px;">*</span>
               </label>
               <select id="reg_jenis_pelayanan" class="input-control-kb" onchange="onJenisPelayananChange()" required style="font-weight: 700;">
                 <option value="">-- PILIH PELAYANAN --</option>
@@ -2223,7 +2290,7 @@
 
             <div class="form-col-kb">
               <label for="reg_rencana_metode" class="label-field-kb">
-                Metode Kontrasepsi <span style="color:#ef4444; margin-left:2px;">*</span>
+                METODE KONTRASEPSI <span style="color:#ef4444; margin-left:2px;">*</span>
               </label>
               <select id="reg_rencana_metode" class="input-control-kb" onchange="evaluasiOtomatisJenisAkseptor()" disabled required style="font-weight: 700; color: #0369a1;">
                 <option value=""></option>
@@ -2232,7 +2299,7 @@
 
             <div class="form-col-kb">
               <label class="label-field-kb">
-                Jenis Akseptor <span style="font-size: 10px; color: #0284c7; margin-left: 4px;">(OTOMATIS)</span>
+                JENIS AKSEPTOR <span style="font-size: 10px; color: #0284c7; margin-left: 4px;">(OTOMATIS)</span>
               </label>
               <input type="hidden" id="reg_jenis_akseptor" value="">
               <div id="badgeJenisAkseptorDisplay" class="input-control-kb" style="background: #f8fafc; font-weight: 700; color: #64748b; display: flex; align-items: center; border-style: dashed;">
@@ -2246,11 +2313,11 @@
             <small id="infoRiwayatKb" style="font-size: 11.5px; font-weight: 600; color: #0369a1; display: block; line-height: 1.4;"></small>
           </div>
 
-          <!-- Baris 2: Bulan & Tanggal Rencana (Simetris 2 Kolom) -->
+          <!-- Baris 2: Bulan & Tanggal Rencana (2 Kolom Sejajar) -->
           <div class="grid-2-col">
             <div class="form-col-kb">
               <label for="reg_bulan_rencana" class="label-field-kb">
-                Bulan Pelayanan <span style="color:#ef4444; margin-left:2px;">*</span>
+                BULAN PELAYANAN <span style="color:#ef4444; margin-left:2px;">*</span>
               </label>
               <select id="reg_bulan_rencana" class="input-control-kb" onchange="evaluasiOtomatisJenisAkseptor()" required style="font-weight: 600;">
                 <option value="1">JANUARI</option><option value="2">FEBRUARI</option><option value="3">MARET</option>
@@ -2262,17 +2329,18 @@
 
             <div class="form-col-kb">
               <label for="reg_tgl_rencana" class="label-field-kb">
-                Tanggal Rencana Tindakan <span style="color:#ef4444; margin-left:2px;">*</span>
+                TANGGAL RENCANA TINDAKAN <span style="color:#ef4444; margin-left:2px;">*</span>
               </label>
               <input type="date" id="reg_tgl_rencana" class="input-control-kb" required>
             </div>
           </div>
 
-          <!-- Baris 3: Tempat Pelayanan & Kader Pendamping (Simetris 2 Kolom) -->
-          <div style="display: grid; grid-template-columns: 2fr 1.1fr 1.7fr; gap: 14px; margin-top: 12px; margin-bottom: 24px;">            
-            <div style="display: flex; flex-direction: column;">
-              <label for="reg_faskes_tujuan" class="label-field-kb" style="height: 34px; margin: 0 0 6px 0; display: flex; align-items: flex-end; font-size: 11.5px; font-weight: 700; color: #334155; line-height: 1.2;">
-                <span>TEMPAT / FASILITAS PELAYANAN <span style="color:#ef4444;">*</span></span>
+          <!-- Baris 3: Tempat Pelayanan - Kode Faskes - Nama Kader (Menggunakan .grid-layanan-faskes) -->
+          <div class="grid-layanan-faskes">            
+            <!-- Tempat Pelayanan -->
+            <div class="form-col-kb">
+              <label for="reg_faskes_tujuan" class="label-field-kb" style="height: 32px; margin-bottom: 6px; display: flex; align-items: flex-end;">
+                TEMPAT / FASILITAS PELAYANAN <span style="color:#ef4444; margin-left:2px;">*</span>
               </label>
               <input 
                 type="text" 
@@ -2283,29 +2351,31 @@
                 placeholder="-- PILIH ATAU KETIK FASKES --"
                 onfocus="if(!this.value && typeof populateDropdownFaskesLayanan === 'function') populateDropdownFaskesLayanan();"
                 oninput="onInputFaskesLayanan()"
-                style="height: 42px; line-height: 40px; box-sizing: border-box; margin: 0; padding: 0 12px; font-weight: 600; text-transform: uppercase; width: 100%; border-radius: 6px;"
+                style="font-weight: 600; text-transform: uppercase;"
               >
               <datalist id="listFaskesOptions"></datalist>
             </div>
             
-            <div style="display: flex; flex-direction: column;">
-              <label for="reg_kode_faskes" class="label-field-kb" style="height: 34px; margin: 0 0 6px 0; display: flex; align-items: flex-end; font-size: 11.5px; font-weight: 700; color: #334155; line-height: 1.2;">
-                <span>KODE FASKES</span>
+            <!-- Kode Faskes -->
+            <div class="form-col-kb">
+              <label for="reg_kode_faskes" class="label-field-kb" style="height: 32px; margin-bottom: 6px; display: flex; align-items: flex-end;">
+                KODE FASKES
               </label>
               <input 
                 type="text" 
                 id="reg_kode_faskes" 
                 maxlength="11" 
                 class="input-control-kb" 
-                placeholder="KODE (7/9 DIGIT)" 
+                placeholder="7/9 DIGIT" 
                 oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')"
-                style="height: 42px; line-height: 40px; box-sizing: border-box; margin: 0; padding: 0 8px; font-family: monospace; font-weight: bold; text-align: center; width: 100%; border-radius: 6px; letter-spacing: 0.5px;"
+                style="font-family: monospace; font-weight: bold; text-align: center; letter-spacing: 0.5px;"
               >
             </div>
             
-            <div style="display: flex; flex-direction: column;">
-              <label for="reg_nama_kader" class="label-field-kb" style="height: 34px; margin: 0 0 6px 0; display: flex; align-items: flex-end; font-size: 11.5px; font-weight: 700; color: #334155; line-height: 1.2;">
-                <span>NAMA KADER <span style="color:#ef4444;">*</span></span>
+            <!-- Nama Kader -->
+            <div class="form-col-kb">
+              <label for="reg_nama_kader" class="label-field-kb" style="height: 32px; margin-bottom: 6px; display: flex; align-items: flex-end;">
+                NAMA KADER <span style="color:#ef4444; margin-left:2px;">*</span>
               </label>
               <input 
                 type="text" 
@@ -2314,12 +2384,27 @@
                 required 
                 placeholder="NAMA LENGKAP KADER" 
                 oninput="this.value = this.value.toUpperCase()" 
-                style="height: 42px; line-height: 40px; box-sizing: border-box; margin: 0; padding: 0 12px; font-weight: 600; width: 100%; border-radius: 6px;"
+                style="font-weight: 600;"
               >
             </div>
           </div>
 
-        <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid #e2e8f0; display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">          
+          <!-- Baris 4: Catatan Tambahan (Opsional) -->
+          <div class="form-col-kb" style="margin-bottom: 0;">
+            <label for="reg_catatan" class="label-field-kb" style="min-height: auto; margin-bottom: 4px;">
+              CATATAN TAMBAHAN (OPSIONAL):
+            </label>
+            <input 
+              type="text" 
+              id="reg_catatan" 
+              class="input-control-kb" 
+              placeholder="Contoh: Rujukan Pustu / Jadwal Sore / Kontak Khusus"
+            >
+          </div>
+        </div>
+
+        <!-- KONTROLLER TOMBOL EKSEKUSI (SIMETRIS DI PC/TABLET & OTOMATIS VERTIKAL DI HP) -->
+        <div class="btn-layanan-actions">          
           <button 
             type="button" 
             class="btn-nav btn-secondary" 
