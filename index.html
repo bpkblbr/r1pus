@@ -2334,29 +2334,45 @@
               <input type="date" id="reg_tgl_rencana" class="input-control-kb" required>
             </div>
           </div>
-
-          <!-- Baris 3: Tempat Pelayanan - Kode Faskes - Nama Kader (Menggunakan .grid-layanan-faskes) -->
+          
+          <div id="wrapperFilterFaskesWilayah" style="display: none; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 6px; padding: 12px; margin-top: 10px; margin-bottom: 12px;">
+            <div style="font-size: 11px; font-weight: 700; color: #0369a1; text-transform: uppercase; margin-bottom: 6px;">
+              📍 Filter Wilayah Faskes Pelayanan
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;">
+              <!-- Dropdown Kabupaten (Hanya muncul untuk Admin Provinsi) -->
+              <div id="colFilterFaskesKab" style="display: none;">
+                <label style="font-size: 11px; font-weight: bold; color: #475569;">KABUPATEN / KOTA:</label>
+                <select id="reg_filter_faskes_kab" class="input-control-kb" onchange="onRegFilterFaskesKabChange()" style="font-weight: 600;">
+                  <option value="">-- SEMUA KABUPATEN --</option>
+                </select>
+              </div>
+              <!-- Dropdown Kecamatan (Muncul untuk Admin Kab & Prov) -->
+              <div id="colFilterFaskesKec" style="display: none;">
+                <label style="font-size: 11px; font-weight: bold; color: #475569;">KECAMATAN:</label>
+                <select id="reg_filter_faskes_kec" class="input-control-kb" onchange="onRegFilterFaskesKecChange()" style="font-weight: 600;">
+                  <option value="">-- PILIH KECAMATAN --</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
           <div class="grid-layanan-faskes">            
-            <!-- Tempat Pelayanan -->
             <div class="form-col-kb">
               <label for="reg_faskes_tujuan" class="label-field-kb" style="height: 32px; margin-bottom: 6px; display: flex; align-items: flex-end;">
                 TEMPAT / FASILITAS PELAYANAN <span style="color:#ef4444; margin-left:2px;">*</span>
               </label>
-              <input 
-                type="text" 
+              <select 
                 id="reg_faskes_tujuan" 
-                list="listFaskesOptions" 
                 class="input-control-kb" 
                 required 
-                placeholder="-- PILIH ATAU KETIK FASKES --"
-                onfocus="if(!this.value && typeof populateDropdownFaskesLayanan === 'function') populateDropdownFaskesLayanan();"
-                oninput="onInputFaskesLayanan()"
+                onchange="onSelectFaskesLayananChange()"
                 style="font-weight: 600; text-transform: uppercase;"
               >
-              <datalist id="listFaskesOptions"></datalist>
-            </div>
+                <option value="">-- PILIH TEMPAT PELAYANAN --</option>
+              </select>
+            </div>            
             
-            <!-- Kode Faskes -->
             <div class="form-col-kb">
               <label for="reg_kode_faskes" class="label-field-kb" style="height: 32px; margin-bottom: 6px; display: flex; align-items: flex-end;">
                 KODE FASKES
@@ -2367,12 +2383,11 @@
                 maxlength="11" 
                 class="input-control-kb" 
                 placeholder="7/9 DIGIT" 
-                oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')"
-                style="font-family: monospace; font-weight: bold; text-align: center; letter-spacing: 0.5px;"
+                readonly
+                style="font-family: monospace; font-weight: bold; text-align: center; letter-spacing: 0.5px; background-color: #f1f5f9; cursor: not-allowed;"
               >
-            </div>
+            </div>            
             
-            <!-- Nama Kader -->
             <div class="form-col-kb">
               <label for="reg_nama_kader" class="label-field-kb" style="height: 32px; margin-bottom: 6px; display: flex; align-items: flex-end;">
                 NAMA KADER <span style="color:#ef4444; margin-left:2px;">*</span>
@@ -9820,49 +9835,158 @@
   // =========================================================================
   // INTEGRASI FASKES KE FORM PENDAFTARAN LAYANAN & SIMPAN DATA
   // =========================================================================
-  let mapFaskesNameToKode = {};
-
+  let masterFaskesListCache = [];
+  
   async function populateDropdownFaskesLayanan() {
-    const dataList = document.getElementById("listFaskesOptions");
-    if (!dataList) return;
+    const selFaskes = document.getElementById("reg_faskes_tujuan");
+    const kodeFaskesInput = document.getElementById("reg_kode_faskes");
+    const wrapperFilter = document.getElementById("wrapperFilterFaskesWilayah");
+    const colKab = document.getElementById("colFilterFaskesKab");
+    const colKec = document.getElementById("colFilterFaskesKec");
+    const selFilterKab = document.getElementById("reg_filter_faskes_kab");
+    const selFilterKec = document.getElementById("reg_filter_faskes_kec");
 
-    dataList.innerHTML = "";
-    mapFaskesNameToKode = {};
+    if (!selFaskes) return;
 
-    try {
-      let query = db.from('master_faskes').select('*').order('nama_faskes', { ascending: true });      
-      
+    selFaskes.innerHTML = '<option value="">-- MEMUAT TEMPAT PELAYANAN... --</option>';
+    if (kodeFaskesInput) kodeFaskesInput.value = "";
+
+    try {      
+      let query = db.from('master_faskes').select('*').order('nama_faskes', { ascending: true });
+
+      // Jika role Kabupaten, Kecamatan, atau Desa: kunci data ke kabupatennya
       if (userKodeKab) {
         query = query.eq('kode_kab', String(userKodeKab).padStart(2, '0'));
       }
 
       const { data, error } = await query;
-      if (error) {
-        console.error("Gagal mengambil data master faskes:", error);
-        return;
-      }
+      if (error) throw error;
+      masterFaskesListCache = data || [];
+      
+      const isProv = (typeof userRole !== 'undefined' && userRole.includes("PROV"));
+      const isKab = isKabRole() && !isProv;
+      const isKecAtauDesa = isKecRole() || isDesaRole();
+      
+      if (isKecAtauDesa) {
+        if (wrapperFilter) wrapperFilter.style.display = "none";
+        
+        renderOpsiFaskesByKecamatan(userKodeKec, userKodeKab);
+      } 
+      
+      else if (isKab) {
+        if (wrapperFilter) wrapperFilter.style.display = "block";
+        if (colKab) colKab.style.display = "none";
+        if (colKec) colKec.style.display = "block";
 
-      if (data && data.length > 0) {
-        data.forEach(f => {
-          const nmUpper = (f.nama_faskes || '').trim().toUpperCase();
-          const kdClean = (f.kode_faskes || '').trim().toUpperCase();
-
-          if (!nmUpper) return;
-
-          mapFaskesNameToKode[nmUpper] = kdClean;
-
-          // Buat elemen option di dalam datalist
-          const opt = document.createElement("option");
-          opt.value = nmUpper;
-          if (f.kecamatan) {
-            opt.label = `[${kdClean}] - Kec. ${f.kecamatan}`;
+        // Isi pilihan kecamatan di kabupaten tersebut
+        selFilterKec.innerHTML = '<option value="">-- SEMUA KECAMATAN --</option>';
+        if (dataKecamatan && dataKecamatan[userKodeKab]) {
+          for (let kd in dataKecamatan[userKodeKab]) {
+            selFilterKec.add(new Option(dataKecamatan[userKodeKab][kd].toUpperCase(), String(kd).padStart(2, '0')));
           }
-          dataList.appendChild(opt);
-        });
+        }
+        renderOpsiFaskesByKecamatan("", userKodeKab);
+      } 
+      
+      else {
+        if (wrapperFilter) wrapperFilter.style.display = "block";
+        if (colKab) colKab.style.display = "block";
+        if (colKec) colKec.style.display = "block";
+
+        selFilterKab.innerHTML = '<option value="">-- SEMUA KABUPATEN --</option>';
+        selFilterKec.innerHTML = '<option value="">-- SEMUA KECAMATAN --</option>';
+
+        const provKey = userKodeProv || Object.keys(dataKabupaten)[0] || "52";
+        if (dataKabupaten && dataKabupaten[provKey]) {
+          for (let kd in dataKabupaten[provKey]) {
+            selFilterKab.add(new Option(dataKabupaten[provKey][kd].toUpperCase(), String(kd).padStart(2, '0')));
+          }
+        }
+        renderOpsiFaskesByKecamatan("", "");
       }
+
     } catch (err) {
-      console.warn("Gagal memuat datalist faskes:", err);
+      console.error("Gagal memuat dropdown faskes:", err);
+      selFaskes.innerHTML = '<option value="">-- GAGAL MEMUAT DATA FASKES --</option>';
     }
+  }
+
+  function renderOpsiFaskesByKecamatan(filterKodeKec = "", filterKodeKab = "") {
+    const selFaskes = document.getElementById("reg_faskes_tujuan");
+    const kodeFaskesInput = document.getElementById("reg_kode_faskes");
+    if (!selFaskes) return;
+
+    selFaskes.innerHTML = '<option value="">-- PILIH TEMPAT PELAYANAN --</option>';
+    if (kodeFaskesInput) kodeFaskesInput.value = "";
+
+    const cleanTargetKec = filterKodeKec ? String(filterKodeKec).padStart(2, '0') : "";
+    const cleanTargetKab = filterKodeKab ? String(filterKodeKab).padStart(2, '0') : "";
+
+    const filtered = masterFaskesListCache.filter(item => {
+      if (cleanTargetKab && String(item.kode_kab || '').padStart(2, '0') !== cleanTargetKab) {
+        return false;
+      }
+      if (cleanTargetKec && String(item.kode_kec || '').padStart(2, '0') !== cleanTargetKec) {
+        return false;
+      }
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      selFaskes.innerHTML = '<option value="">-- TIDAK ADA FASKES TERDAFTAR DI WILAYAH INI --</option>';
+      return;
+    }
+
+    filtered.forEach(f => {
+      const opt = document.createElement("option");
+      opt.value = f.nama_faskes;
+      // Simpan kode faskes pada atribut data-kode
+      opt.setAttribute("data-kode", f.kode_faskes || "");
+      
+      // Jika yang login admin kab/prov dan belum filter kecamatan, beri label kecamatannya
+      if (!cleanTargetKec && f.kecamatan) {
+        opt.text = `${f.nama_faskes} (Kec. ${f.kecamatan})`;
+      } else {
+        opt.text = f.nama_faskes;
+      }
+      selFaskes.appendChild(opt);
+    });
+  }
+  
+  function onSelectFaskesLayananChange() {
+    const selFaskes = document.getElementById("reg_faskes_tujuan");
+    const kodeFaskesInput = document.getElementById("reg_kode_faskes");
+    if (!selFaskes || !kodeFaskesInput) return;
+
+    const selectedOption = selFaskes.options[selFaskes.selectedIndex];
+    const kodeFaskes = selectedOption ? selectedOption.getAttribute("data-kode") : "";
+
+    kodeFaskesInput.value = kodeFaskes || "";
+  }
+  
+  function onRegFilterFaskesKabChange() {
+    const selKab = document.getElementById("reg_filter_faskes_kab");
+    const selKec = document.getElementById("reg_filter_faskes_kec");
+    const kdKab = selKab ? selKab.value : "";
+
+    selKec.innerHTML = '<option value="">-- SEMUA KECAMATAN --</option>';
+
+    if (kdKab && dataKecamatan && dataKecamatan[kdKab]) {
+      for (let kd in dataKecamatan[kdKab]) {
+        selKec.add(new Option(dataKecamatan[kdKab][kd].toUpperCase(), String(kd).padStart(2, '0')));
+      }
+    }
+    renderOpsiFaskesByKecamatan("", kdKab);
+  }
+
+  function onRegFilterFaskesKecChange() {
+    const selKab = document.getElementById("reg_filter_faskes_kab");
+    const selKec = document.getElementById("reg_filter_faskes_kec");
+
+    const kdKab = (selKab && selKab.value) ? selKab.value : (userKodeKab || "");
+    const kdKec = selKec ? selKec.value : "";
+
+    renderOpsiFaskesByKecamatan(kdKec, kdKab);
   }
   
   function onInputFaskesLayanan() {
