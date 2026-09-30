@@ -1177,6 +1177,16 @@
             <select id="bnbaRt"><option value="">-- PILIH RT --</option></select>
           </div>
 
+          <div class="filter-grid-2col" style="margin-top: 8px;">
+            <div>
+              <select id="bnbaScopeData" onchange="fetchBnba()" style="font-weight: bold; color: #0369a1; border: 1.5px solid #0284c7;">
+                <option value="PUS_AKTIF" selected>PUS AKTIF</option>
+                <option value="MUTASI_BULAN_INI">MUTASI BULAN INI</option>
+                <option value="SEMUA">SEMUA DATA</option>
+              </select>
+            </div>
+          <div>
+
           <!-- Baris Dropdown 2 Kolom Kedua: Pencarian Lanjutan & Bulan -->
           <div class="filter-grid-2col">
             <!-- Kolom 1 Kiri Bawah: Pencarian Lanjutan -->
@@ -5190,14 +5200,15 @@
           else if (cur.reason === "TKI") grouped[key].tki++;
 
         // 5. BUKAN PUS: Mutasi atau Umur >= 50
-        } else if (res.isMutasiOr50) {
-          grouped[key].bukan_pus++;
-          if (cur.cat === "CERAI") grouped[key].bcr++;
-          else if (cur.cat === "MENINGGAL") grouped[key].mng++;
-          else if (cur.cat === "PINDAH") grouped[key].pndh++;
-          if (cur.cat === "50+" || res.umurIstri >= 50) grouped[key].usia_50++;
+        } else if (res.isMutasiOr50) {          
+          if (cur.type === "BUKAN_PUS" || cur.cat === "50+") {
+            grouped[key].bukan_pus++;
+            if (cur.cat === "CERAI") grouped[key].bcr++;
+            else if (cur.cat === "MENINGGAL") grouped[key].mng++;
+            else if (cur.cat === "PINDAH") grouped[key].pndh++;
+            if (cur.cat === "50+" || res.umurIstri >= 50) grouped[key].usia_50++;
+          }
         }
-      });
 
       // Cek jika setelah diproses grouping ternyata tidak ada data valid
       const groupKeys = Object.keys(grouped);
@@ -5281,6 +5292,10 @@
     const tahun = parseInt(document.getElementById("bnbaTahun").value, 10);
     const bulanVal = document.getElementById("bnbaBulan").value;
     const advCat = document.getElementById("bnbaFilterAdvCategory") ? document.getElementById("bnbaFilterAdvCategory").value : "";
+    
+    // Ambil nilai trigger/lingkup data (Default: "PUS_AKTIF" agar sinkron persis dengan angka Total PUS di Rekap)
+    const scopeDataEl = document.getElementById("bnbaScopeData");
+    const scopeData = scopeDataEl ? scopeDataEl.value : "PUS_AKTIF";
 
     if (!tingkat) {
       Swal.fire("Perhatian", "Silakan pilih Tingkat Wilayah terlebih dahulu!", "warning");
@@ -5371,11 +5386,12 @@
       }
     }
 
-    if (advCat && !bulanVal) {
+    // Jika memilih filter PUS AKTIF, MUTASI BULANAN, atau Pencarian Lanjutan, bulan wajib dipilih
+    if ((advCat || scopeData === "PUS_AKTIF" || scopeData === "MUTASI_BULAN_INI") && !bulanVal) {
       Swal.fire({
         icon: "warning",
         title: "Bulan Wajib Dipilih",
-        text: "Jika menggunakan fitur Pencarian Lanjutan, Anda wajib memilih BULAN terlebih dahulu!"
+        text: "Silakan pilih BULAN terlebih dahulu untuk menampilkan data PUS Aktif atau Mutasi!"
       });
       return;
     }
@@ -5418,78 +5434,16 @@
     tbody.innerHTML = "<tr><td colspan='29' style='text-align:center; padding: 20px;'>Memuat seluruh data BNBA...</td></tr>";
 
     let allData = [];
-    let from = 0;
-    const step = 1000;
-    let hasMore = true;
-
-    // Bersihkan nilai filter menjadi format standar (angka dan string tanpa spasi)
     const cleanKecFilter = filterKec ? String(filterKec).trim().replace(/\D/g, "") : "";
     const cleanDesaFilter = filterDesa ? String(filterDesa).trim().replace(/\D/g, "") : "";
     const cleanDusunFilter = (filterDusun && filterDusun !== "0000") ? String(filterDusun).trim().replace(/\D/g, "") : "";
     const cleanRtFilter = (filterRt && filterRt !== "000") ? String(filterRt).trim().replace(/\D/g, "") : "";
 
     try {
-      while (hasMore) {
-        let query = db.from('data_pus').select('*').eq('tahun', tahun);
+      // Gunakan fungsi chunked fetch bawaan yang sudah stabil
+      allData = await fetchAllPusDataChunked(tahun, filterKec, filterDesa, filterDusun);
 
-        // Jika login sebagai Admin Kab atau peran dengan batasan kabupaten
-        if (userKodeKab) {
-          query = query.eq('kode_kab', String(userKodeKab).trim().padStart(2, '0'));
-        }
-
-        // Filter Query Database dengan toleransi format padding
-        if (cleanKecFilter) {
-          const kecPad = cleanKecFilter.padStart(2, '0');
-          const kecNum = parseInt(cleanKecFilter, 10);
-          query = query.or(`kode_kec.eq.${kecPad},kode_kec.eq.${kecNum}`);
-        }
-        if (cleanDesaFilter) {
-          const desPad = cleanDesaFilter.padStart(4, '0');
-          const desNum = parseInt(cleanDesaFilter, 10);
-          query = query.or(`kode_desa.eq.${desPad},kode_desa.eq.${desNum}`);
-        }
-        if (cleanDusunFilter) {
-          const dsnPad = cleanDusunFilter.padStart(4, '0');
-          query = query.eq('kode_dusun', dsnPad);
-        }
-        if (cleanRtFilter) {
-          const rtPad = cleanRtFilter.padStart(3, '0');
-          query = query.eq('kode_rt', rtPad);
-        }
-
-        const { data: chunk, error } = await query.order('id_pus', { ascending: true }).range(from, from + step - 1);
-        if (error) throw error;
-
-        if (chunk && chunk.length > 0) {
-          allData = allData.concat(chunk);
-          from += step;
-          if (chunk.length < step) hasMore = false;
-        } else {
-          hasMore = false;
-        }
-      }
-      
-      if (cleanKecFilter) {
-        allData = allData.filter(r => {
-          const rKec = String(r.kode_kec || "").trim().replace(/\D/g, "");
-          return rKec !== "" && parseInt(rKec, 10) === parseInt(cleanKecFilter, 10);
-        });
-      }
-
-      if (cleanDesaFilter) {
-        allData = allData.filter(r => {
-          const rDesa = String(r.kode_desa || "").trim().replace(/\D/g, "");
-          return rDesa !== "" && parseInt(rDesa, 10) === parseInt(cleanDesaFilter, 10);
-        });
-      }
-
-      if (cleanDusunFilter) {
-        allData = allData.filter(r => {
-          const rDsn = String(r.kode_dusun || "").trim().padStart(4, '0');
-          return rDsn === cleanDusunFilter.padStart(4, '0');
-        });
-      }
-
+      // Filter presisi level RT (jika dipilih)
       if (cleanRtFilter) {
         allData = allData.filter(r => {
           const rRt = String(r.kode_rt || "").trim().replace(/\D/g, "");
@@ -5497,14 +5451,7 @@
         });
       }
 
-      if (isDesaRole() && userAllowedDusun && userAllowedDusun.length > 0 && !cleanDusunFilter) {
-        allData = allData.filter(r => {
-          const rDsn = String(r.kode_dusun || "").trim().padStart(4, '0');
-          return userAllowedDusun.includes(rDsn);
-        });
-      }
-
-      // 1. SANITASI MUTASI & USIA 50+ (Hanya muncul sekali, setelahnya kosong)
+      // Sanitasi Mutasi & Usia 50+ (Hanya tercatat pada bulan kejadian, setelahnya dikosongkan)
       const mKeysAll = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"];
       allData.forEach(r => {
         let lockStartingIndex = 13;
@@ -5538,20 +5485,46 @@
         });
       });
 
-            // 2. FILTER PENCARIAN LANJUTAN (MULTI-SELECT CHECKBOX)
-      if (advCat) {
-        const mKeys = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"];
-        const targetBulan = bulanVal ? parseInt(bulanVal, 10) : 1;
-        const selectedCbs = Array.from(document.querySelectorAll('input[name="bnba_adv_cb"]:checked')).map(cb => cb.value);
+      // =========================================================================
+      // FILTER CORE: SINKRONISASI PUS AKTIF, MUTASI BULAN INI, & PENCARIAN LANJUTAN
+      // =========================================================================
+      const targetBulan = targetBulanIdx || 1;
+      const selectedCbs = Array.from(document.querySelectorAll('input[name="bnba_adv_cb"]:checked')).map(cb => cb.value);
+      const hasSpecificFilter = selectedCbs.length > 0;
 
-        allData = allData.filter(r => {
-          const res = hitungStatusIndikator(r, targetBulan, mKeys);
-          const cur = res.cur;
-          const hasSpecificFilter = selectedCbs.length > 0;
+      allData = allData.filter(r => {
+        // Evaluasi indikator persis seperti di fetchRecap()
+        const res = hitungStatusIndikator(r, targetBulan, mKeysAll);
+        const cur = res.cur;
 
-          // ================= KHUSUS MUTASI =================
+        // 1. FILTER LINGKUP DATA (TRIGGER UTAMA)
+        if (scopeData === "PUS_AKTIF") {
+          // Hanya yang terhitung di kolom TOTAL PUS Rekapitulasi (Aktif KB atau Bukan Peserta, bukan mutasi/50+)
+          if (!res.isPusAktif || res.isMutasiOr50) return false;
+        } else if (scopeData === "MUTASI_BULAN_INI") {
+          // Hanya pasangan yang mengalami mutasi tepat di bulan tersebut
+          let isMutasiBulanIni = false;
+          if (cur.type === "BUKAN_PUS") {
+            isMutasiBulanIni = true;
+          } else if (cur.cat === "50+" || (res.umurIstri >= 50 && r.tgl_lahir_istri)) {
+            const dob = new Date(r.tgl_lahir_istri);
+            if (!isNaN(dob.getTime())) {
+              const birthMonth = dob.getMonth() + 1;
+              const yearTurning50 = dob.getFullYear() + 50;
+              // Mutasi 50+ hanya dihitung pada bulan ulang tahun ke-50 di tahun tersebut
+              if (tahun === yearTurning50 && birthMonth === targetBulan) {
+                isMutasiBulanIni = true;
+              }
+            }
+          }
+          if (!isMutasiBulanIni) return false;
+        }
+        // Jika scopeData === "SEMUA", tidak ada eliminasi (semua 91 data tetap tampil)
+
+        // 2. FILTER PENCARIAN LANJUTAN (JIKA AKTIF)
+        if (advCat) {
+          // Kategori Mutasi
           if (advCat === "MUTASI") {
-            // Mutasi hanya mencari yang statusnya BUKAN PUS akibat mutasi perdata
             if (cur.type !== "BUKAN_PUS") return false;
             if (!hasSpecificFilter) return true;
             let catMutasi = "";
@@ -5561,13 +5534,9 @@
             return selectedCbs.includes(catMutasi);
           }
 
-          // ================= SEMUA KATEGORI LAIN =================
-          // SYARAT MUTLAK: Harus PUS Aktif pada bulan yang dipilih (bukan Mutasi & bukan Usia 50+)
-          if (!res.isPusAktif || res.isMutasiOr50) {
-            return false;
-          }
+          // Untuk kategori lainnya, wajib merupakan PUS Aktif di bulan tersebut
+          if (!res.isPusAktif || res.isMutasiOr50) return false;
 
-          // 1. KATEGORI JKN (Sekarang hanya untuk yang PUS Aktif)
           if (advCat === "JKN") {
             const rawJkn = String(r.peserta_jkn || "").toUpperCase();
             let mappedJkn = "TIDAK MEMILIKI";
@@ -5582,57 +5551,52 @@
             return selectedCbs.includes(mappedJkn);
           }
 
-          // 2. KATEGORI KESERTAAN KB
           if (advCat === "KESERTAAN_KB") {
             let statusUser = (cur.type === "PESERTA_KB") ? "BER_KB" : ((cur.type === "BUKAN_PESERTA") ? "TIDAK_BER_KB" : "");
             if (!hasSpecificFilter) return true;
             return selectedCbs.includes(statusUser);
           }
 
-          // 3. KATEGORI METODE KONTRASEPSI
           if (advCat === "METODE_KONTRASEPSI") {
             if (cur.type !== "PESERTA_KB") return false;
             if (!hasSpecificFilter) return true;
             return selectedCbs.includes(cur.method);
           }
 
-          // 4. KATEGORI AKSEPTOR KB BARU
           if (advCat === "AKSEPTOR_KB_BARU") {
             if (!res.isKbBaru) return false;
             if (!hasSpecificFilter) return true;
             return selectedCbs.includes(cur.method);
           }
 
-          // 5. KATEGORI ALASAN TIDAK KB
           if (advCat === "ALASAN_TIDAK_KB") {
             if (cur.type !== "BUKAN_PESERTA") return false;
             if (!hasSpecificFilter) return true;
             return selectedCbs.includes(cur.reason);
           }
 
-          // 6. KATEGORI HAMIL, HAMIL BARU, PUS BARU
           if (advCat === "HAMIL") return cur.type === "BUKAN_PESERTA" && cur.reason === "HAMIL";
           if (advCat === "HAMIL_BARU") return res.isHamilBaru;
           if (advCat === "PUS_BARU") return res.isPusBaru;
+        }
 
-          return true;
-        });
-      }
+        return true;
+      });
 
       if (allData.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='29' style='text-align:center; color:#dc2626; font-weight:bold; padding: 30px;'>Tidak ada data BNBA yang sesuai kriteria pencarian dan filter lanjutan.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='29' style='text-align:center; color:#dc2626; font-weight:bold; padding: 30px;'>Tidak ada data BNBA yang sesuai dengan filter cakupan atau kriteria pencarian.</td></tr>";
         return;
       }
 
-      const mKeys = ["kb_jan", "kb_feb", "kb_mar", "kb_apr", "kb_mei", "kb_jun", "kb_jul", "kb_agu", "kb_sep", "kb_okt", "kb_nov", "kb_des"];
+      // RENDER BARIS TABEL BNBA
       let htmlRows = "";
       allData.forEach((r, idx) => {
         let kbRowTd = "";
         if (targetBulanIdx) {
-          const valBln = r[mKeys[targetBulanIdx - 1]] || '-';
+          const valBln = r[mKeysAll[targetBulanIdx - 1]] || '-';
           kbRowTd = `<td style="text-align:center; font-weight:bold; color:#0284c7;">${valBln}</td>`;
         } else {
-          kbRowTd = mKeys.map(k => `<td style="text-align:center;">${r[k] || '-'}</td>`).join("");
+          kbRowTd = mKeysAll.map(k => `<td style="text-align:center;">${r[k] || '-'}</td>`).join("");
         }
 
         const nikSuamiTd = !hideNik ? `<td style="font-family: monospace;">${r.nik_suami || '-'}</td>` : ``;
