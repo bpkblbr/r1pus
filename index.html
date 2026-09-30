@@ -4947,18 +4947,54 @@
   // Helper evaluasi komprehensif status PUS, PUS Baru, Hamil Baru, dan Akseptor KB Baru
   function hitungStatusIndikator(r, bulan, mKeys) {
     const monthKey = mKeys[bulan - 1];
-    const cur = evaluateKbStatus(r[monthKey]);
+    let cur = evaluateKbStatus(r[monthKey]);
     const prev = bulan > 1 ? evaluateKbStatus(r[mKeys[bulan - 2]]) : null;
     const umurIstri = parseInt(r.umur_istri || 0, 10);
 
-    // 1. EVALUASI TOTAL PUS & BUKAN PUS
-    const isMutasiOr50 = (cur.type === "BUKAN_PUS" || umurIstri >= 50);
+    // 1. CEK APAKAH SUDAH TERJADI MUTASI DI BULAN-BULAN SEBELUMNYA (BULAN 1 S.D BULAN-1)
+    let pernahMutasiSebelumnya = false;
+    let jenisMutasiSebelumnya = "";
+    for (let i = 0; i < bulan - 1; i++) {
+      const stPrev = evaluateKbStatus(r[mKeys[i]]);
+      if (stPrev.type === "BUKAN_PUS") {
+        pernahMutasiSebelumnya = true;
+        jenisMutasiSebelumnya = stPrev.cat;
+        break;
+      }
+    }
+
+    // 2. CEK USIA 50 TAHUN
+    let sudah50Tahun = false;
+    if (r.tgl_lahir_istri) {
+      const dob = new Date(r.tgl_lahir_istri);
+      if (!isNaN(dob.getTime())) {
+        const thnInput = parseInt(r.tahun || document.getElementById("recapTahun")?.value || new Date().getFullYear(), 10);
+        const birthYear = dob.getFullYear();
+        const birthMonth = dob.getMonth() + 1;
+        const yearTurning50 = birthYear + 50;
+
+        if (thnInput > yearTurning50) {
+          sudah50Tahun = true;
+        } else if (thnInput === yearTurning50 && bulan >= birthMonth) {
+          sudah50Tahun = true;
+        }
+      }
+    } else if (umurIstri >= 50) {
+      sudah50Tahun = true;
+    }
+
+    // JIKA DI BULAN INI KOSONG TAPI PERNAH MUTASI DI BULAN LALU, JANGAN ANGGAP SEBAGAI PUS
+    const isMutasiBulanIni = (cur.type === "BUKAN_PUS");
+    const isMutasiOr50 = isMutasiBulanIni || pernahMutasiSebelumnya || sudah50Tahun;
+
+    // SYARAT PUS AKTIF:
+    // Bukan mutasi (baik bulan ini maupun bulan lalu), belum 50 tahun, dan status bulan ini PESERTA_KB / BUKAN_PESERTA
     const isPusAktif = !isMutasiOr50 && (cur.type === "PESERTA_KB" || cur.type === "BUKAN_PESERTA");
 
-    // 2. EVALUASI RIWAYAT BULAN SEBELUMNYA
+    // 3. EVALUASI RIWAYAT BULAN SEBELUMNYA
     let allPrevEmpty = true;
     let everKbBefore = false;
-    let consecutiveNonKbCount = 0; // Menghitung putus pakai mundur dari bulan lalu
+    let consecutiveNonKbCount = 0;
 
     for (let i = 0; i < bulan - 1; i++) {
       const st = evaluateKbStatus(r[mKeys[i]]);
@@ -4970,7 +5006,6 @@
       }
     }
 
-    // Hitung berapa bulan berturut-turut tidak ber-KB tepat sebelum bulan ini
     if (bulan > 1) {
       for (let i = bulan - 2; i >= 0; i--) {
         const st = evaluateKbStatus(r[mKeys[i]]);
@@ -4982,49 +5017,41 @@
       }
     }
 
-    // 3. EVALUASI PUS BARU
+    // 4. EVALUASI PUS BARU
     let isPusBaru = false;
     const isBukanPindah = (r.is_pindah_dalam_kab !== true && r.is_pindah_dalam_kab !== "true" && !r.id_mutasi_tiket);
     if (!isMutasiOr50 && isBukanPindah && isPusAktif) {
-      if (bulan === 1) {
-        isPusBaru = true;
-      } else if (allPrevEmpty) {
+      if (bulan === 1 || allPrevEmpty) {
         isPusBaru = true;
       }
     }
 
-    // 4. EVALUASI HAMIL BARU
+    // 5. EVALUASI HAMIL BARU
     let isHamilBaru = false;
     if (cur.type === "BUKAN_PESERTA" && cur.reason === "HAMIL") {
-      if (bulan === 1) {
-        isHamilBaru = true;
-      } else if (prev && prev.reason !== "HAMIL") {
+      if (bulan === 1 || (prev && prev.reason !== "HAMIL")) {
         isHamilBaru = true;
       }
     }
 
-    // 5. EVALUASI AKSEPTOR KB BARU & GANTI CARA
+    // 6. EVALUASI AKSEPTOR KB BARU & GANTI CARA
     let isKbBaru = false;
-    let kbBaruSub = ""; // 'KBPP' | 'PASCA_DO' | 'MURNI'
+    let kbBaruSub = "";
     let isGantiCara = false;
 
-    if (cur.type === "PESERTA_KB") {
+    if (cur.type === "PESERTA_KB" && !isMutasiOr50) {
       if (bulan > 1) {
         if (prev && prev.type === "PESERTA_KB") {
-          // Bukan KB baru, cek apakah ganti metode
           if (prev.method && prev.method !== cur.method) {
             isGantiCara = true;
           }
         } else if (prev && prev.reason === "HAMIL") {
-          // KBPP: Bulan lalu berstatus HAMIL
           isKbBaru = true;
           kbBaruSub = "KBPP";
         } else if (everKbBefore && consecutiveNonKbCount >= 3) {
-          // Pasca DO: Pernah ber-KB dan putus pakai minimal 3 bulan berturut-turut
           isKbBaru = true;
           kbBaruSub = "PASCA_DO";
         } else if (!everKbBefore) {
-          // Baru Murni: Belum pernah tercatat ber-KB sebelumnya
           isKbBaru = true;
           kbBaruSub = "MURNI";
         }
@@ -5037,6 +5064,9 @@
       umurIstri,
       isPusAktif,
       isMutasiOr50,
+      isMutasiBulanIni,
+      pernahMutasiSebelumnya,
+      sudah50Tahun,
       isPusBaru,
       isHamilBaru,
       isKbBaru,
@@ -5493,25 +5523,21 @@
       const hasSpecificFilter = selectedCbs.length > 0;
 
       allData = allData.filter(r => {
-        // Evaluasi indikator persis seperti di fetchRecap()
         const res = hitungStatusIndikator(r, targetBulan, mKeysAll);
         const cur = res.cur;
 
         // 1. FILTER LINGKUP DATA (TRIGGER UTAMA)
         if (scopeData === "PUS_AKTIF") {
-          // Hanya yang terhitung di kolom TOTAL PUS Rekapitulasi (Aktif KB atau Bukan Peserta, bukan mutasi/50+)
-          if (!res.isPusAktif || res.isMutasiOr50) return false;
+          // Harus PUS Aktif (Sama persis dengan syarat masuk kolom TOTAL PUS Rekap)
+          if (!res.isPusAktif) return false;
         } else if (scopeData === "MUTASI_BULAN_INI") {
-          // Hanya pasangan yang mengalami mutasi tepat di bulan tersebut
-          let isMutasiBulanIni = false;
-          if (cur.type === "BUKAN_PUS") {
-            isMutasiBulanIni = true;
-          } else if (cur.cat === "50+" || (res.umurIstri >= 50 && r.tgl_lahir_istri)) {
+          // Hanya mutasi yang terjadi di bulan tersebut
+          let isMutasiBulanIni = res.isMutasiBulanIni;
+          if (r.tgl_lahir_istri) {
             const dob = new Date(r.tgl_lahir_istri);
             if (!isNaN(dob.getTime())) {
               const birthMonth = dob.getMonth() + 1;
               const yearTurning50 = dob.getFullYear() + 50;
-              // Mutasi 50+ hanya dihitung pada bulan ulang tahun ke-50 di tahun tersebut
               if (tahun === yearTurning50 && birthMonth === targetBulan) {
                 isMutasiBulanIni = true;
               }
@@ -5519,13 +5545,11 @@
           }
           if (!isMutasiBulanIni) return false;
         }
-        // Jika scopeData === "SEMUA", tidak ada eliminasi (semua 91 data tetap tampil)
 
-        // 2. FILTER PENCARIAN LANJUTAN (JIKA AKTIF)
+        // 2. FILTER PENCARIAN LANJUTAN (JIKA ADA)
         if (advCat) {
-          // Kategori Mutasi
           if (advCat === "MUTASI") {
-            if (cur.type !== "BUKAN_PUS") return false;
+            if (!res.isMutasiBulanIni) return false;
             if (!hasSpecificFilter) return true;
             let catMutasi = "";
             if (cur.cat === "CERAI") catMutasi = "BERCERAI";
@@ -5534,19 +5558,14 @@
             return selectedCbs.includes(catMutasi);
           }
 
-          // Untuk kategori lainnya, wajib merupakan PUS Aktif di bulan tersebut
-          if (!res.isPusAktif || res.isMutasiOr50) return false;
+          if (!res.isPusAktif) return false;
 
           if (advCat === "JKN") {
             const rawJkn = String(r.peserta_jkn || "").toUpperCase();
             let mappedJkn = "TIDAK MEMILIKI";
-            if (rawJkn.includes("BUKAN PBI") || rawJkn.includes("NON PBI") || rawJkn.includes("NON-PBI")) {
-              mappedJkn = "BUKAN PBI";
-            } else if (rawJkn.includes("PBI")) {
-              mappedJkn = "PBI";
-            } else if (rawJkn.includes("SWASTA")) {
-              mappedJkn = "SWASTA";
-            }
+            if (rawJkn.includes("BUKAN PBI") || rawJkn.includes("NON PBI")) mappedJkn = "BUKAN PBI";
+            else if (rawJkn.includes("PBI")) mappedJkn = "PBI";
+            else if (rawJkn.includes("SWASTA")) mappedJkn = "SWASTA";
             if (!hasSpecificFilter) return true;
             return selectedCbs.includes(mappedJkn);
           }
