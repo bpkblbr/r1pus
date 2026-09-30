@@ -6929,7 +6929,7 @@
           // Jika BUKAN kasus mutasi yang sah (misal: aktif di 2 tempat sekaligus), masukkan ke daftar pelanggaran
           if (!isSah && barisAktif.length > 1) {
             records.forEach(item => {
-              let labelAudit = "GANDA AKTIF (Pelanggaran)";
+              let labelAudit = "GANDA AKTIF";
               if (item.pernah_pindah) labelAudit = "Riwayat Pindah Asal";
               else if (item.pernah_cerai) labelAudit = "Pasangan Cerai";
               else if (item.pernah_meninggal) labelAudit = "Pasangan Meninggal";
