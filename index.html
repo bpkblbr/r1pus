@@ -6808,8 +6808,8 @@
     const tahunAudit = parseInt(tahunPilihan, 10);
 
     Swal.fire({
-      title: 'Memeriksa Seluruh Database...',
-      text: `Menarik data Kabupaten tahun ${tahunAudit}...`,
+      title: 'Memeriksa Database...',
+      text: `Menganalisis status riwayat mutasi & pernikahan tahun ${tahunAudit}...`,
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading()
     });
@@ -6820,7 +6820,7 @@
       const step = 1000;
       let hasMore = true;
 
-      // Tarik seluruh data PUS Kabupaten bersangkutan secara chunked
+      // Tarik seluruh data PUS Kabupaten secara chunked
       while (hasMore) {
         let query = db.from('data_pus')
           .select('id_pus, tahun, nik_istri, nama_istri, nama_suami, nik_suami, kecamatan_nama, desa_nama, dusun_nama, kode_rt, kb_jan, kb_feb, kb_mar, kb_apr, kb_mei, kb_jun, kb_jul, kb_agu, kb_sep, kb_okt, kb_nov, kb_des')
@@ -6853,24 +6853,28 @@
       const mKeysDesc = ["kb_des", "kb_nov", "kb_okt", "kb_sep", "kb_agu", "kb_jul", "kb_jun", "kb_mei", "kb_apr", "kb_mar", "kb_feb", "kb_jan"];
       const nikMap = new Map();
 
+      // 1. Identifikasi Riwayat Status Setiap Baris
       allRows.forEach(r => {
         const nik = String(r.nik_istri || "").trim();
-        // Lewati jika NIK dummy / kosong
         if (!nik || nik === "9999999999999999" || nik.length !== 16) return;
 
         let lastStatus = "-";
+        let pernahPindah = false;
+        let pernahCerai = false;
+        let pernahMeninggal = false;
+
+        // Periksa seluruh bulan untuk mendeteksi jejak mutasi resmi
         for (let mk of mKeysDesc) {
           let val = String(r[mk] || "").trim().toUpperCase();
           if (val && val !== "--KOSONG--" && val !== "-" && val !== "NULL") {
-            lastStatus = val;
-            break;
+            if (lastStatus === "-") lastStatus = val;
+            if (val.includes("PINDAH")) pernahPindah = true;
+            if (val.includes("CERAI")) pernahCerai = true;
+            if (val.includes("MENINGGAL")) pernahMeninggal = true;
           }
         }
 
-        // Cek apakah data ini berstatus sah mutasi
-        const isMutasiSah = lastStatus.includes("CERAI") || 
-                            lastStatus.includes("MENINGGAL") || 
-                            lastStatus.includes("PINDAH");
+        const isMutasiResmi = pernahPindah || pernahCerai || pernahMeninggal;
 
         if (!nikMap.has(nik)) {
           nikMap.set(nik, []);
@@ -6881,31 +6885,58 @@
           tahun: r.tahun,
           nik_istri: nik,
           nama_istri: r.nama_istri || "-",
-          nama_suami: r.nama_suami || "-",
-          nik_suami: r.nik_suami || "-",
+          nama_suami: String(r.nama_suami || "-").trim().toUpperCase(),
+          nik_suami: String(r.nik_suami || "-").trim(),
           kecamatan: r.kecamatan_nama || "-",
           desa: r.desa_nama || "-",
           dusun: r.dusun_nama || "-",
           rt: r.kode_rt || "-",
           status_terakhir: lastStatus,
-          is_mutasi: isMutasiSah
+          pernah_pindah: pernahPindah,
+          pernah_cerai: pernahCerai,
+          pernah_meninggal: pernahMeninggal,
+          is_mutasi_resmi: isMutasiResmi
         });
       });
 
-      // Saring NIK yang muncul lebih dari 1 kali yang melanggar (memiliki > 1 status aktif)
+      // 2. Evaluasi NIK Ganda (Kecualikan Pindah & Menikah Ulang setelah Cerai/Meninggal)
       const listPelanggaran = [];
 
       nikMap.forEach((records, nik) => {
         if (records.length > 1) {
-          const aktifCount = records.filter(item => !item.is_mutasi).length;
-          // Jika ada lebih dari 1 baris sama-sama aktif, berarti NIK ganda ilegal!
-          if (aktifCount > 1) {
+          // Pisahkan antara baris mutasi dan baris aktif
+          const barisAktif = records.filter(item => !item.is_mutasi_resmi);
+          const barisPindah = records.filter(item => item.pernah_pindah);
+          const barisCeraiMeninggal = records.filter(item => item.pernah_cerai || item.pernah_meninggal);
+
+          let isSah = false;
+
+          // Kasus 1: Pindah Domisili (Ada baris asal yang berstatus PINDAH, dan 1 baris aktif di tujuan)
+          if (barisPindah.length >= 1 && barisAktif.length === 1) {
+            isSah = true;
+          }
+
+          // Kasus 2: Menikah Lagi (Ada baris lama Cerai/Meninggal, dan 1 baris baru dengan suami berbeda)
+          if (barisCeraiMeninggal.length >= 1 && barisAktif.length === 1) {
+            const suamiLama = barisCeraiMeninggal[0].nama_suami;
+            const suamiBaru = barisAktif[0].nama_suami;
+            // Jika nama/nik suami berbeda, maka pernikahan baru sah
+            if (suamiLama !== suamiBaru) {
+              isSah = true;
+            }
+          }
+
+          // Jika BUKAN kasus mutasi yang sah (misal: aktif di 2 tempat sekaligus), masukkan ke daftar pelanggaran
+          if (!isSah && barisAktif.length > 1) {
             records.forEach(item => {
+              let labelAudit = "GANDA AKTIF (Pelanggaran)";
+              if (item.pernah_pindah) labelAudit = "Riwayat Pindah Asal";
+              else if (item.pernah_cerai) labelAudit = "Pasangan Cerai";
+              else if (item.pernah_meninggal) labelAudit = "Pasangan Meninggal";
+
               listPelanggaran.push({
                 ...item,
-                keterangan_audit: item.is_mutasi 
-                  ? "Riwayat Mutasi (Sah)" 
-                  : "GANDA AKTIF (Pelanggaran)"
+                keterangan_audit: labelAudit
               });
             });
           }
@@ -6918,27 +6949,27 @@
         Swal.fire({
           icon: 'success',
           title: 'Database Bersih!',
-          text: `Kabupaten Anda bersih! Tidak ditemukan NIK Istri ganda aktif pada tahun ${tahunAudit}.`
+          text: `Tidak ditemukan NIK Istri ganda aktif tanpa alasan mutasi pada tahun ${tahunAudit}. (Riwayat pindah dan nikah ulang sah terverifikasi)`
         });
         return;
       }
 
-      // Tampilkan hasil audit pelanggaran
+      // Tampilkan temuan pelanggaran
       const previewHtml = listPelanggaran.slice(0, 6).map(d => 
-        `• <b>${d.nama_istri}</b> (${d.nik_istri}) - Kec. ${d.kecamatan}, Desa ${d.desa} [${d.keterangan_audit}]`
+        `• <b>${d.nama_istri}</b> (${d.nik_istri}) - Suami: ${d.nama_suami} [Kec. ${d.kecamatan}, Desa ${d.desa}]`
       ).join("<br>");
 
       Swal.fire({
         icon: 'warning',
-        title: `Ditemukan ${listPelanggaran.length} Baris Duplikat!`,
+        title: `Ditemukan ${listPelanggaran.length} Baris Duplikat Ilegal!`,
         html: `
           <div style="text-align: left; font-size: 12.5px; color: #334155; line-height: 1.5;">
-            Ditemukan NIK Istri yang tercatat ganda pada lebih dari satu PUS aktif di Kabupaten Anda pada tahun ${tahunAudit}:<br><br>
+            Ditemukan NIK Istri aktif ganda yang <b>bukan</b> karena pindah domisili atau menikah ulang setelah cerai/meninggal:<br><br>
             <div style="background:#fff1f2; padding:8px; border-radius:5px; border:1px solid #fecdd3; max-height:160px; overflow-y:auto; font-size:11.5px;">
               ${previewHtml}
               ${listPelanggaran.length > 6 ? `<br><i>...dan ${listPelanggaran.length - 6} baris lainnya.</i>` : ''}
             </div>
-            <br>Silakan unduh berkas Excel untuk melihat rincian dan melakukan tindak lanjut koreksi.
+            <br>Silakan unduh berkas laporan Excel untuk meneliti dan menghapus baris duplikat.
           </div>
         `,
         showCancelButton: true,
@@ -6967,7 +6998,7 @@
           const ws = XLSX.utils.json_to_sheet(exportData);
           const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
           for (let R = range.s.r; R <= range.e.r; ++R) {
-            for (let C of [3, 6]) { // Kolom NIK Istri & NIK Suami
+            for (let C of [3, 6]) {
               const cell = XLSX.utils.encode_cell({ r: R, c: C });
               if (ws[cell]) ws[cell].t = 's';
             }
