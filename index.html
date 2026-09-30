@@ -1130,11 +1130,9 @@
           
           <!-- Baris Dropdown 2 Kolom: Kolom 1 (Level & Lanjutan) | Kolom 2 (Tahun & Bulan) -->
           <div class="filter-grid-2col">
-            <!-- Kolom 1 Kiri Atas: Level BNBA -->
             <div>
               <select id="bnbaTingkat" onchange="onBnbaTingkatChange()">
                 <option value="">-- PILIH LEVEL BNBA --</option>
-                <!-- Untuk index_prov tambahkan: <option value="Provinsi">BNBA PROVINSI</option> -->
                 <option value="Kabupaten">BNBA KABUPATEN</option>
                 <option value="Kecamatan">BNBA KECAMATAN</option>
                 <option value="Desa">BNBA DESA</option>
@@ -1142,7 +1140,6 @@
                 <option value="RT">BNBA RT</option>
               </select>
             </div>
-            <!-- Kolom 2 Kanan Atas: Tahun -->
             <div>
               <select id="bnbaTahun">
                 <option value="2025">2025</option>
@@ -1177,7 +1174,8 @@
             <select id="bnbaRt"><option value="">-- PILIH RT --</option></select>
           </div>
 
-          <div class="filter-grid-2col" style="margin-top: 8px;">
+          <!-- Baris 2: Status Data (PUS Aktif / Mutasi / Semua) & Bulan -->
+          <div class="filter-grid-2col">
             <div>
               <select id="bnbaScopeData" onchange="fetchBnba()" style="font-weight: bold; color: #0369a1; border: 1.5px solid #0284c7;">
                 <option value="PUS_AKTIF" selected>PUS AKTIF</option>
@@ -1185,26 +1183,6 @@
                 <option value="SEMUA">SEMUA DATA</option>
               </select>
             </div>
-          <div>
-
-          <!-- Baris Dropdown 2 Kolom Kedua: Pencarian Lanjutan & Bulan -->
-          <div class="filter-grid-2col">
-            <!-- Kolom 1 Kiri Bawah: Pencarian Lanjutan -->
-            <div>
-              <select id="bnbaFilterAdvCategory" onchange="onBnbaAdvCategoryChange()">
-                <option value="">-- PENCARIAN LANJUTAN --</option>
-                <option value="JKN">JKN</option>
-                <option value="KESERTAAN_KB">KESERTAAN KB</option>
-                <option value="METODE_KONTRASEPSI">METODE KONTRASEPSI</option>
-                <option value="AKSEPTOR_KB_BARU">AKSEPTOR KB BARU</option>
-                <option value="ALASAN_TIDAK_KB">ALASAN TIDAK BER KB</option>
-                <option value="HAMIL">HAMIL</option>
-                <option value="HAMIL_BARU">HAMIL BARU</option>
-                <option value="PUS_BARU">PUS BARU</option>
-                <option value="MUTASI">MUTASI</option>
-              </select>
-            </div>
-            <!-- Kolom 2 Kanan Bawah: Bulan -->
             <div>
               <select id="bnbaBulan">
                 <option value="" selected>-- PILIH BULAN --</option>
@@ -1216,6 +1194,22 @@
                 <option value="11">NOVEMBER</option><option value="12">DESEMBER</option>
               </select>
             </div>
+          </div>
+
+          <!-- Baris 3: Pencarian Lanjutan (Lebar Penuh) -->
+          <div style="width: 100%;">
+            <select id="bnbaFilterAdvCategory" onchange="onBnbaAdvCategoryChange()">
+              <option value="">-- PENCARIAN LANJUTAN --</option>
+              <option value="JKN">JKN</option>
+              <option value="KESERTAAN_KB">KESERTAAN KB</option>
+              <option value="METODE_KONTRASEPSI">METODE KONTRASEPSI</option>
+              <option value="AKSEPTOR_KB_BARU">AKSEPTOR KB BARU</option>
+              <option value="ALASAN_TIDAK_KB">ALASAN TIDAK BER KB</option>
+              <option value="HAMIL">HAMIL</option>
+              <option value="HAMIL_BARU">HAMIL BARU</option>
+              <option value="PUS_BARU">PUS BARU</option>
+              <option value="MUTASI">MUTASI</option>
+            </select>
           </div>
 
           <!-- Panel Checkbox Pencarian Lanjutan (Lebar Penuh Otomatis) -->
@@ -3755,6 +3749,11 @@
       tbody.innerHTML = "<tr><td colspan='29' style='text-align:center; padding: 20px;'>Silakan atur filter dan klik Tampilkan Data BNBA</td></tr>";
     }
 
+    const scopeDataEl = document.getElementById("bnbaScopeData");
+    if (scopeDataEl) {
+      scopeDataEl.value = "PUS_AKTIF";
+    }
+
     onBnbaTingkatChange();
   }
 
@@ -5209,6 +5208,7 @@
             if (cur.cat === "50+" || res.umurIstri >= 50) grouped[key].usia_50++;
           }
         }
+      });
 
       // Cek jika setelah diproses grouping ternyata tidak ada data valid
       const groupKeys = Object.keys(grouped);
