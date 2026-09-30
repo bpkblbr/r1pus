@@ -1092,7 +1092,9 @@
               <th rowspan="2" style="vertical-align: middle; background:#f59e0b; color:white;">GANTI CARA</th>
               <th colspan="2" style="background:#0d9488; color:white;">METODE KONTRASEPSI</th>
               <th colspan="7" style="background:#dc3545; color:white;">BUKAN PESERTA KB</th>
-			  <th colspan="7" style="background:#0f766e; color:white;">KELOMPOK UMUR</th>
+              <th colspan="7" style="background:#0f766e; color:white;">KELOMPOK UMUR</th>
+              <!-- KEPESERTAAN JKN SETELAH KELOMPOK UMUR -->
+              <th colspan="4" style="background:#4338ca; color:white;">KEPESERTAAN JKN</th>
               <th colspan="5" style="background:#6c757d; color:white;">BUKAN PUS</th>
             </tr>
             <tr>
@@ -1105,13 +1107,19 @@
               <th>HAMIL</th>
               <th style="background:#fed7aa; color:#9a3412;">HML-BARU</th>
               <th>IAS</th><th>IAT</th><th>TIAL</th><th>TKI</th>
-			  <th>15-19 THN</th><th>20-24 THN</th><th>25-29 THN</th><th>30-34 THN</th><th>35-39 THN</th><th>40-44 TH</th><th>&gt;=45 THN</th>
+              <th>15-19 THN</th><th>20-24 THN</th><th>25-29 THN</th><th>30-34 THN</th><th>35-39 THN</th><th>40-44 TH</th><th>&gt;=45 THN</th>
+              <!-- SUB-HEADER KEPESERTAAN JKN -->
+              <th style="background:#e0e7ff; color:#312e81;">PBI</th>
+              <th style="background:#e0e7ff; color:#312e81;">NON PBI</th>
+              <th style="background:#e0e7ff; color:#312e81;">SWASTA</th>
+              <th style="background:#fee2e2; color:#991b1b;">TDK PUNYA</th>
+              <!-- SUB-HEADER BUKAN PUS -->
               <th style="background:#e2e3e5;">BKN-PUS</th>
               <th>CERAI</th><th>MNGL</th><th>PINDAH</th><th>USIA 50+</th>
             </tr>
           </thead>
           <tbody id="recapTableBody">
-            <tr><td colspan="38" style="text-align:center; padding: 20px;">Silakan atur filter dan klik <b>Tampilkan Rekap</b></td></tr>
+            <tr><td colspan="42" style="text-align:center; padding: 20px;">Silakan atur filter dan klik <b>Tampilkan Rekap</b></td></tr>
           </tbody>
         </table>
       </div>
@@ -3514,7 +3522,7 @@
       }
     }
 
-    document.getElementById("recapTableBody").innerHTML = "<tr><td colspan='38' style='text-align:center; padding: 20px;'>Silakan atur filter dan klik Tampilkan Rekap</td></tr>";
+    document.getElementById("recapTableBody").innerHTML = "<tr><td colspan='42' style='text-align:center; padding: 20px;'>Silakan atur filter dan klik Tampilkan Rekap</td></tr>";
   }
   
   function resetRecapFilters() {
@@ -5114,20 +5122,19 @@
     const monthKey = mKeys[bulan - 1];
 
     const tbody = document.getElementById("recapTableBody");
-    tbody.innerHTML = "<tr><td colspan='38' style='text-align:center; padding: 20px;'>Mengambil seluruh data rekapitulasi...</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='42' style='text-align:center; padding: 20px;'>Mengambil seluruh data rekapitulasi...</td></tr>";
 
     let allData = [];
     try {
       allData = await fetchAllPusDataChunked(tahun, filterKec, filterDesa, filterDusun);
     } catch (err) {
       console.error("Fetch Error:", err);
-      tbody.innerHTML = `<tr><td colspan='38' style='text-align:center; color:red; padding: 20px;'>Gagal memuat: ${err.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan='42' style='text-align:center; color:red; padding: 20px;'>Gagal memuat: ${err.message}</td></tr>`;
       return;
     }
 
-    // CEK VALIDASI: Jika tidak ada data dari database
     if (!allData || allData.length === 0) {
-      tbody.innerHTML = "<tr><td colspan='38' style='text-align:center; color:#dc2626; font-weight:bold; padding: 30px;'>Tidak ada data PUS yang terdaftar untuk filter wilayah dan tahun ini.</td></tr>";
+      tbody.innerHTML = "<tr><td colspan='42' style='text-align:center; color:#dc2626; font-weight:bold; padding: 30px;'>Tidak ada data PUS yang terdaftar untuk filter wilayah dan tahun ini.</td></tr>";
       Swal.fire({
         icon: 'info',
         title: 'Data Kosong',
@@ -5143,13 +5150,13 @@
         kb_baru_total: 0, kb_baru_kbpp: 0, kb_baru_pasca_do: 0, kb_baru_murni: 0,
         ganti_cara: 0, mkjp: 0, non_mkjp: 0,
         ias: 0, iat: 0, tial: 0, hamil: 0, hamil_baru: 0, tki: 0,
-		u15_19: 0, u20_24: 0, u25_29: 0, u30_34: 0, u35_39: 0, u40_44: 0, u45_plus: 0,
+        u15_19: 0, u20_24: 0, u25_29: 0, u30_34: 0, u35_39: 0, u40_44: 0, u45_plus: 0,
+        // Kolom JKN
+        jkn_pbi: 0, jkn_non_pbi: 0, jkn_swasta: 0, jkn_none: 0,
         bukan_pus: 0, bcr: 0, mng: 0, pndh: 0, usia_50: 0
       };
     }
 
-    // PERUBAHAN: grouped TIDAK DI-PREPOPULATE DARI MASTER WILAYAH.
-    // Wilayah hanya dibentuk jika benar-benar ada data record PUS-nya di database.
     let grouped = {};
 
     try {
@@ -5169,11 +5176,11 @@
         const res = hitungStatusIndikator(r, bulan, mKeys);
         const cur = res.cur;
 
-        // 1. TOTAL PUS: Hanya bertambah jika status bulan berjalan adalah PESERTA_KB atau BUKAN_PESERTA (umur < 50 dan bukan mutasi)
+        // 1. TOTAL PUS
         if (res.isPusAktif) {
           grouped[key].total_pus++;
 
-          // Distribusi Kelompok Umur (Penjumlahan sub-kelompok ini = total_pus)
+          // Distribusi Kelompok Umur
           const u = res.umurIstri;
           if (u >= 15 && u <= 19) grouped[key].u15_19++;
           else if (u >= 20 && u <= 24) grouped[key].u20_24++;
@@ -5182,14 +5189,26 @@
           else if (u >= 35 && u <= 39) grouped[key].u35_39++;
           else if (u >= 40 && u <= 44) grouped[key].u40_44++;
           else if (u >= 45) grouped[key].u45_plus++;
+
+          // Distribusi Kepesertaan JKN (Penjumlahan 4 kolom ini = total_pus)
+          const rawJkn = String(r.peserta_jkn || "").toUpperCase().trim();
+          if (rawJkn === "PBI" || (rawJkn.includes("PBI") && !rawJkn.includes("BUKAN") && !rawJkn.includes("NON"))) {
+            grouped[key].jkn_pbi++;
+          } else if (rawJkn.includes("BUKAN PBI") || rawJkn.includes("NON PBI") || rawJkn.includes("NON-PBI")) {
+            grouped[key].jkn_non_pbi++;
+          } else if (rawJkn.includes("SWASTA")) {
+            grouped[key].jkn_swasta++;
+          } else {
+            grouped[key].jkn_none++;
+          }
         }
 
-        // 2. PUS BARU: Sesuai syarat aturan baru
+        // 2. PUS BARU
         if (res.isPusBaru) {
           grouped[key].pus_baru++;
         }
 
-        // 3. PESERTA KB AKTIF & KB BARU
+        // 3. PESERTA KB AKTIF
         if (cur.type === "PESERTA_KB" && !res.isMutasiOr50) {
           grouped[key].ber_kb++;
           if (cur.method === "PIL") grouped[key].pil++;
@@ -5228,7 +5247,7 @@
           else if (cur.reason === "TIAL") grouped[key].tial++;
           else if (cur.reason === "TKI") grouped[key].tki++;
 
-        // 5. BUKAN PUS: Mutasi atau Umur >= 50
+        // 5. BUKAN PUS / MUTASI
         } else if (res.isMutasiOr50) {          
           if (cur.type === "BUKAN_PUS" || cur.cat === "50+") {
             grouped[key].bukan_pus++;
@@ -5240,14 +5259,13 @@
         }
       });
 
-      // Cek jika setelah diproses grouping ternyata tidak ada data valid
       const groupKeys = Object.keys(grouped);
       if (groupKeys.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='38' style='text-align:center; color:#dc2626; font-weight:bold; padding: 30px;'>Tidak ada data PUS yang terdaftar untuk filter wilayah ini.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='42' style='text-align:center; color:#dc2626; font-weight:bold; padding: 30px;'>Tidak ada data PUS yang terdaftar untuk filter wilayah ini.</td></tr>";
         return;
       }
 
-      // Render Baris Tabel
+      // Render Baris Data
       tbody.innerHTML = "";
       let idx = 1;
       let totalAll = emptyRecapItem("JUMLAH / TOTAL");
@@ -5270,7 +5288,13 @@
           <td>${d.hamil}</td>
           <td style="background:#fff7ed; font-weight:bold; color:#c2410c;">${d.hamil_baru}</td>
           <td>${d.ias}</td><td>${d.iat}</td><td>${d.tial}</td><td>${d.tki}</td>
-		      <td>${d.u15_19}</td><td>${d.u20_24}</td><td>${d.u25_29}</td><td>${d.u30_34}</td><td>${d.u35_39}</td><td>${d.u40_44}</td><td>${d.u45_plus}</td>
+          <td>${d.u15_19}</td><td>${d.u20_24}</td><td>${d.u25_29}</td><td>${d.u30_34}</td><td>${d.u35_39}</td><td>${d.u40_44}</td><td>${d.u45_plus}</td>
+          <!-- 4 KOLOM JKN SETELAH KELOMPOK UMUR -->
+          <td style="background:#f5f3ff;">${d.jkn_pbi}</td>
+          <td style="background:#f5f3ff;">${d.jkn_non_pbi}</td>
+          <td style="background:#f5f3ff;">${d.jkn_swasta}</td>
+          <td style="background:#fff1f2; color:#991b1b;">${d.jkn_none}</td>
+          <!-- KOLOM BUKAN PUS -->
           <td style="background:#e2e3e5; font-weight:bold;">${d.bukan_pus}</td>
           <td>${d.bcr}</td><td>${d.mng}</td><td>${d.pndh}</td><td>${d.usia_50}</td>
         </tr>`;
@@ -5282,6 +5306,7 @@
         }
       });
 
+      // Render Baris Jumlah / Total
       tbody.innerHTML += `<tr style="font-weight:bold; background:#e9ecef;">
         <td colspan="2" style="text-align:center; font-size:13px; color:#1f4e78;">JUMLAH / TOTAL</td>
         <td style="font-size:13px;">${totalAll.total_pus}</td>
@@ -5297,19 +5322,25 @@
         <td>${totalAll.hamil}</td>
         <td style="background:#fed7aa; font-size:13px; color:#9a3412;">${totalAll.hamil_baru}</td>
         <td>${totalAll.ias}</td><td>${totalAll.iat}</td><td>${totalAll.tial}</td><td>${totalAll.tki}</td>
-		    <td style="text-align:center;">${totalAll.u15_19}</td>
+        <td style="text-align:center;">${totalAll.u15_19}</td>
         <td style="text-align:center;">${totalAll.u20_24}</td>
         <td style="text-align:center;">${totalAll.u25_29}</td>
         <td style="text-align:center;">${totalAll.u30_34}</td>
         <td style="text-align:center;">${totalAll.u35_39}</td>
         <td style="text-align:center;">${totalAll.u40_44}</td>
         <td style="text-align:center;">${totalAll.u45_plus}</td>
+        <!-- TOTAL 4 KOLOM JKN -->
+        <td style="background:#ede9fe; font-size:12px; color:#312e81;">${totalAll.jkn_pbi}</td>
+        <td style="background:#ede9fe; font-size:12px; color:#312e81;">${totalAll.jkn_non_pbi}</td>
+        <td style="background:#ede9fe; font-size:12px; color:#312e81;">${totalAll.jkn_swasta}</td>
+        <td style="background:#fecdd3; font-size:12px; color:#991b1b;">${totalAll.jkn_none}</td>
+        <!-- TOTAL BUKAN PUS -->
         <td style="background:#d6d8d9; font-size:13px;">${totalAll.bukan_pus}</td>
         <td>${totalAll.bcr}</td><td>${totalAll.mng}</td><td>${totalAll.pndh}</td><td>${totalAll.usia_50}</td>
       </tr>`;
     } catch (renderErr) {
       console.error("Render Loop Error:", renderErr);
-      tbody.innerHTML = `<tr><td colspan='38' style='text-align:center; color:red; padding: 20px;'>Terjadi kesalahan saat memproses data: ${renderErr.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan='42' style='text-align:center; color:red; padding: 20px;'>Terjadi kesalahan saat memproses data: ${renderErr.message}</td></tr>`;
     }
   }
   
