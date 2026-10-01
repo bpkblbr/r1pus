@@ -14,7 +14,8 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
   
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 10px; background-color: #f0f2f5; color: #333; margin: 0; }
@@ -6785,6 +6786,7 @@
       return;
     }
 
+    const currentYear = String(new Date().getFullYear());
     const { value: tahunPilihan } = await Swal.fire({
       title: 'Audit NIK Istri Ganda',
       text: 'Pilih tahun pelaporan yang ingin diaudit:',
@@ -6796,8 +6798,13 @@
         '2028': '2028',
         '2029': '2029',
         '2030': '2030'
+        '2031': '2031'
+        '2032': '2032'
+        '2033': '2033'
+        '2034': '2034'
+        '2035': '2035'
       },
-      inputValue: document.getElementById("tahun_input")?.value || new Date().getFullYear(),
+      inputValue: document.getElementById("tahun_input")?.value || currentYear,
       showCancelButton: true,
       confirmButtonText: 'Mulai Audit',
       cancelButtonText: 'Batal',
@@ -6820,7 +6827,7 @@
       const step = 1000;
       let hasMore = true;
 
-      // Tarik seluruh data PUS Kabupaten secara chunked
+      // Tarik seluruh data PUS Kabupaten secara chunked menembus limit 1.000 baris
       while (hasMore) {
         let query = db.from('data_pus')
           .select('id_pus, tahun, nik_istri, nama_istri, nama_suami, nik_suami, kecamatan_nama, desa_nama, dusun_nama, kode_rt, kb_jan, kb_feb, kb_mar, kb_apr, kb_mei, kb_jun, kb_jul, kb_agu, kb_sep, kb_okt, kb_nov, kb_des')
@@ -6853,7 +6860,7 @@
       const mKeysDesc = ["kb_des", "kb_nov", "kb_okt", "kb_sep", "kb_agu", "kb_jul", "kb_jun", "kb_mei", "kb_apr", "kb_mar", "kb_feb", "kb_jan"];
       const nikMap = new Map();
 
-      // 1. Identifikasi Riwayat Status Setiap Baris
+      // 1. Identifikasi riwayat status setiap baris
       allRows.forEach(r => {
         const nik = String(r.nik_istri || "").trim();
         if (!nik || nik === "9999999999999999" || nik.length !== 16) return;
@@ -6863,7 +6870,6 @@
         let pernahCerai = false;
         let pernahMeninggal = false;
 
-        // Periksa seluruh bulan untuk mendeteksi jejak mutasi resmi
         for (let mk of mKeysDesc) {
           let val = String(r[mk] || "").trim().toUpperCase();
           if (val && val !== "--KOSONG--" && val !== "-" && val !== "NULL") {
@@ -6899,37 +6905,35 @@
         });
       });
 
-      // 2. Evaluasi NIK Ganda (Kecualikan Pindah & Menikah Ulang setelah Cerai/Meninggal)
+      // 2. Evaluasi NIK Ganda (Kecualikan riwayat Pindah & Menikah ulang setelah Cerai/Meninggal)
       const listPelanggaran = [];
 
       nikMap.forEach((records, nik) => {
         if (records.length > 1) {
-          // Pisahkan antara baris mutasi dan baris aktif
           const barisAktif = records.filter(item => !item.is_mutasi_resmi);
           const barisPindah = records.filter(item => item.pernah_pindah);
           const barisCeraiMeninggal = records.filter(item => item.pernah_cerai || item.pernah_meninggal);
 
           let isSah = false;
 
-          // Kasus 1: Pindah Domisili (Ada baris asal yang berstatus PINDAH, dan 1 baris aktif di tujuan)
+          // Kasus 1: Pindah Domisili (Ada asal berstatus PINDAH dan 1 baris aktif di tujuan)
           if (barisPindah.length >= 1 && barisAktif.length === 1) {
             isSah = true;
           }
 
-          // Kasus 2: Menikah Lagi (Ada baris lama Cerai/Meninggal, dan 1 baris baru dengan suami berbeda)
+          // Kasus 2: Menikah Lagi (Ada baris Cerai/Meninggal dan 1 baris aktif dengan suami berbeda)
           if (barisCeraiMeninggal.length >= 1 && barisAktif.length === 1) {
             const suamiLama = barisCeraiMeninggal[0].nama_suami;
             const suamiBaru = barisAktif[0].nama_suami;
-            // Jika nama/nik suami berbeda, maka pernikahan baru sah
             if (suamiLama !== suamiBaru) {
               isSah = true;
             }
           }
 
-          // Jika BUKAN kasus mutasi yang sah (misal: aktif di 2 tempat sekaligus), masukkan ke daftar pelanggaran
+          // Jika bukan mutasi sah dan terdapat lebih dari 1 baris sama-sama aktif
           if (!isSah && barisAktif.length > 1) {
             records.forEach(item => {
-              let labelAudit = "GANDA AKTIF";
+              let labelAudit = "GANDA AKTIF (Pelanggaran)";
               if (item.pernah_pindah) labelAudit = "Riwayat Pindah Asal";
               else if (item.pernah_cerai) labelAudit = "Pasangan Cerai";
               else if (item.pernah_meninggal) labelAudit = "Pasangan Meninggal";
@@ -6949,12 +6953,12 @@
         Swal.fire({
           icon: 'success',
           title: 'Database Bersih!',
-          text: `Tidak ditemukan NIK Istri ganda aktif tanpa alasan mutasi pada tahun ${tahunAudit}. (Riwayat pindah dan nikah ulang sah terverifikasi)`
+          text: `Kabupaten Anda bersih! Tidak ditemukan NIK Istri ganda aktif tanpa alasan mutasi pada tahun ${tahunAudit}.`
         });
         return;
       }
 
-      // Tampilkan temuan pelanggaran
+      // Preview temuan
       const previewHtml = listPelanggaran.slice(0, 6).map(d => 
         `• <b>${d.nama_istri}</b> (${d.nik_istri}) - Suami: ${d.nama_suami} [Kec. ${d.kecamatan}, Desa ${d.desa}]`
       ).join("<br>");
@@ -6969,7 +6973,7 @@
               ${previewHtml}
               ${listPelanggaran.length > 6 ? `<br><i>...dan ${listPelanggaran.length - 6} baris lainnya.</i>` : ''}
             </div>
-            <br>Silakan unduh berkas laporan Excel untuk meneliti dan menghapus baris duplikat.
+            <br>Silakan unduh berkas laporan Excel untuk meneliti dan memperbaiki data.
           </div>
         `,
         showCancelButton: true,
@@ -6977,42 +6981,136 @@
         cancelButtonText: 'Tutup',
         confirmButtonColor: '#e11d48',
         cancelButtonColor: '#64748b'
-      }).then((res) => {
+      }).then(async (res) => {
         if (res.isConfirmed) {
-          const exportData = listPelanggaran.map((item, i) => ({
-            "NO": i + 1,
-            "TAHUN": item.tahun,
-            "ID PUS": item.id_pus,
-            "NIK ISTRI": String(item.nik_istri),
-            "NAMA ISTRI": item.nama_istri,
-            "NAMA SUAMI": item.nama_suami,
-            "NIK SUAMI": String(item.nik_suami),
-            "KECAMATAN": item.kecamatan,
-            "DESA": item.desa,
-            "DUSUN": item.dusun,
-            "RT": item.rt,
-            "STATUS BULAN TERAKHIR": item.status_terakhir,
-            "STATUS AUDIT": item.keterangan_audit
-          }));
-
-          const ws = XLSX.utils.json_to_sheet(exportData);
-          const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
-          for (let R = range.s.r; R <= range.e.r; ++R) {
-            for (let C of [3, 6]) {
-              const cell = XLSX.utils.encode_cell({ r: R, c: C });
-              if (ws[cell]) ws[cell].t = 's';
-            }
+          if (typeof ExcelJS === "undefined") {
+            Swal.fire("Error", "Pustaka ExcelJS belum terpasang di tag <head>!", "error");
+            return;
           }
 
-          ws['!cols'] = [
-            { wch: 5 }, { wch: 8 }, { wch: 22 }, { wch: 20 }, { wch: 24 },
-            { wch: 24 }, { wch: 20 }, { wch: 20 }, { wch: 22 }, { wch: 20 },
-            { wch: 8 }, { wch: 22 }, { wch: 25 }
+          // Buat workbook & sheet menggunakan ExcelJS
+          const workbook = new ExcelJS.Workbook();
+          const worksheet = workbook.addWorksheet("Audit_NIK_Kab");
+
+          // 1. Kolom Header (Format persis gambar)
+          worksheet.columns = [
+            { header: "NO", key: "no", width: 6 },
+            { header: "TAHUN", key: "tahun", width: 9 },
+            { header: "ID PUS", key: "id_pus", width: 26 },
+            { header: "NIK ISTRI", key: "nik_istri", width: 22 },
+            { header: "NAMA ISTRI", key: "nama_istri", width: 24 },
+            { header: "NAMA SUAMI", key: "nama_suami", width: 24 },
+            { header: "NIK SUAMI", key: "nik_suami", width: 22 },
+            { header: "KECAMATAN", key: "kecamatan", width: 18 },
+            { header: "DESA", key: "desa", width: 22 },
+            { header: "DUSUN", key: "dusun", width: 24 },
+            { header: "RT", key: "rt", width: 8 },
+            { header: "STATUS BULAN TERAKHIR", key: "status_terakhir", width: 18 },
+            { header: "STATUS AUDIT", key: "status_audit", width: 25 }
           ];
 
-          const wb = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, ws, "Audit_NIK_Kab");
-          XLSX.writeFile(wb, `AUDIT_NIK_GANDA_KAB_${tahunAudit}.xlsx`);
+          // 2. Styling Header: Biru Tua Navy (#1F4E78), Teks Putih Tebal, Rata Tengah
+          const headerRow = worksheet.getRow(1);
+          headerRow.height = 28;
+          headerRow.eachCell((cell) => {
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FF1F4E78" }
+            };
+            cell.font = {
+              name: "Segoe UI",
+              color: { argb: "FFFFFFFF" },
+              bold: true,
+              size: 10
+            };
+            cell.alignment = {
+              vertical: "middle",
+              horizontal: "center",
+              wrapText: true
+            };
+            cell.border = {
+              top: { style: "thin", color: { argb: "FFCBD5E1" } },
+              left: { style: "thin", color: { argb: "FFCBD5E1" } },
+              bottom: { style: "thin", color: { argb: "FFCBD5E1" } },
+              right: { style: "thin", color: { argb: "FFCBD5E1" } }
+            };
+          });
+
+          // 3. Masukkan Baris Data dengan Zebra Grouping per NIK
+          let currentGroupNik = "";
+          let groupColorIndex = 0;
+          const groupBgColors = ["FFFFFFFF", "FFDCEEFA"]; // Putih dan Biru Muda Soft
+
+          listPelanggaran.forEach((item, index) => {
+            if (item.nik_istri !== currentGroupNik) {
+              currentGroupNik = item.nik_istri;
+              groupColorIndex = (groupColorIndex + 1) % 2;
+            }
+
+            const currentBg = groupBgColors[groupColorIndex];
+
+            const row = worksheet.addRow({
+              no: index + 1,
+              tahun: item.tahun,
+              id_pus: item.id_pus,
+              nik_istri: String(item.nik_istri),
+              nama_istri: item.nama_istri,
+              nama_suami: item.nama_suami,
+              nik_suami: String(item.nik_suami),
+              kecamatan: item.kecamatan,
+              desa: item.desa,
+              dusun: item.dusun,
+              rt: String(item.rt).padStart(3, "0"),
+              status_terakhir: item.status_terakhir,
+              status_audit: item.keterangan_audit
+            });
+
+            row.height = 20;
+
+            row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+              cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: currentBg }
+              };
+
+              cell.font = {
+                name: "Segoe UI",
+                size: 9.5,
+                color: { argb: "FF1E293B" }
+              };
+
+              cell.border = {
+                top: { style: "thin", color: { argb: "FFCBD5E1" } },
+                left: { style: "thin", color: { argb: "FFCBD5E1" } },
+                bottom: { style: "thin", color: { argb: "FFCBD5E1" } },
+                right: { style: "thin", color: { argb: "FFCBD5E1" } }
+              };
+
+              // Posisi Teks: Col 1: NO, 2: TAHUN, 4: NIK ISTRI, 7: NIK SUAMI, 11: RT, 12: STATUS KB, 13: STATUS AUDIT
+              if ([1, 2, 4, 7, 11, 12, 13].includes(colNumber)) {
+                cell.alignment = { vertical: "middle", horizontal: "center" };
+              } else {
+                cell.alignment = { vertical: "middle", horizontal: "left" };
+              }
+
+              // Format teks murni agar angka 16 digit dan angka nol di awal tetap terjaga
+              if ([3, 4, 7, 11].includes(colNumber)) {
+                cell.numFmt = "@";
+              }
+            });
+          });
+
+          // 4. Unduh berkas ke browser
+          const buffer = await workbook.xlsx.writeBuffer();
+          const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `AUDIT_NIK_GANDA_KAB_${tahunAudit}.xlsx`;
+          a.click();
+          window.URL.revokeObjectURL(url);
         }
       });
 
