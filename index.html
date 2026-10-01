@@ -6586,7 +6586,6 @@
       const tingkatSelect = document.getElementById("bnbaTingkat");
       const tingkatVal = (tingkatSelect && tingkatSelect.value) ? tingkatSelect.value.toUpperCase() : "WILAYAH";
 
-      // Kertas A3 Landscape agar muat hingga 29 kolom tanpa terpotong
       const doc = new jsPDF('landscape', 'pt', 'a3');
 
       // Header Laporan
@@ -6616,12 +6615,12 @@
         bodyRows.push(rowData);
       });
 
-      // Render Tabel AutoTable
+      // Render Tabel AutoTable dengan Selang-Seling Otomatis
       doc.autoTable({
         head: [headRow],
         body: bodyRows,
         startY: 56,
-        theme: 'grid',
+        theme: 'striped', // Mengaktifkan efek zebra striping
         styles: {
           font: "helvetica",
           fontSize: 6.5,
@@ -6629,7 +6628,8 @@
           valign: 'middle',
           lineColor: [203, 213, 225],
           lineWidth: 0.35,
-          textColor: [30, 41, 59]
+          textColor: [30, 41, 59],
+          fillColor: [255, 255, 255] // Warna baris ganjil (Putih)
         },
         headStyles: {
           fillColor: [23, 77, 88], // Header Teal #174D58
@@ -6637,6 +6637,9 @@
           fontStyle: 'bold',
           fontSize: 7,
           halign: 'center'
+        },
+        alternateRowStyles: {
+          fillColor: [241, 245, 249] // Warna baris genap (Soft Slate/Cyan sesuai lampiran)
         },
         didParseCell: function(data) {
           if (data.section === 'body') {
@@ -6693,7 +6696,7 @@
 
     Swal.fire({
       title: 'Menyiapkan Berkas Excel...',
-      text: 'Menyusun tabel BNBA sesuai format resmi...',
+      text: 'Menyusun tabel BNBA dengan format zebra striping...',
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading()
     });
@@ -6708,7 +6711,7 @@
         views: [{ showGridLines: true }]
       });
 
-      // 1. Ekstrak Header Kolom
+      // 1. Ambil Header dari <thead>
       const headerThs = thead.querySelectorAll("tr th");
       const headers = [];
       headerThs.forEach(th => headers.push(th.innerText.trim().toUpperCase()));
@@ -6742,9 +6745,9 @@
         };
       });
 
-      // 3. Masukkan Baris Data dari <tbody>
+      // 3. Masukkan Baris Data dengan WARNA SELANG-SELING (Zebra Striping)
       const trList = tbody.querySelectorAll("tr");
-      trList.forEach(tr => {
+      trList.forEach((tr, rowIdx) => {
         const tdList = tr.querySelectorAll("td");
         if (tdList.length === 0 || tdList.length < headers.length) return;
 
@@ -6754,8 +6757,19 @@
         const excelRow = worksheet.addRow(rowValues);
         excelRow.height = 20;
 
+        // Logika Selang-Seling: Baris ganjil Putih, Baris genap Abu-abu muda / soft cyan
+        const isEven = (rowIdx % 2 === 1);
+        const rowBgColor = isEven ? "FFF1F5F9" : "FFFFFFFF";
+
         excelRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
           const headerName = headers[colNumber - 1] || "";
+
+          // Terapkan latar belakang selang-seling
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: rowBgColor }
+          };
 
           cell.font = {
             name: "Segoe UI",
@@ -6770,7 +6784,7 @@
             right: { style: "thin", color: { argb: "FFCBD5E1" } }
           };
 
-          // Alignment presisi sesuai gambar resmi BNBA
+          // Alignment presisi sesuai gambar lampiran
           if (
             headerName === "NO." || 
             headerName === "RT" || 
@@ -6779,7 +6793,7 @@
             headerName.includes("UMUR") || 
             headerName.includes("ANAK") || 
             headerName.includes("KB") ||
-            headerName.length === 3 // JAN, FEB, MAR, dst.
+            headerName.length === 3
           ) {
             cell.alignment = { vertical: "middle", horizontal: "center" };
           } else if (headerName === "ID PUS") {
@@ -6788,7 +6802,7 @@
             cell.alignment = { vertical: "middle", horizontal: "left" };
           }
 
-          // Kunci format String (Teks Murni) untuk NIK, ID PUS, dan RT agar angka 0 di depan tidak hilang
+          // Kunci format String (Teks Murni) untuk NIK, ID PUS, dan RT agar 0 di depan tidak hilang
           if (headerName.includes("NIK") || headerName === "ID PUS" || headerName === "RT") {
             cell.numFmt = "@";
           }
@@ -6833,7 +6847,7 @@
       Swal.fire({
         icon: 'success',
         title: 'Ekspor Berhasil!',
-        text: `Berkas ${fileName} berhasil diunduh.`,
+        text: `Berkas ${fileName} berhasil diunduh dengan baris selang-seling.`,
         timer: 1500,
         showConfirmButton: false
       });
