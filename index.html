@@ -12506,10 +12506,7 @@
     }
     if (!tglRencana) {
       errors.push("Tanggal Rencana Tindakan wajib diisi");
-    }
-    if (!faskesTujuan) {
-      errors.push("Tempat / Fasilitas Pelayanan wajib diisi");
-    }
+    }    
     if (!namaKader) {
       errors.push("Nama Kader / Petugas Pendamping wajib diisi");
     }
@@ -12532,7 +12529,7 @@
       return;
     }
 
-    const btn = document.getElementById("btnSimpanPendaftaranLayanan");
+    const btn = document.getElementById("btnSimpanLayanan") || document.getElementById("btnSimpanPendaftaranLayanan");
     btn.disabled = true;
     btn.innerText = "Memeriksa data & mendaftarkan...";
 
