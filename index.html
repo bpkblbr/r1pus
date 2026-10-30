@@ -12861,6 +12861,18 @@
 
     const formatDokumen = document.getElementById("cetakMassalJenisDokumen").value;
 
+    // SINKRONKAN KODE FASKES JIKA DI ITEM MASIH KOSONG
+    targetAkseptor = targetAkseptor.map(item => {
+      let kdFaskes = item.kode_faskes || "";
+      if (!kdFaskes && item.faskes_tujuan && Array.isArray(masterFaskesListCache)) {
+        const fFound = masterFaskesListCache.find(f => 
+          String(f.nama_faskes || "").trim().toUpperCase() === String(item.faskes_tujuan || "").trim().toUpperCase()
+        );
+        if (fFound) kdFaskes = fFound.kode_faskes || "";
+      }
+      return { ...item, kode_faskes: kdFaskes };
+    });
+
     // AMBIL DATA LENGKAP PUS (Tgl lahir, JKN, Anak) dari tabel data_pus
     try {
       const idPusList = targetAkseptor.map(a => a.id_pus).filter(Boolean);
@@ -13045,6 +13057,7 @@
   }
 
   function renderSatuKartuDepan(item) {
+    const cleanKdFaskes = String(item.kode_faskes || '').replace(/[^a-zA-Z0-9]/g, '').padEnd(7, ' ');
     const rawJkn = String(item.peserta_jkn || '').toUpperCase().trim();
 
     let checkPesertaJkn = false;
@@ -13198,9 +13211,9 @@
                 <td class="b-text">Nomor Kode Faskes KB</td><td class="b-text">:</td>
                 <td>
                   <div style="display:inline-flex; align-items:center;">
-                    <span class="box-digit">&nbsp;</span><span class="box-digit">&nbsp;</span>&nbsp;&nbsp;
-                    <span class="box-digit">&nbsp;</span><span class="box-digit">&nbsp;</span>&nbsp;&nbsp;
-                    <span class="box-digit">&nbsp;</span><span class="box-digit">&nbsp;</span><span class="box-digit">&nbsp;</span>
+                    <span class="box-digit">${cleanKdFaskes.charAt(0).trim() || '&nbsp;'}</span><span class="box-digit">${cleanKdFaskes.charAt(1).trim() || '&nbsp;'}</span>&nbsp;&nbsp;
+                    <span class="box-digit">${cleanKdFaskes.charAt(2).trim() || '&nbsp;'}</span><span class="box-digit">${cleanKdFaskes.charAt(3).trim() || '&nbsp;'}</span>&nbsp;&nbsp;
+                    <span class="box-digit">${cleanKdFaskes.charAt(4).trim() || '&nbsp;'}</span><span class="box-digit">${cleanKdFaskes.charAt(5).trim() || '&nbsp;'}</span><span class="box-digit">${cleanKdFaskes.charAt(6).trim() || '&nbsp;'}</span>
                   </div>
                 </td>
               </tr>
@@ -13435,7 +13448,7 @@
   }
   
   function renderSatuFormKIV(item) {
-    // 1. Parsing Tanggal Rencana Layanan
+    const cleanKdFaskes = String(item.kode_faskes || '').replace(/[^a-zA-Z0-9]/g, '').padEnd(7, ' ');
     const cleanTglFormatted = String(item.tgl_rencana_layanan || new Date().toISOString().split('T')[0]).replace(/\//g, '-').trim();
     const pTgl = cleanTglFormatted.split('-');
     let yLayanan = String(new Date().getFullYear()), mLayanan = "01", dLayanan = "01";
@@ -13529,6 +13542,8 @@
     else if (jnsAkseptor.includes("DO") || jnsAkseptor.includes("PASCA DO")) kdStatusPeserta = "3";
     else if (jnsAkseptor.includes("ULANGAN") || jnsAkseptor.includes("GANTI")) kdStatusPeserta = "4";
 
+    const kdAlkonTerakhir = (kdStatusPeserta === "1") ? "" : kdAlkon;
+
     // 8. Penggunaan Asuransi
     const rawJkn = String(item.peserta_jkn || "").toUpperCase().trim();
     let kdAsuransi = "";
@@ -13566,11 +13581,11 @@
               <span style="font-size: 7.2pt; line-height: 1.15;">I. Kode Faskes KB/Jaringan/<br>&nbsp;&nbsp;&nbsp;Jejaring</span>
               <span style="font-size: 7.2pt;">:</span>
               <div style="display: flex; gap: 1px;">
-                <span class="box-char">&nbsp;</span><span class="box-char">&nbsp;</span>
+                <span class="box-char">${cleanKdFaskes.charAt(0).trim() || '&nbsp;'}</span><span class="box-char">${cleanKdFaskes.charAt(1).trim() || '&nbsp;'}</span>
                 <span style="margin: 0 1px;"></span>
-                <span class="box-char">&nbsp;</span><span class="box-char">&nbsp;</span>
+                <span class="box-char">${cleanKdFaskes.charAt(2).trim() || '&nbsp;'}</span><span class="box-char">${cleanKdFaskes.charAt(3).trim() || '&nbsp;'}</span>
                 <span style="margin: 0 1px;"></span>
-                <span class="box-char">&nbsp;</span><span class="box-char">&nbsp;</span><span class="box-char">&nbsp;</span>
+                <span class="box-char">${cleanKdFaskes.charAt(4).trim() || '&nbsp;'}</span><span class="box-char">${cleanKdFaskes.charAt(5).trim() || '&nbsp;'}</span><span class="box-char">${cleanKdFaskes.charAt(6).trim() || '&nbsp;'}</span>
               </div>
             </div>
 
@@ -13692,7 +13707,7 @@
                 <td style="vertical-align: top; padding: 1.5px 0;">XIII. Alat/Obat/Cara KB terakhir</td>
                 <td style="vertical-align: top; padding: 1.5px 0;">:</td>
                 <td style="vertical-align: top; padding: 1.5px 0;">
-                  <span class="box-char">${kdAlkon || '&nbsp;'}</span>
+                  <span class="box-char">${kdAlkonTerakhir || '&nbsp;'}</span>
                   <div style="font-size: 6.2pt; line-height: 1.25; margin-top: 1.5px;">
                     1) Suntikan 1 Bulanan &nbsp;&nbsp;&nbsp; 4) Kondom &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 7) IUD CuT 380A<br>
                     2) Suntikan 3 Bulanan &nbsp;&nbsp;&nbsp; 5) Implan 1 Batang &nbsp; 8) IUD Lain-lain<br>
@@ -13967,6 +13982,7 @@
   }
   
   function renderSatuConsent(item) {
+    const cleanKdFaskes = String(item.kode_faskes || '').replace(/[^a-zA-Z0-9]/g, '').padEnd(7, ' ');
     const tglFormatted = item.tgl_rencana_layanan || new Date().toISOString().split('T')[0];
     const pTgl = tglFormatted.split('-');
     const dLayanan = pTgl[2] || "01";
@@ -14081,11 +14097,11 @@
               <td style="padding-top: 1mm; vertical-align: top;">Nomor Kode Faskes KB</td>
               <td style="padding-top: 1mm; vertical-align: top;">:</td>
               <td style="padding-top: 1mm; vertical-align: top;">
-                <span class="ic-digit-box"></span><span class="ic-digit-box"></span>
+                <span class="ic-digit-box">${cleanKdFaskes.charAt(0).trim() || '&nbsp;'}</span><span class="ic-digit-box">${cleanKdFaskes.charAt(1).trim() || '&nbsp;'}</span>
                 &nbsp;&nbsp;
-                <span class="ic-digit-box"></span><span class="ic-digit-box"></span>
+                <span class="ic-digit-box">${cleanKdFaskes.charAt(2).trim() || '&nbsp;'}</span><span class="ic-digit-box">${cleanKdFaskes.charAt(3).trim() || '&nbsp;'}</span>
                 &nbsp;&nbsp;
-                <span class="ic-digit-box"></span><span class="ic-digit-box"></span><span class="ic-digit-box"></span>
+                <span class="ic-digit-box">${cleanKdFaskes.charAt(4).trim() || '&nbsp;'}</span><span class="ic-digit-box">${cleanKdFaskes.charAt(5).trim() || '&nbsp;'}</span><span class="ic-digit-box">${cleanKdFaskes.charAt(6).trim() || '&nbsp;'}</span>
               </td>
             </tr>
             <tr>
